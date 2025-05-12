@@ -33,9 +33,18 @@ export default function MitarbeiterPage() {
   const [selectedMitarbeiter, setSelectedMitarbeiter] = useState<Mitarbeiter | null>(null);
   const [showMitarbeiterForm, setShowMitarbeiterForm] = useState(false);
   
+  // State for modal editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingMitarbeiter, setEditingMitarbeiter] = useState<Mitarbeiter | null>(null);
+  
   // State for salary management
   const [selectedLohn, setSelectedLohn] = useState<LohnDaten | null>(null);
   const [showLohnForm, setShowLohnForm] = useState(false);
+  
+  // State for modal salary editing
+  const [editingLohnId, setEditingLohnId] = useState<string | null>(null);
+  const [editingLohn, setEditingLohn] = useState<LohnDaten | null>(null);
+  const [editingLohnMitarbeiter, setEditingLohnMitarbeiter] = useState<Mitarbeiter | null>(null);
   
   // Form states
   const [mitarbeiterForm, setMitarbeiterForm] = useState({
@@ -50,6 +59,8 @@ export default function MitarbeiterPage() {
   
   // Fetch employees data
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchData() {
       if (!user?.id) return;
       
@@ -59,20 +70,32 @@ export default function MitarbeiterPage() {
       try {
         showNotification('Lade Mitarbeiter aus Supabase...', 'loading');
         const data = await loadMitarbeiter(user.id);
-        setMitarbeiter(data);
-        showNotification(`${data.length} Mitarbeiter geladen`, 'success');
+        
+        if (isMounted) {
+          setMitarbeiter(data);
+          showNotification(`${data.length} Mitarbeiter geladen`, 'success');
+        }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-        setError('Fehler beim Laden der Mitarbeiter. Bitte versuchen Sie es später erneut.');
-        showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-        setMitarbeiter([]);
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+          setError('Fehler beim Laden der Mitarbeiter. Bitte versuchen Sie es später erneut.');
+          showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+          setMitarbeiter([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     fetchData();
-  }, [user?.id, showNotification]);
+    
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // intentionally remove showNotification from dependencies
   
   // Handle form input changes for employee form
   const handleMitarbeiterInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,13 +137,31 @@ export default function MitarbeiterPage() {
     }
   };
   
-  // Set form for editing employee
-  const prepareEditMitarbeiter = (mitarbeiter: Mitarbeiter) => {
-    setSelectedMitarbeiter(mitarbeiter);
-    setMitarbeiterForm({
-      name: mitarbeiter.Name
-    });
-    setShowMitarbeiterForm(true);
+  // Set form for editing employee in modal
+  const startEditing = (mitarbeiter: Mitarbeiter) => {
+    setEditingId(mitarbeiter.id);
+    setEditingMitarbeiter({...mitarbeiter});
+  };
+
+  // Cancel editing in modal
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingMitarbeiter(null);
+  };
+  
+  // Set form for editing salary with modal
+  const startEditingLohn = (mitarbeiter: Mitarbeiter, lohn: LohnDaten) => {
+    console.log("Starting to edit lohn with modal", lohn);
+    setEditingLohnId(lohn.id);
+    setEditingLohn({...lohn});
+    setEditingLohnMitarbeiter(mitarbeiter);
+  };
+
+  // Cancel editing salary in modal
+  const cancelEditingLohn = () => {
+    setEditingLohnId(null);
+    setEditingLohn(null);
+    setEditingLohnMitarbeiter(null);
   };
   
   // Set form for editing salary
@@ -166,12 +207,16 @@ export default function MitarbeiterPage() {
   };
   
   // Handle adding/updating employee
-  const handleSubmitMitarbeiter = async (e: React.FormEvent) => {
+  const handleSubmitMitarbeiter = async (e: React.FormEvent, isEditingModal = false) => {
     e.preventDefault();
     
     if (!user?.id) return;
     
-    if (!mitarbeiterForm.name.trim()) {
+    const name = isEditingModal && editingMitarbeiter 
+      ? editingMitarbeiter.Name.trim()
+      : mitarbeiterForm.name.trim();
+    
+    if (!name) {
       setError('Bitte geben Sie einen Namen ein.');
       return;
     }
@@ -180,11 +225,30 @@ export default function MitarbeiterPage() {
     setError(null);
     
     try {
-      if (selectedMitarbeiter) {
-        // Update existing employee
+      if (isEditingModal && editingMitarbeiter) {
+        // Update using modal data
+        showNotification('Aktualisiere Mitarbeiter in Supabase...', 'loading');
+        const result = await updateMitarbeiter(
+          editingMitarbeiter.id,
+          { Name: name },
+          user.id
+        );
+        
+        // Update state
+        const updatedList = mitarbeiter.map(item => 
+          item.id === editingMitarbeiter.id ? result : item
+        );
+        
+        setMitarbeiter(updatedList);
+        setSuccessMessage('Mitarbeiter erfolgreich aktualisiert.');
+        showNotification('Mitarbeiter erfolgreich aktualisiert', 'success');
+        cancelEditing(); // Close the modal
+      } else if (selectedMitarbeiter) {
+        // Update using inline form data
+        showNotification('Aktualisiere Mitarbeiter in Supabase...', 'loading');
         const result = await updateMitarbeiter(
           selectedMitarbeiter.id,
-          { Name: mitarbeiterForm.name.trim() },
+          { Name: name },
           user.id
         );
         
@@ -195,39 +259,54 @@ export default function MitarbeiterPage() {
         
         setMitarbeiter(updatedList);
         setSuccessMessage('Mitarbeiter erfolgreich aktualisiert.');
+        showNotification('Mitarbeiter erfolgreich aktualisiert', 'success');
+        resetMitarbeiterForm();
       } else {
         // Add new employee
+        showNotification('Füge Mitarbeiter in Supabase hinzu...', 'loading');
         const result = await addMitarbeiter(
-          mitarbeiterForm.name.trim(),
+          name,
           [], // No initial salary data
           user.id
         );
         
         setMitarbeiter([...mitarbeiter, result]);
         setSuccessMessage('Mitarbeiter erfolgreich hinzugefügt.');
+        showNotification('Mitarbeiter erfolgreich hinzugefügt', 'success');
+        resetMitarbeiterForm();
       }
       
-      // Reset form
-      resetMitarbeiterForm();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       setError('Fehler beim Speichern des Mitarbeiters.');
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
     } finally {
       setLoading(false);
     }
   };
   
   // Handle adding/updating salary
-  const handleSubmitLohn = async (e: React.FormEvent) => {
+  const handleSubmitLohn = async (e: React.FormEvent, isEditingModal = false) => {
     e.preventDefault();
-    console.log("Lohn form submitted", { selectedMitarbeiter, lohnForm });
+    console.log("Lohn form submitted", { selectedMitarbeiter, lohnForm, isEditingModal, editingLohn, editingLohnMitarbeiter });
     
-    if (!selectedMitarbeiter) {
-      console.error("No selectedMitarbeiter when submitting lohn form");
+    const mitarbeiterForEdit = isEditingModal ? editingLohnMitarbeiter : selectedMitarbeiter;
+    
+    if (!mitarbeiterForEdit) {
+      console.error("No mitarbeiter selected when submitting lohn form");
       return;
     }
     
-    if (lohnForm.betrag <= 0) {
+    const lohnData = isEditingModal && editingLohn
+      ? {
+          start: format(editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start), 'yyyy-MM-dd'),
+          betrag: editingLohn.Betrag,
+          ende: editingLohn.Ende ? format(editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende), 'yyyy-MM-dd') : ''
+        }
+      : lohnForm;
+    
+    if (lohnData.betrag <= 0) {
       setError('Bitte geben Sie einen gültigen Betrag ein.');
       return;
     }
@@ -236,30 +315,32 @@ export default function MitarbeiterPage() {
     setError(null);
     
     try {
-      const startDate = new Date(lohnForm.start);
-      const endDate = lohnForm.ende ? new Date(lohnForm.ende) : null;
-      console.log("Processing lohn data", { startDate, endDate, betrag: lohnForm.betrag });
+      const startDate = new Date(lohnData.start);
+      const endDate = lohnData.ende ? new Date(lohnData.ende) : null;
+      console.log("Processing lohn data", { startDate, endDate, betrag: lohnData.betrag });
       
       let result: LohnDaten;
+      const targetLohnId = isEditingModal && editingLohn ? editingLohn.id : selectedLohn?.id;
       
-      if (selectedLohn) {
+      if (targetLohnId) {
         // Update existing salary
+        showNotification('Aktualisiere Lohndaten in Supabase...', 'loading');
         result = await updateLohn(
-          selectedLohn.id,
+          targetLohnId,
           {
             Start: startDate,
             Ende: endDate,
-            Betrag: lohnForm.betrag
+            Betrag: lohnData.betrag
           }
         );
         
         // Update state
         const updatedMitarbeiter = mitarbeiter.map(ma => {
-          if (ma.id === selectedMitarbeiter.id) {
+          if (ma.id === mitarbeiterForEdit.id) {
             return {
               ...ma,
               Lohn: ma.Lohn.map(lohn => 
-                lohn.id === selectedLohn.id ? result : lohn
+                lohn.id === targetLohnId ? result : lohn
               )
             };
           }
@@ -268,18 +349,20 @@ export default function MitarbeiterPage() {
         
         setMitarbeiter(updatedMitarbeiter);
         setSuccessMessage('Lohndaten erfolgreich aktualisiert.');
+        showNotification('Lohndaten erfolgreich aktualisiert', 'success');
       } else {
         // Add new salary
+        showNotification('Füge Lohndaten in Supabase hinzu...', 'loading');
         result = await addLohnToMitarbeiter(
-          selectedMitarbeiter.id,
+          mitarbeiterForEdit.id,
           startDate,
-          lohnForm.betrag,
+          lohnData.betrag,
           endDate
         );
         
         // Update state
         const updatedMitarbeiter = mitarbeiter.map(ma => {
-          if (ma.id === selectedMitarbeiter.id) {
+          if (ma.id === mitarbeiterForEdit.id) {
             return {
               ...ma,
               Lohn: [...ma.Lohn, result]
@@ -290,13 +373,20 @@ export default function MitarbeiterPage() {
         
         setMitarbeiter(updatedMitarbeiter);
         setSuccessMessage('Lohndaten erfolgreich hinzugefügt.');
+        showNotification('Lohndaten erfolgreich hinzugefügt', 'success');
       }
       
       // Reset form
-      resetLohnForm();
+      if (isEditingModal) {
+        cancelEditingLohn();
+      } else {
+        resetLohnForm();
+      }
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       setError('Fehler beim Speichern der Lohndaten.');
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
     } finally {
       setLoading(false);
     }
@@ -472,7 +562,7 @@ export default function MitarbeiterPage() {
             {selectedMitarbeiter ? 'Mitarbeiter bearbeiten' : 'Neuen Mitarbeiter anlegen'}
           </h2>
           
-          <form onSubmit={handleSubmitMitarbeiter} className="space-y-4">
+          <form onSubmit={(e) => handleSubmitMitarbeiter(e, false)} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Name
@@ -509,7 +599,7 @@ export default function MitarbeiterPage() {
             {selectedLohn ? 'Lohndaten bearbeiten' : 'Neue Lohndaten anlegen'} für {selectedMitarbeiter.Name}
           </h2>
           
-          <form onSubmit={handleSubmitLohn} className="space-y-4">
+          <form onSubmit={(e) => handleSubmitLohn(e, false)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
@@ -619,7 +709,7 @@ export default function MitarbeiterPage() {
                     
                     <div className="flex mt-2 space-x-2">
                       <button
-                        onClick={() => prepareEditMitarbeiter(ma)}
+                        onClick={() => startEditing(ma)}
                         disabled={isReadOnly || loading}
                         className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -688,7 +778,7 @@ export default function MitarbeiterPage() {
                                 </td>
                                 <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                                   <button
-                                    onClick={() => showSalaryForm(ma, lohn)}
+                                    onClick={() => startEditingLohn(ma, lohn)}
                                     disabled={isReadOnly || loading}
                                     className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
@@ -712,6 +802,149 @@ export default function MitarbeiterPage() {
               </div>
             );
           })}
+        </div>
+      )}
+      
+      {/* Edit form modal */}
+      {editingId && editingMitarbeiter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Mitarbeiter bearbeiten</h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (editingId && editingMitarbeiter) {
+                handleSubmitMitarbeiter(e, true);
+              }
+            }} className="space-y-4">
+              <div>
+                <label htmlFor="edit_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  id="edit_name"
+                  type="text"
+                  value={editingMitarbeiter.Name}
+                  onChange={(e) => setEditingMitarbeiter({...editingMitarbeiter, Name: e.target.value})}
+                  disabled={loading}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Aktualisieren'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Salary edit form modal */}
+      {editingLohnId && editingLohn && editingLohnMitarbeiter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">
+              Lohndaten bearbeiten für {editingLohnMitarbeiter.Name}
+            </h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmitLohn(e, true);
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="edit_lohn_start" className="block text-sm font-medium text-gray-700 mb-1">
+                    Startdatum
+                  </label>
+                  <input
+                    id="edit_lohn_start"
+                    name="start"
+                    type="date"
+                    value={format(editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start), 'yyyy-MM-dd')}
+                    onChange={(e) => setEditingLohn({
+                      ...editingLohn,
+                      Start: new Date(e.target.value)
+                    })}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_lohn_betrag" className="block text-sm font-medium text-gray-700 mb-1">
+                    Lohn (CHF)
+                  </label>
+                  <input
+                    id="edit_lohn_betrag"
+                    name="betrag"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editingLohn.Betrag}
+                    onChange={(e) => setEditingLohn({
+                      ...editingLohn,
+                      Betrag: parseFloat(e.target.value) || 0
+                    })}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_lohn_ende" className="block text-sm font-medium text-gray-700 mb-1">
+                    Enddatum (optional)
+                  </label>
+                  <input
+                    id="edit_lohn_ende"
+                    name="ende"
+                    type="date"
+                    value={editingLohn.Ende ? format(editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende), 'yyyy-MM-dd') : ''}
+                    onChange={(e) => setEditingLohn({
+                      ...editingLohn,
+                      Ende: e.target.value ? new Date(e.target.value) : null
+                    })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={cancelEditingLohn}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Aktualisieren'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

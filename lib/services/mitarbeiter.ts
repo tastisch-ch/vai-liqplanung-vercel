@@ -10,19 +10,15 @@ import { dateToIsoString } from '@/lib/date-utils/format';
 
 /**
  * Load all employees from the database
- * @param userId Optional user ID to filter employees
+ * @param userId Optional user ID to filter employees (not used anymore as all authenticated users can see all employees)
  */
 export async function loadMitarbeiter(userId?: string): Promise<Mitarbeiter[]> {
   try {
-    // First, load all employees
-    let query = supabase.from('mitarbeiter').select('*');
-    
-    // Filter by user if specified
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
-    const { data: mitarbeiterData, error: mitarbeiterError } = await query.order('Name', { ascending: true });
+    // Load all employees without filtering by user_id
+    const { data: mitarbeiterData, error: mitarbeiterError } = await supabase
+      .from('mitarbeiter')
+      .select('*')
+      .order('Name', { ascending: true });
     
     if (mitarbeiterError) {
       console.error('Error loading employees:', mitarbeiterError.message, mitarbeiterError.details);

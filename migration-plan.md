@@ -161,6 +161,11 @@ This document outlines the step-by-step plan to migrate the VAI-Liq-Planung appl
 4. Conduct cross-browser testing
 5. Implement responsive design improvements
 6. Add progressive enhancement features
+7. Enhance edit UI with modal dialogs for all modules
+   - Convert inline editing to modal dialogs (as implemented in Fixkosten module)
+   - Standardize dialog appearance and behavior across all modules
+   - Add keyboard shortcuts for common editing actions
+   - Implement focus management for better accessibility
 
 ## Implementation Strategy
 

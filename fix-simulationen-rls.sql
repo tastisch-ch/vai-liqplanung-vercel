@@ -3,8 +3,10 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT FROM information_schema.tables 
+
     WHERE table_schema = 'public'
     AND table_name = 'simulationen'
+
   ) THEN
     -- Create simulationen table if it doesn't exist
     CREATE TABLE public.simulationen (
@@ -45,5 +47,44 @@ BEGIN
     -- Add comment
     COMMENT ON TABLE public.simulationen IS 'Financial simulations for what-if scenarios';
   END IF;
+END
+$$;
+
+-- Fix Row Level Security policies for the simulationen table
+DO $$
+BEGIN
+  -- First ensure the table has RLS enabled
+  ALTER TABLE public.simulationen ENABLE ROW LEVEL SECURITY;
+  
+  -- Drop existing policies to avoid conflicts
+  DROP POLICY IF EXISTS "Users can view their own simulations" ON public.simulationen;
+  DROP POLICY IF EXISTS "Users can update their own simulations" ON public.simulationen;
+  DROP POLICY IF EXISTS "Users can insert their own simulations" ON public.simulationen;
+  DROP POLICY IF EXISTS "Users can delete their own simulations" ON public.simulationen;
+  DROP POLICY IF EXISTS "Authenticated users can view all simulations" ON public.simulationen;
+  
+  -- Create new policies with proper permissions
+  
+  -- Allow all authenticated users to view all simulations
+  CREATE POLICY "Authenticated users can view all simulations"
+    ON public.simulationen FOR SELECT
+    USING (auth.role() = 'authenticated');
+  
+  -- Allow users to insert their own records
+  CREATE POLICY "Users can insert their own simulations"
+    ON public.simulationen FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+  
+  -- Allow users to update their own records
+  CREATE POLICY "Users can update their own simulations"
+    ON public.simulationen FOR UPDATE
+    USING (auth.uid() = user_id);
+  
+  -- Allow users to delete their own records
+  CREATE POLICY "Users can delete their own simulations"
+    ON public.simulationen FOR DELETE
+    USING (auth.uid() = user_id);
+  
+  RAISE NOTICE 'RLS policies for simulationen table updated';
 END
 $$; 

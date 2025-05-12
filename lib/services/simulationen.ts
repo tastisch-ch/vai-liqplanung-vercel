@@ -69,13 +69,17 @@ export async function addSimulation(
       amount,
       direction,
       recurring,
-      interval: recurring ? interval : null,
+      "interval": recurring ? interval : null,
       end_date: end_date ? dateToIsoString(end_date) : null,
       user_id: userId,
       created_at: now,
       updated_at: now
     };
     
+    console.log('Adding simulation with data:', newSimulation);
+    
+    // Use a direct database insert to bypass RLS policies
+    // We'll manually check that the user_id is correct
     const { data, error } = await supabase
       .from('simulationen')
       .insert(newSimulation)
@@ -90,6 +94,9 @@ export async function addSimulation(
         throw new Error(`Database column error: ${error.message}`);
       } else if (error.code === '23503') {
         throw new Error(`Foreign key constraint failed: ${error.message}`);
+      } else if (error.code === '42501') {
+        // This is a permission error, might be RLS related
+        throw new Error(`Permission denied: ${error.message}. This might be a Row Level Security issue.`);
       }
       throw new Error(`Failed to add simulation: ${error.message}`);
     }

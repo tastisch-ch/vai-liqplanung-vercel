@@ -41,10 +41,13 @@ export default function Fixkosten() {
   
   // State for editing
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingFixkosten, setEditingFixkosten] = useState<Fixkosten | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Fetch fixed costs data
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchData() {
       if (!user?.id) return;
       
@@ -54,22 +57,34 @@ export default function Fixkosten() {
       try {
         showNotification('Lade Fixkosten aus Supabase...', 'loading');
         const data = await loadFixkosten(user.id);
-        setFixkosten(data);
-        applyFilters(data);
-        showNotification(`${data.length} Fixkosten geladen`, 'success');
+        
+        if (isMounted) {
+          setFixkosten(data);
+          applyFilters(data);
+          showNotification(`${data.length} Fixkosten geladen`, 'success');
+        }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-        setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
-        showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-        setFixkosten([]);
-        setFilteredFixkosten([]);
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+          setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
+          showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+          setFixkosten([]);
+          setFilteredFixkosten([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     fetchData();
-  }, [user?.id, showNotification]);
+    
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // intentionally removing showNotification from dependencies
   
   // Apply filters when filter criteria change
   useEffect(() => {
@@ -167,6 +182,7 @@ export default function Fixkosten() {
       setFixkosten(updatedList);
       applyFilters(updatedList);
       setEditingId(null);
+      setEditingFixkosten(null);
       
       setSuccessMessage('Fixkosten erfolgreich aktualisiert.');
       showNotification('Fixkosten erfolgreich in Supabase aktualisiert', 'success');
@@ -177,6 +193,18 @@ export default function Fixkosten() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // New function to start editing
+  const startEditing = (item: Fixkosten) => {
+    setEditingId(item.id);
+    setEditingFixkosten({...item});
+  };
+
+  // New function to cancel editing
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingFixkosten(null);
   };
   
   // Handle deleting fixed cost
@@ -600,7 +628,7 @@ export default function Fixkosten() {
                     
                     <div className="flex items-start gap-2 ml-4">
                       <button
-                        onClick={() => handleUpdateFixkosten(item.id, { /* open edit form instead */ })}
+                        onClick={() => startEditing(item)}
                         disabled={isReadOnly || loading}
                         className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -640,6 +668,128 @@ export default function Fixkosten() {
           </div>
         )}
       </div>
+
+      {/* Edit form modal */}
+      {editingId && editingFixkosten && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Fixkosten bearbeiten</h2>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (editingId && editingFixkosten) {
+                handleUpdateFixkosten(editingId, editingFixkosten);
+              }
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="edit_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Bezeichnung
+                  </label>
+                  <input
+                    id="edit_name"
+                    type="text"
+                    value={editingFixkosten.name}
+                    onChange={(e) => setEditingFixkosten({...editingFixkosten, name: e.target.value})}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag (CHF)
+                  </label>
+                  <input
+                    id="edit_amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editingFixkosten.betrag}
+                    onChange={(e) => setEditingFixkosten({...editingFixkosten, betrag: parseFloat(e.target.value)})}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_rhythmus" className="block text-sm font-medium text-gray-700 mb-1">
+                    Rhythmus
+                  </label>
+                  <select
+                    id="edit_rhythmus"
+                    value={editingFixkosten.rhythmus}
+                    onChange={(e) => setEditingFixkosten({
+                      ...editingFixkosten, 
+                      rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
+                    })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="monatlich">monatlich</option>
+                    <option value="quartalsweise">quartalsweise</option>
+                    <option value="halbjährlich">halbjährlich</option>
+                    <option value="jährlich">jährlich</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit_start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Startdatum
+                  </label>
+                  <input
+                    id="edit_start_date"
+                    type="date"
+                    value={editingFixkosten.start instanceof Date ? editingFixkosten.start.toISOString().split('T')[0] : new Date(editingFixkosten.start).toISOString().split('T')[0]}
+                    onChange={(e) => setEditingFixkosten({...editingFixkosten, start: new Date(e.target.value)})}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Enddatum (optional)
+                  </label>
+                  <input
+                    id="edit_end_date"
+                    type="date"
+                    value={editingFixkosten.enddatum ? (editingFixkosten.enddatum instanceof Date ? editingFixkosten.enddatum.toISOString().split('T')[0] : new Date(editingFixkosten.enddatum).toISOString().split('T')[0]) : ''}
+                    onChange={(e) => setEditingFixkosten({
+                      ...editingFixkosten, 
+                      enddatum: e.target.value ? new Date(e.target.value) : null
+                    })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Speichern'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

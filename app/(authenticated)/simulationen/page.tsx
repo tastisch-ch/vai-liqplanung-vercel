@@ -66,6 +66,8 @@ export default function Simulationen() {
   
   // Fetch simulations data
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchData() {
       if (!user?.id) return;
       
@@ -75,28 +77,40 @@ export default function Simulationen() {
       try {
         showNotification('Lade Simulationen aus Supabase...', 'loading');
         const data = await loadSimulationen(user.id);
-        setSimulationen(data);
-        showNotification(`${data.length} Simulationen geladen`, 'success');
         
-        // Generate projections
-        const projected = generateSimulationProjections(data, projectionStart, projectionEnd);
-        setProjections(projected);
-        
-        applyFilters(data);
+        if (isMounted) {
+          setSimulationen(data);
+          showNotification(`${data.length} Simulationen geladen`, 'success');
+          
+          // Generate projections
+          const projected = generateSimulationProjections(data, projectionStart, projectionEnd);
+          setProjections(projected);
+          
+          applyFilters(data);
+        }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-        setError('Fehler beim Laden der Simulationen. Bitte versuchen Sie es später erneut.');
-        showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-        setSimulationen([]);
-        setProjections([]);
-        setFilteredSimulationen([]);
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+          setError('Fehler beim Laden der Simulationen. Bitte versuchen Sie es später erneut.');
+          showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+          setSimulationen([]);
+          setProjections([]);
+          setFilteredSimulationen([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     
     fetchData();
-  }, [user?.id, projectionStart, projectionEnd, showNotification]);
+    
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, projectionStart, projectionEnd]); // intentionally remove showNotification from dependencies
   
   // Apply filters when filter criteria change
   useEffect(() => {
