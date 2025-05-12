@@ -1,0 +1,645 @@
+'use client';
+
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useState, useEffect } from "react";
+import type { Fixkosten } from "@/models/types";
+import { 
+  loadFixkosten, 
+  addFixkosten, 
+  updateFixkostenById, 
+  deleteFixkostenById,
+  calculateMonthlyCosts,
+  filterActiveFixkosten,
+  isFixkostenActive
+} from "@/lib/services/fixkosten";
+import { formatCHF } from "@/lib/currency";
+import { format, addMonths } from "date-fns";
+import { de } from "date-fns/locale";
+import { useNotification } from "@/components/ui/Notification";
+
+export default function Fixkosten() {
+  const { authState } = useAuth();
+  const { user, isReadOnly } = authState;
+  const { showNotification } = useNotification();
+  
+  // State for fixed costs list and filtering
+  const [fixkosten, setFixkosten] = useState<Fixkosten[]>([]);
+  const [filteredFixkosten, setFilteredFixkosten] = useState<Fixkosten[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showOnlyActive, setShowOnlyActive] = useState(true);
+  const [rhythmusFilter, setRhythmusFilter] = useState<string[]>([]);
+  
+  // State for creating new fixed cost
+  const [newFixkosten, setNewFixkosten] = useState({
+    name: '',
+    betrag: 0,
+    rhythmus: 'monatlich' as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich',
+    start: new Date(),
+    enddatum: null as Date | null
+  });
+  
+  // State for editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  
+  // Fetch fixed costs data
+  useEffect(() => {
+    async function fetchData() {
+      if (!user?.id) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        showNotification('Lade Fixkosten aus Supabase...', 'loading');
+        const data = await loadFixkosten(user.id);
+        setFixkosten(data);
+        applyFilters(data);
+        showNotification(`${data.length} Fixkosten geladen`, 'success');
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
+        showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+        setFixkosten([]);
+        setFilteredFixkosten([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [user?.id, showNotification]);
+  
+  // Apply filters when filter criteria change
+  useEffect(() => {
+    applyFilters(fixkosten);
+  }, [showOnlyActive, rhythmusFilter]);
+  
+  // Filter function
+  const applyFilters = (data: Fixkosten[]) => {
+    let filtered = [...data];
+    
+    // Apply active/inactive filter
+    if (showOnlyActive) {
+      filtered = filterActiveFixkosten(filtered, true);
+    }
+    
+    // Apply rhythm filter
+    if (rhythmusFilter.length > 0) {
+      filtered = filtered.filter(item => rhythmusFilter.includes(item.rhythmus));
+    }
+    
+    // Sort by name
+    filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    
+    setFilteredFixkosten(filtered);
+  };
+  
+  // Handle adding new fixed cost
+  const handleAddFixkosten = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    
+    if (!newFixkosten.name.trim()) {
+      setError('Bitte geben Sie eine Bezeichnung ein.');
+      return;
+    }
+    
+    if (newFixkosten.betrag <= 0) {
+      setError('Bitte geben Sie einen gültigen Betrag ein.');
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      showNotification('Speichere Fixkosten in Supabase...', 'loading');
+      const result = await addFixkosten(
+        newFixkosten.name.trim(),
+        newFixkosten.betrag,
+        newFixkosten.rhythmus,
+        newFixkosten.start,
+        newFixkosten.enddatum,
+        user.id
+      );
+      
+      setFixkosten([...fixkosten, result]);
+      applyFilters([...fixkosten, result]);
+      
+      // Reset form
+      setNewFixkosten({
+        name: '',
+        betrag: 0,
+        rhythmus: 'monatlich',
+        start: new Date(),
+        enddatum: null
+      });
+      
+      setSuccessMessage('Fixkosten erfolgreich hinzugefügt.');
+      showNotification('Fixkosten erfolgreich in Supabase gespeichert', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError('Fehler beim Hinzufügen der Fixkosten.');
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle updating fixed cost
+  const handleUpdateFixkosten = async (id: string, updates: Partial<Fixkosten>) => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      showNotification('Aktualisiere Fixkosten in Supabase...', 'loading');
+      const result = await updateFixkostenById(id, updates, user.id);
+      
+      // Update state
+      const updatedList = fixkosten.map(item => 
+        item.id === id ? result : item
+      );
+      
+      setFixkosten(updatedList);
+      applyFilters(updatedList);
+      setEditingId(null);
+      
+      setSuccessMessage('Fixkosten erfolgreich aktualisiert.');
+      showNotification('Fixkosten erfolgreich in Supabase aktualisiert', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError('Fehler beim Aktualisieren der Fixkosten.');
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle deleting fixed cost
+  const handleDeleteFixkosten = async (id: string) => {
+    if (!window.confirm('Möchten Sie diesen Fixkosten-Eintrag wirklich löschen? Dieser Vorgang wirkt sich direkt auf die Supabase-Datenbank aus.')) {
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      showNotification('Lösche Fixkosten aus Supabase...', 'loading');
+      await deleteFixkostenById(id);
+      
+      // Update state
+      const updatedList = fixkosten.filter(item => item.id !== id);
+      setFixkosten(updatedList);
+      applyFilters(updatedList);
+      
+      setSuccessMessage('Fixkosten erfolgreich gelöscht.');
+      showNotification('Fixkosten erfolgreich aus Supabase gelöscht', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError('Fehler beim Löschen der Fixkosten.');
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle ending fixed cost (setting end date to today)
+  const handleEndFixkosten = async (id: string) => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await updateFixkostenById(
+        id, 
+        { enddatum: new Date() },
+        user.id
+      );
+      
+      // Update state
+      const updatedList = fixkosten.map(item => 
+        item.id === id ? result : item
+      );
+      
+      setFixkosten(updatedList);
+      applyFilters(updatedList);
+      
+      setSuccessMessage('Fixkosten erfolgreich beendet.');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError('Fehler beim Beenden der Fixkosten.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle reactivating fixed cost (removing end date)
+  const handleReactivateFixkosten = async (id: string) => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await updateFixkostenById(
+        id, 
+        { enddatum: null },
+        user.id
+      );
+      
+      // Update state
+      const updatedList = fixkosten.map(item => 
+        item.id === id ? result : item
+      );
+      
+      setFixkosten(updatedList);
+      applyFilters(updatedList);
+      
+      setSuccessMessage('Fixkosten erfolgreich reaktiviert.');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError('Fehler beim Reaktivieren der Fixkosten.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Calculate display info for fixed cost
+  const getFixkostenDisplayInfo = (item: Fixkosten) => {
+    // Determine if active
+    const isActive = isFixkostenActive(item);
+    
+    // Format for monthlyAmount based on rhythm
+    let monthlyAmount = 0;
+    switch(item.rhythmus) {
+      case 'monatlich':
+        monthlyAmount = item.betrag;
+        break;
+      case 'quartalsweise':
+        monthlyAmount = item.betrag / 3;
+        break;
+      case 'halbjährlich':
+        monthlyAmount = item.betrag / 6;
+        break;
+      case 'jährlich':
+        monthlyAmount = item.betrag / 12;
+        break;
+    }
+    
+    // Get next date
+    let nextDate = new Date(item.start);
+    const today = new Date();
+    
+    // Keep advancing until we find a date in the future
+    while (nextDate < today) {
+      switch(item.rhythmus) {
+        case 'monatlich':
+          nextDate = addMonths(nextDate, 1);
+          break;
+        case 'quartalsweise':
+          nextDate = addMonths(nextDate, 3);
+          break;
+        case 'halbjährlich':
+          nextDate = addMonths(nextDate, 6);
+          break;
+        case 'jährlich':
+          nextDate = addMonths(nextDate, 12);
+          break;
+      }
+    }
+    
+    return {
+      isActive,
+      monthlyAmount,
+      statusText: isActive 
+        ? `Aktiv, nächste Zahlung: ${format(nextDate, 'dd.MM.yyyy')}`
+        : `Beendet am: ${item.enddatum ? format(item.enddatum, 'dd.MM.yyyy') : 'unbekannt'}`
+    };
+  };
+  
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
+      
+      {/* Read-only warning if applicable */}
+      {isReadOnly && (
+        <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">Lesemodus aktiv</h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>Sie haben nur Leserechte. Das Hinzufügen oder Bearbeiten von Fixkosten ist nicht möglich.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Success message */}
+      {successMessage && (
+        <div className="bg-green-50 p-4 rounded-md border border-green-200">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">
+                {successMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 p-4 rounded-md border border-red-200">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Add new fixed cost form */}
+      <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
+        <h2 className="text-xl font-semibold mb-4">Neue Fixkosten hinzufügen</h2>
+        
+        <form onSubmit={handleAddFixkosten} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Bezeichnung
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={newFixkosten.name}
+                onChange={(e) => setNewFixkosten({...newFixkosten, name: e.target.value})}
+                disabled={isReadOnly || loading}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                Betrag (CHF)
+              </label>
+              <input
+                id="amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={newFixkosten.betrag}
+                onChange={(e) => setNewFixkosten({...newFixkosten, betrag: parseFloat(e.target.value)})}
+                disabled={isReadOnly || loading}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="rhythmus" className="block text-sm font-medium text-gray-700 mb-1">
+                Rhythmus
+              </label>
+              <select
+                id="rhythmus"
+                value={newFixkosten.rhythmus}
+                onChange={(e) => setNewFixkosten({
+                  ...newFixkosten, 
+                  rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
+                })}
+                disabled={isReadOnly || loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="monatlich">monatlich</option>
+                <option value="quartalsweise">quartalsweise</option>
+                <option value="halbjährlich">halbjährlich</option>
+                <option value="jährlich">jährlich</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                Startdatum
+              </label>
+              <input
+                id="start_date"
+                type="date"
+                value={newFixkosten.start.toISOString().split('T')[0]}
+                onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
+                disabled={isReadOnly || loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                Enddatum (optional)
+              </label>
+              <input
+                id="end_date"
+                type="date"
+                value={newFixkosten.enddatum ? newFixkosten.enddatum.toISOString().split('T')[0] : ''}
+                onChange={(e) => setNewFixkosten({
+                  ...newFixkosten, 
+                  enddatum: e.target.value ? new Date(e.target.value) : null
+                })}
+                disabled={isReadOnly || loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={isReadOnly || loading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      {/* Filter controls */}
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold">Aktuelle Fixkosten</h2>
+            <p className="text-sm text-gray-500">
+              Monatliche Gesamtkosten: <span className="font-medium">{formatCHF(calculateMonthlyCosts(fixkosten))}</span>
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <div>
+              <label className="inline-flex items-center">
+                <input 
+                  type="checkbox" 
+                  checked={showOnlyActive} 
+                  onChange={(e) => setShowOnlyActive(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-blue-600"
+                />
+                <span className="ml-2 text-sm text-gray-700">Nur aktive anzeigen</span>
+              </label>
+            </div>
+            
+            <select 
+              value={rhythmusFilter.length === 0 ? '' : 'selected'}
+              onChange={(e) => {
+                if (e.target.value === '') {
+                  setRhythmusFilter([]);
+                }
+              }}
+              className="text-sm border border-gray-300 rounded-md shadow-sm px-3 py-1"
+            >
+              <option value="">Alle Rhythmen</option>
+              <option value="selected" disabled>Filter aktiv</option>
+            </select>
+            
+            <div className="flex flex-wrap gap-2">
+              {['monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'].map(rhythm => (
+                <button
+                  key={rhythm}
+                  onClick={() => {
+                    if (rhythmusFilter.includes(rhythm)) {
+                      setRhythmusFilter(rhythmusFilter.filter(r => r !== rhythm));
+                    } else {
+                      setRhythmusFilter([...rhythmusFilter, rhythm]);
+                    }
+                  }}
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    rhythmusFilter.includes(rhythm) 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {rhythm}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Fixed costs list */}
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="mt-2 text-gray-500">Daten werden geladen...</p>
+          </div>
+        ) : filteredFixkosten.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-gray-500">Keine Fixkosten gefunden.</p>
+            {showOnlyActive && (
+              <button 
+                onClick={() => setShowOnlyActive(false)}
+                className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+              >
+                Alle anzeigen (auch beendete)
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="border rounded-lg divide-y">
+            {filteredFixkosten.map((item) => {
+              const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
+              
+              return (
+                <div key={item.id} className={`p-4 ${isActive ? '' : 'bg-gray-50'}`}>
+                  <div className="flex flex-wrap justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium flex items-center">
+                        {item.name}
+                        {!isActive && (
+                          <span className="ml-2 inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
+                            Beendet
+                          </span>
+                        )}
+                      </h3>
+                      <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-500">
+                        <div>
+                          Betrag: <span className="font-medium">{formatCHF(item.betrag)}</span>
+                        </div>
+                        <div>
+                          Rhythmus: <span className="font-medium">{item.rhythmus}</span>
+                        </div>
+                        <div>
+                          Monatlich: <span className="font-medium">{formatCHF(monthlyAmount)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-sm text-gray-500">
+                        <span className="font-medium">{statusText}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-2 ml-4">
+                      <button
+                        onClick={() => handleUpdateFixkosten(item.id, { /* open edit form instead */ })}
+                        disabled={isReadOnly || loading}
+                        className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Bearbeiten
+                      </button>
+                      
+                      {isActive ? (
+                        <button
+                          onClick={() => handleEndFixkosten(item.id)}
+                          disabled={isReadOnly || loading}
+                          className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Beenden
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleReactivateFixkosten(item.id)}
+                          disabled={isReadOnly || loading}
+                          className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Reaktivieren
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => handleDeleteFixkosten(item.id)}
+                        disabled={isReadOnly || loading}
+                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Löschen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+} 
