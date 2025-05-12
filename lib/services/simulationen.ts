@@ -13,25 +13,36 @@ import { dateToIsoString, getNextOccurrence } from '@/lib/date-utils/format';
  * @param userId Optional user ID to filter simulations
  */
 export async function loadSimulationen(userId?: string): Promise<Simulation[]> {
-  let query = supabase.from('simulationen').select('*');
-  
-  // Filter by user if specified
-  if (userId) {
-    query = query.eq('user_id', userId);
+  try {
+    let query = supabase.from('simulationen').select('*');
+    
+    // Filter by user if specified
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query.order('date', { ascending: true });
+    
+    if (error) {
+      console.error('Error loading simulations:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'simulationen' not found. Please check your database setup.`);
+      }
+      throw new Error(`Failed to load simulations: ${error.message}`);
+    }
+    
+    return (data || []).map(item => ({
+      ...item,
+      date: new Date(item.date),
+      end_date: item.end_date ? new Date(item.end_date) : null,
+    })) as Simulation[];
+  } catch (error: any) {
+    if (error.message && error.message.includes('Failed to load simulations')) {
+      throw error;
+    }
+    console.error('Unexpected error loading simulations:', error);
+    throw new Error(`Failed to load simulations: ${error.message || 'Unknown error'}`);
   }
-  
-  const { data, error } = await query.order('date', { ascending: true });
-  
-  if (error) {
-    console.error('Error loading simulations:', error.message);
-    throw new Error(`Failed to load simulations: ${error.message}`);
-  }
-  
-  return (data || []).map(item => ({
-    ...item,
-    date: new Date(item.date),
-    end_date: item.end_date ? new Date(item.end_date) : null,
-  })) as Simulation[];
 }
 
 /**
@@ -48,38 +59,57 @@ export async function addSimulation(
   interval?: 'monthly' | 'quarterly' | 'yearly',
   end_date?: Date | null
 ): Promise<Simulation> {
-  const now = new Date().toISOString();
-  const newSimulation = {
-    id: uuidv4(),
-    name,
-    details,
-    date: dateToIsoString(date) as string,
-    amount,
-    direction,
-    recurring,
-    interval: recurring ? interval : null,
-    end_date: end_date ? dateToIsoString(end_date) : null,
-    user_id: userId,
-    created_at: now,
-    updated_at: now
-  };
-  
-  const { data, error } = await supabase
-    .from('simulationen')
-    .insert(newSimulation)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error adding simulation:', error.message);
-    throw new Error(`Failed to add simulation: ${error.message}`);
+  try {
+    const now = new Date().toISOString();
+    const newSimulation = {
+      id: uuidv4(),
+      name,
+      details,
+      date: dateToIsoString(date) as string,
+      amount,
+      direction,
+      recurring,
+      interval: recurring ? interval : null,
+      end_date: end_date ? dateToIsoString(end_date) : null,
+      user_id: userId,
+      created_at: now,
+      updated_at: now
+    };
+    
+    const { data, error } = await supabase
+      .from('simulationen')
+      .insert(newSimulation)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding simulation:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'simulationen' not found. Please check your database setup.`);
+      } else if (error.code === '42703') {
+        throw new Error(`Database column error: ${error.message}`);
+      } else if (error.code === '23503') {
+        throw new Error(`Foreign key constraint failed: ${error.message}`);
+      }
+      throw new Error(`Failed to add simulation: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned after adding simulation');
+    }
+    
+    return {
+      ...data,
+      date: new Date(data.date),
+      end_date: data.end_date ? new Date(data.end_date) : null,
+    } as Simulation;
+  } catch (error: any) {
+    if (error.message && error.message.includes('Failed to add simulation')) {
+      throw error;
+    }
+    console.error('Unexpected error adding simulation:', error);
+    throw new Error(`Failed to add simulation: ${error.message || 'Unknown error'}`);
   }
-  
-  return {
-    ...data,
-    date: new Date(data.date),
-    end_date: data.end_date ? new Date(data.end_date) : null,
-  } as Simulation;
 }
 
 /**
@@ -90,46 +120,78 @@ export async function updateSimulationById(
   updates: Partial<Simulation>,
   userId: string
 ): Promise<Simulation> {
-  // Ensure dates are formatted correctly
-  const formattedUpdates = {
-    ...updates,
-    date: updates.date ? dateToIsoString(updates.date) : undefined,
-    end_date: updates.end_date !== undefined ? dateToIsoString(updates.end_date) : undefined,
-    updated_at: new Date().toISOString(),
-    user_id: userId
-  };
-  
-  const { data, error } = await supabase
-    .from('simulationen')
-    .update(formattedUpdates)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating simulation:', error.message);
-    throw new Error(`Failed to update simulation: ${error.message}`);
+  try {
+    // Ensure dates are formatted correctly
+    const formattedUpdates = {
+      ...updates,
+      date: updates.date ? dateToIsoString(updates.date) : undefined,
+      end_date: updates.end_date !== undefined ? dateToIsoString(updates.end_date) : undefined,
+      updated_at: new Date().toISOString(),
+      user_id: userId
+    };
+    
+    const { data, error } = await supabase
+      .from('simulationen')
+      .update(formattedUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating simulation:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'simulationen' not found`);
+      } else if (error.code === '42703') {
+        throw new Error(`Database column error: ${error.message}`);
+      } else if (error.code === '23503') {
+        throw new Error(`Foreign key constraint failed: ${error.message}`);
+      }
+      throw new Error(`Failed to update simulation: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error(`Simulation with ID ${id} not found`);
+    }
+    
+    return {
+      ...data,
+      date: new Date(data.date),
+      end_date: data.end_date ? new Date(data.end_date) : null,
+    } as Simulation;
+  } catch (error: any) {
+    if (error.message && (error.message.includes('Failed to update simulation') || error.message.includes('not found'))) {
+      throw error;
+    }
+    console.error('Unexpected error updating simulation:', error);
+    throw new Error(`Failed to update simulation: ${error.message || 'Unknown error'}`);
   }
-  
-  return {
-    ...data,
-    date: new Date(data.date),
-    end_date: data.end_date ? new Date(data.end_date) : null,
-  } as Simulation;
 }
 
 /**
  * Delete a simulation by ID
  */
 export async function deleteSimulationById(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('simulationen')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting simulation:', error.message);
-    throw new Error(`Failed to delete simulation: ${error.message}`);
+  try {
+    const { error } = await supabase
+      .from('simulationen')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting simulation:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'simulationen' not found`);
+      } else if (error.code === '23503') {
+        throw new Error(`This simulation cannot be deleted because it is referenced by other records`);
+      }
+      throw new Error(`Failed to delete simulation: ${error.message}`);
+    }
+  } catch (error: any) {
+    if (error.message && error.message.includes('Failed to delete simulation')) {
+      throw error;
+    }
+    console.error('Unexpected error deleting simulation:', error);
+    throw new Error(`Failed to delete simulation: ${error.message || 'Unknown error'}`);
   }
 }
 
