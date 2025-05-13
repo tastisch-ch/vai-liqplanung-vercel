@@ -524,178 +524,6 @@ export default function Simulationen() {
         </div>
       )}
       
-      {/* Add/Edit Simulation Form */}
-      <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-        <h2 className="text-xl font-semibold mb-4">
-          {formMode === 'add' ? 'Neue Simulation erstellen' : 'Simulation bearbeiten'}
-        </h2>
-        
-        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Bezeichnung
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                value={form.name}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Betrag (CHF)
-              </label>
-              <input
-                id="amount"
-                name="amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={form.amount}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-              Details
-            </label>
-            <textarea
-              id="details"
-              name="details"
-              rows={2}
-              value={form.details}
-              onChange={handleInputChange}
-              disabled={isReadOnly || loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                Datum
-              </label>
-              <input
-                id="date"
-                name="date"
-                type="date"
-                value={form.date}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="direction" className="block text-sm font-medium text-gray-700 mb-1">
-                Richtung
-              </label>
-              <select
-                id="direction"
-                name="direction"
-                value={form.direction}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="Incoming">Einnahme</option>
-                <option value="Outgoing">Ausgabe</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-center mb-3">
-              <input
-                id="recurring"
-                name="recurring"
-                type="checkbox"
-                checked={form.recurring}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="recurring" className="ml-2 block text-sm font-medium text-gray-700">
-                Wiederkehrende Simulation
-              </label>
-            </div>
-            
-            {form.recurring && (
-              <div className="ml-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="interval" className="block text-sm font-medium text-gray-700 mb-1">
-                      Intervall
-                    </label>
-                    <select
-                      id="interval"
-                      name="interval"
-                      value={form.interval}
-                      onChange={handleInputChange}
-                      disabled={isReadOnly || loading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="monthly">Monatlich</option>
-                      <option value="quarterly">Quartalsweise</option>
-                      <option value="yearly">Jährlich</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                      Enddatum (optional)
-                    </label>
-                    <input
-                      id="end_date"
-                      name="end_date"
-                      type="date"
-                      value={form.end_date}
-                      onChange={handleInputChange}
-                      disabled={isReadOnly || loading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex justify-end space-x-3">
-            {formMode === 'edit' && (
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={loading}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Abbrechen
-              </button>
-            )}
-            
-            <button
-              type="submit"
-              disabled={isReadOnly || loading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Wird gespeichert...' : formMode === 'add' ? 'Hinzufügen' : 'Aktualisieren'}
-            </button>
-          </div>
-        </form>
-      </div>
-      
       {/* Filter controls */}
       <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
         <div className="flex flex-wrap items-center gap-4">
@@ -830,7 +658,184 @@ export default function Simulationen() {
         )}
       </div>
       
-      {/* Edit form modal */}
+      {/* New Simulation Modal */}
+      {showSimulationForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
+            <h2 className="text-xl font-semibold mb-4">Neue Simulation erstellen</h2>
+            
+            <form onSubmit={(e) => {
+              handleSubmit(e, false);
+              setShowSimulationForm(false);
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="new_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Bezeichnung
+                  </label>
+                  <input
+                    id="new_name"
+                    name="name"
+                    type="text"
+                    value={form.name}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="new_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag (CHF)
+                  </label>
+                  <input
+                    id="new_amount"
+                    name="amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="new_details" className="block text-sm font-medium text-gray-700 mb-1">
+                  Details
+                </label>
+                <textarea
+                  id="new_details"
+                  name="details"
+                  rows={2}
+                  value={form.details}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="new_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum
+                  </label>
+                  <input
+                    id="new_date"
+                    name="date"
+                    type="date"
+                    value={form.date}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="new_direction" className="block text-sm font-medium text-gray-700 mb-1">
+                    Richtung
+                  </label>
+                  <select
+                    id="new_direction"
+                    name="direction"
+                    value={form.direction}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Incoming">Einnahme</option>
+                    <option value="Outgoing">Ausgabe</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center mb-3">
+                  <input
+                    id="new_recurring"
+                    name="recurring"
+                    type="checkbox"
+                    checked={form.recurring}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="new_recurring" className="ml-2 block text-sm font-medium text-gray-700">
+                    Wiederkehrende Simulation
+                  </label>
+                </div>
+                
+                {form.recurring && (
+                  <div className="ml-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="new_interval" className="block text-sm font-medium text-gray-700 mb-1">
+                          Intervall
+                        </label>
+                        <select
+                          id="new_interval"
+                          name="interval"
+                          value={form.interval}
+                          onChange={handleInputChange}
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="monthly">Monatlich</option>
+                          <option value="quarterly">Quartalsweise</option>
+                          <option value="yearly">Jährlich</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="new_end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                          Enddatum (optional)
+                        </label>
+                        <input
+                          id="new_end_date"
+                          name="end_date"
+                          type="date"
+                          value={form.end_date}
+                          onChange={handleInputChange}
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setShowSimulationForm(false);
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Simulation Modal */}
       {editingId && editingSimulation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
