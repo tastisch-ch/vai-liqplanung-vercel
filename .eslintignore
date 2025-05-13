@@ -1,0 +1,30 @@
+# Build output
+.next/
+dist/
+out/
+
+# Node modules
+node_modules/
+
+# Public assets
+public/
+
+# Cache
+.cache/
+
+# Miscellaneous
+*.log
+*.lock
+.DS_Store
+
+# Generated files
+next-env.d.ts
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+__tests__/
+
+# Config files
+*.config.js
+*.config.mjs 

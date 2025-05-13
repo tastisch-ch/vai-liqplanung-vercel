@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# migration and test files
+migration-*.md
+*-implementation-plan.md
+*test*.ts
+*test*.js
+*test*.tsx
+fix-*.sql
+setup-*.sql
+*-SOLUTION.md
+*-SETUP*.md
+*-RLS-*.md
+test-supabase/
