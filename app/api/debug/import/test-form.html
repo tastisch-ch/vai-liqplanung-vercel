@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Excel Import Debug Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .form-container {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .response {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      min-height: 100px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Excel Import Debug Test</h1>
+  
+  <div class="form-container">
+    <h2>Upload Excel File</h2>
+    <form id="uploadForm">
+      <div>
+        <input type="file" id="excelFile" name="file" accept=".xlsx,.xls" required />
+      </div>
+      <div>
+        <button type="submit" class="button">Test Import</button>
+      </div>
+    </form>
+  </div>
+  
+  <h2>Response:</h2>
+  <div id="response" class="response">No response yet.</div>
+  
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const fileInput = document.getElementById('excelFile');
+      const responseDiv = document.getElementById('response');
+      
+      if (!fileInput.files.length) {
+        responseDiv.textContent = 'Please select a file first.';
+        return;
+      }
+      
+      responseDiv.textContent = 'Processing...';
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        const response = await fetch('/api/debug/import', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        
+        const result = await response.json();
+        
+        // Display formatted JSON response
+        responseDiv.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        responseDiv.textContent = `Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html> 

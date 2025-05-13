@@ -149,23 +149,30 @@ This document outlines the step-by-step plan to migrate the VAI-Liq-Planung appl
    - Duplicate detection and validation
    - Import error handling and notifications
 
-2. **Export Functionality** (Next Steps)
-   - Implement CSV export for transaction data
+2. **Export Functionality** ✅
+   - CSV export for all main data types:
+     - Transactions (Buchungen)
+     - Fixed Costs (Fixkosten)
+     - Employees (Mitarbeiter)
+     - Simulations
+   - Date range filtering for exports
+   - Active/inactive filtering for applicable data
+   - Robust authentication handling with JWT token verification
+   - Proper formatting of exported values with type awareness
+
+3. **Future Export Enhancements** (Next Steps)
    - Add Excel export for financial reports
    - Create PDF export for summary reports and charts
-   - Add data filtering options for exports
-
-3. **Data Validation Improvements**
-   - Enhance validation for imports with detailed error messages
-   - Add preview functionality before import
-   - Implement batch validation and error reporting
-   - Support for additional import formats (CSV, QIF)
-
-4. **Export Templates**
    - Create customizable report templates
    - Add monthly and yearly financial statement templates
    - Implement cash flow report templates
    - Support for custom fields and filtering in exports
+
+4. **Data Validation Improvements**
+   - Enhance validation for imports with detailed error messages
+   - Add preview functionality before import
+   - Implement batch validation and error reporting
+   - Support for additional import formats (CSV, QIF)
 
 ### Phase 11: Admin Panel
 1. Create user management interface
@@ -185,6 +192,14 @@ This document outlines the step-by-step plan to migrate the VAI-Liq-Planung appl
    - Standardize dialog appearance and behavior across all modules
    - Add keyboard shortcuts for common editing actions
    - Implement focus management for better accessibility
+
+### Phase 13: Vercel Deployment
+1. Configure Vercel project settings
+2. Set up environment variables for production
+3. Configure build settings
+4. Implement CI/CD pipeline with GitHub integration
+5. Set up domain and SSL configuration
+6. Implement monitoring and error reporting
 
 ## Implementation Strategy
 
@@ -222,4 +237,4 @@ This document outlines the step-by-step plan to migrate the VAI-Liq-Planung appl
 - End-to-end tests for critical paths
 
 ## Next Steps
-Implement Phase 9 (Simulation Tool), creating a what-if scenarios interface that allows users to model different financial outcomes. This module will help users understand potential future financial states based on various assumptions and planning scenarios. 
+Continue implementing the remaining features for export functionality, including Excel and PDF exports. Prepare for Vercel deployment with proper environment configuration and performance optimizations. 

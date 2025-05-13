@@ -1,40 +1,64 @@
 /**
- * Format a number as CHF currency
+ * Currency utility functions for the application.
  */
-export function formatCHF(amount: number): string {
+
+/**
+ * Format a number as CHF currency
+ * @param value Number to format
+ * @returns Formatted string (e.g. "123.45 CHF")
+ */
+export function formatCHF(value: number): string {
   return new Intl.NumberFormat('de-CH', {
     style: 'currency',
     currency: 'CHF',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 /**
- * Parse a string with a CHF amount into a number
+ * Parse a CHF currency string to a number
+ * @param value String representation of CHF amount (e.g. "CHF 123.45", "123,45 CHF", etc.)
+ * @returns Parsed number or null if parsing fails
  */
-export function parseCHF(amountStr: string): number | null {
-  if (!amountStr) return null;
+export function parseCHF(value: string): number | null {
+  if (!value) return null;
   
   try {
-    // Clean the string
-    let cleanStr = amountStr.trim();
+    // Clean up the string - remove currency symbol, spaces, etc.
+    let cleanedValue = value
+      .replace(/CHF|Fr\.|SFr\.?|\u20A3/gi, '') // Remove currency indicators
+      .replace(/[^\d.,\-]/g, '') // Remove anything that's not a digit, dot, comma or minus
+      .trim();
     
-    // Remove 'CHF' if present
-    if (cleanStr.toUpperCase().startsWith('CHF')) {
-      cleanStr = cleanStr.substring(3).trim();
+    // Handle Swiss number format (using comma as decimal separator)
+    if (cleanedValue.includes(',')) {
+      // If we have both comma and dot, assume comma is thousands separator
+      if (cleanedValue.includes('.')) {
+        cleanedValue = cleanedValue.replace(/,/g, '');
+      } 
+      // Otherwise, assume comma is decimal separator
+      else {
+        cleanedValue = cleanedValue.replace(',', '.');
+      }
     }
     
-    // Replace commas with periods for decimal places
-    cleanStr = cleanStr.replace(/['']/g, "").replace(/[,]/g, ".");
+    // Parse as float
+    const amount = parseFloat(cleanedValue);
     
-    // Remove all other non-numeric characters except periods
-    cleanStr = cleanStr.replace(/[^\d.-]/g, "");
-    
-    const amount = parseFloat(cleanStr);
     return isNaN(amount) ? null : amount;
   } catch (error) {
-    console.error('Error parsing CHF amount:', error);
+    console.error('Error parsing CHF value:', error);
     return null;
   }
+}
+
+/**
+ * Gets the signed amount based on the direction
+ * @param amount Absolute amount value
+ * @param direction Transaction direction (Incoming or Outgoing)
+ * @returns Signed amount (positive for incoming, negative for outgoing)
+ */
+export function getSignedAmount(amount: number, direction: 'Incoming' | 'Outgoing'): number {
+  return direction === 'Outgoing' ? -Math.abs(amount) : Math.abs(amount);
 } 

@@ -1,86 +1,125 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('Test connection API called');
+    // Extract all cookies
+    const allCookies = request.cookies.getAll();
+    const cookieNames = allCookies.map(c => c.name);
+    const cookieValues = Object.fromEntries(
+      allCookies.map(c => [c.name, c.value.substring(0, 20) + '...'])
+    );
     
-    // Test if environment variables are set correctly
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const authCookies = cookieNames.filter(name => 
+      name.includes('sb-') || 
+      name.includes('supabase') || 
+      name.includes('auth')
+    );
+
+    // Check for manual auth tokens
+    const accessToken = request.cookies.get('sb-access-token')?.value;
+    const refreshToken = request.cookies.get('sb-refresh-token')?.value;
     
-    if (!url || !key) {
-      console.error('Missing Supabase environment variables');
-      return NextResponse.json({
-        success: false,
-        message: 'Supabase environment variables are missing',
-        environment: {
-          url: !!url,
-          key: !!key
-        }
-      }, { status: 500 });
-    }
+    // Use Supabase client to check auth
+    const supabase = createRouteHandlerSupabaseClient(request);
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    // Print but truncate for security
-    console.log(`Supabase URL: ${url.substring(0, 15)}...`);
-    console.log(`API Key starts with: ${key.substring(0, 10)}...`);
+    // Prepare HTML response with cookie and auth info
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Auth Test Connection</title>
+          <style>
+            body { font-family: -apple-system, system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; }
+            .success { color: green; }
+            .error { color: red; }
+            .section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>Authentication Test</h1>
+          
+          <div class="section">
+            <h2>Cookie Information</h2>
+            <p>Total cookies: ${allCookies.length}</p>
+            <p>Auth-related cookies: ${authCookies.length}</p>
+            
+            <h3>All Cookies</h3>
+            <pre>${JSON.stringify(cookieValues, null, 2)}</pre>
+            
+            <h3>Auth Cookies</h3>
+            <pre>${JSON.stringify(authCookies, null, 2)}</pre>
+          </div>
+          
+          <div class="section">
+            <h2>Manual Auth Tokens</h2>
+            <p>Access Token: ${accessToken ? '<span class="success">Present</span>' : '<span class="error">Missing</span>'}</p>
+            <p>Refresh Token: ${refreshToken ? '<span class="success">Present</span>' : '<span class="error">Missing</span>'}</p>
+          </div>
+          
+          <div class="section">
+            <h2>Supabase Session</h2>
+            ${sessionError 
+              ? `<p class="error">Session Error: ${sessionError.message}</p>` 
+              : session 
+                ? `<p class="success">Valid session found!</p>
+                   <p>User ID: ${session.user.id}</p>
+                   <p>Email: ${session.user.email}</p>
+                   <pre>${JSON.stringify({
+                     user_id: session.user.id,
+                     email: session.user.email,
+                     expires_at: session.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'unknown',
+                   }, null, 2)}</pre>`
+                : `<p class="error">No valid session found</p>`
+            }
+          </div>
+          
+          <div class="section">
+            <h2>Test Actions</h2>
+            <button onclick="refreshPage()">Refresh Page</button>
+            <button onclick="clearCookies()">Clear Cookies</button>
+            <button onclick="goToDashboard()">Go to Dashboard</button>
+            <button onclick="goToImport()">Go to Data Import</button>
+            
+            <script>
+              function refreshPage() {
+                window.location.reload();
+              }
+              
+              function clearCookies() {
+                document.cookie.split(';').forEach(function(c) {
+                  document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+                });
+                alert('Cookies cleared. Refreshing page...');
+                window.location.reload();
+              }
+              
+              function goToDashboard() {
+                window.location.href = '/dashboard';
+              }
+              
+              function goToImport() {
+                window.location.href = '/datenimport';
+              }
+            </script>
+          </div>
+        </body>
+      </html>
+    `;
     
-    // Create Supabase client directly with environment variables
-    console.log('Creating Supabase client...');
-    const supabase = createClient(url, key);
-    console.log('Supabase client created successfully');
-    
-    // Try a simple query
-    try {
-      console.log('Testing connection with a simple query...');
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-      
-      if (error) {
-        console.error('Database query error:', error);
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Failed to query database', 
-          error: error.message,
-          hint: error.hint || 'No hint provided',
-          details: error.details || 'No details provided',
-          code: error.code || 'No code provided',
-          credentials: {
-            url_prefix: url.substring(0, 10) + '...',
-            key_prefix: key.substring(0, 10) + '...',
-            key_length: key.length
-          }
-        }, { status: 500 });
-      }
-      
-      console.log('Query successful');
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Successfully connected to Supabase!',
-        data
-      });
-    } catch (queryError) {
-      console.error('Error executing query:', queryError);
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Error executing database query',
-        error: queryError instanceof Error ? queryError.message : String(queryError),
-        credentials: {
-          url_prefix: url.substring(0, 10) + '...',
-          key_prefix: key.substring(0, 10) + '...',
-          key_length: key.length
-        }
-      }, { status: 500 });
-    }
+    return new NextResponse(html, {
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
   } catch (error) {
-    console.error('Unexpected error in test-connection API:', error);
-    return NextResponse.json({ 
-      success: false, 
-      message: 'An unexpected error occurred',
-      error: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    console.error('Test connection error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }
 

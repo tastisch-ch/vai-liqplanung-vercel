@@ -23,6 +23,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData?: UserProfile) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
 };
 
 const initialState: AuthState = {
@@ -37,6 +38,70 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>(initialState);
+  
+  // Function to refresh authentication status and ensure cookies are set
+  const refreshAuth = async () => {
+    try {
+      logger.debug('Refreshing auth session', { component: 'AuthProvider' });
+      
+      // First check if user is already authenticated
+      const user = await authClient.getCurrentUser();
+      
+      if (user) {
+        // Force session refresh to ensure cookies are set
+        await authClient.refreshSession();
+        
+        const updatedUser = await authClient.getCurrentUser();
+        
+        if (updatedUser) {
+          logger.info('Auth session refreshed', { 
+            userId: updatedUser.id,
+            component: 'AuthProvider'
+          });
+          
+          // Get user profile
+          let isAdmin = false;
+          let isReadOnly = false;
+          
+          try {
+            const profile = await authClient.getProfile(updatedUser.id);
+            const profileData = profile as UserProfile;
+            isAdmin = profileData?.role === 'admin';
+            isReadOnly = profileData?.role === 'readonly';
+          } catch (error) {
+            logger.warn('Error fetching profile during refresh', {
+              userId: updatedUser.id,
+              component: 'AuthProvider'
+            });
+          }
+          
+          setAuthState({
+            isAuthenticated: true,
+            user: updatedUser,
+            isLoading: false,
+            isAdmin,
+            isReadOnly,
+          });
+          
+          return;
+        }
+      }
+      
+      // If no user after refresh, clear auth state
+      setAuthState({
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        isAdmin: false,
+        isReadOnly: false,
+      });
+      
+    } catch (error) {
+      logger.logError(error, 'Error refreshing auth session', {
+        component: 'AuthProvider'
+      });
+    }
+  };
   
   // Check for existing session when the component mounts
   useEffect(() => {
@@ -69,6 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             userId: user.id,
             component: 'AuthProvider'
           });
+          
+          // Force session refresh to ensure cookies are set properly
+          await authClient.refreshSession();
         } else {
           logger.info('No active session found', { component: 'AuthProvider' });
         }
@@ -293,6 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
+        refreshAuth,
       }}
     >
       {children}

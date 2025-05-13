@@ -329,7 +329,13 @@ export default function Planung() {
                   return (
                     <tr key={transaction.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(transaction.date, 'dd.MM.yyyy')}
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                        {transaction.shifted && (
+                          <span className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20" 
+                                title="Ursprünglicher Termin ist überfällig - auf morgen verschoben">
+                            verschoben
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}

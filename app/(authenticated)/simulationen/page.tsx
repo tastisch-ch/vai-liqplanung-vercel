@@ -37,6 +37,9 @@ export default function Simulationen() {
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
+  // State for modal editing
+  const [editingSimulation, setEditingSimulation] = useState<Simulation | null>(null);
+  
   // Filter state
   const [searchText, setSearchText] = useState('');
   
@@ -79,27 +82,27 @@ export default function Simulationen() {
         const data = await loadSimulationen(user.id);
         
         if (isMounted) {
-          setSimulationen(data);
+        setSimulationen(data);
           showNotification(`${data.length} Simulationen geladen`, 'success');
-          
-          // Generate projections
-          const projected = generateSimulationProjections(data, projectionStart, projectionEnd);
-          setProjections(projected);
-          
-          applyFilters(data);
+        
+        // Generate projections
+        const projected = generateSimulationProjections(data, projectionStart, projectionEnd);
+        setProjections(projected);
+        
+        applyFilters(data);
         }
       } catch (err) {
         if (isMounted) {
           const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-          setError('Fehler beim Laden der Simulationen. Bitte versuchen Sie es später erneut.');
+        setError('Fehler beim Laden der Simulationen. Bitte versuchen Sie es später erneut.');
           showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-          setSimulationen([]);
-          setProjections([]);
-          setFilteredSimulationen([]);
+        setSimulationen([]);
+        setProjections([]);
+        setFilteredSimulationen([]);
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+        setLoading(false);
         }
       }
     }
@@ -215,18 +218,44 @@ export default function Simulationen() {
     setEditingId(simulation.id);
   };
   
+  // Start modal editing
+  const startEditing = (simulation: Simulation) => {
+    setEditingId(simulation.id);
+    setEditingSimulation({...simulation});
+  };
+  
+  // Cancel modal editing
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingSimulation(null);
+  };
+  
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isModalEditing = false) => {
     e.preventDefault();
     
     if (!user?.id) return;
     
-    if (!form.name.trim()) {
+    // Get the correct form data based on whether we're using the modal or not
+    const formData = isModalEditing && editingSimulation 
+      ? {
+          name: editingSimulation.name,
+          details: editingSimulation.details || '',
+          date: formatDate(editingSimulation.date),
+          amount: editingSimulation.amount,
+          direction: editingSimulation.direction,
+          recurring: editingSimulation.recurring || false,
+          interval: editingSimulation.interval || 'monthly',
+          end_date: editingSimulation.end_date ? formatDate(editingSimulation.end_date) : ''
+        }
+      : form;
+    
+    if (!formData.name.trim()) {
       setError('Bitte geben Sie einen Namen ein.');
       return;
     }
     
-    if (form.amount <= 0) {
+    if (formData.amount <= 0) {
       setError('Bitte geben Sie einen gültigen Betrag ein.');
       return;
     }
@@ -236,20 +265,20 @@ export default function Simulationen() {
     
     try {
       showNotification('Speichere Simulation in Supabase...', 'loading');
-      const dateObj = parseISO(form.date);
-      const endDateObj = form.end_date ? parseISO(form.end_date) : null;
+      const dateObj = parseISO(formData.date);
+      const endDateObj = formData.end_date ? parseISO(formData.end_date) : null;
       
       // Create or update simulation
-      if (formMode === 'add') {
+      if (formMode === 'add' && !isModalEditing) {
         const result = await addSimulation(
-          form.name.trim(),
-          form.details.trim(),
+          formData.name.trim(),
+          formData.details.trim(),
           dateObj,
-          form.amount,
-          form.direction,
+          formData.amount,
+          formData.direction,
           user.id,
-          form.recurring,
-          form.recurring ? form.interval : undefined,
+          formData.recurring,
+          formData.recurring ? formData.interval : undefined,
           endDateObj
         );
         
@@ -257,17 +286,17 @@ export default function Simulationen() {
         applyFilters([...simulationen, result]);
         setSuccessMessage('Simulation erfolgreich erstellt.');
         showNotification('Simulation erfolgreich in Supabase gespeichert', 'success');
-      } else if (formMode === 'edit' && editingId) {
+      } else if ((formMode === 'edit' || isModalEditing) && editingId) {
         const result = await updateSimulationById(
           editingId,
           {
-            name: form.name.trim(),
-            details: form.details.trim(),
+            name: formData.name.trim(),
+            details: formData.details.trim(),
             date: dateObj,
-            amount: form.amount,
-            direction: form.direction,
-            recurring: form.recurring,
-            interval: form.recurring ? form.interval : undefined,
+            amount: formData.amount,
+            direction: formData.direction,
+            recurring: formData.recurring,
+            interval: formData.recurring ? formData.interval : undefined,
             end_date: endDateObj
           },
           user.id
@@ -284,7 +313,11 @@ export default function Simulationen() {
       }
       
       // Reset form
+      if (isModalEditing) {
+        cancelEditing();
+      } else {
       resetForm();
+      }
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
@@ -432,7 +465,7 @@ export default function Simulationen() {
           {formMode === 'add' ? 'Neue Simulation erstellen' : 'Simulation bearbeiten'}
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -709,7 +742,7 @@ export default function Simulationen() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-2 ml-4">
                       <button
-                        onClick={() => prepareFormForEdit(item)}
+                        onClick={() => startEditing(item)}
                         disabled={isReadOnly || loading}
                         className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -731,6 +764,169 @@ export default function Simulationen() {
           </div>
         )}
       </div>
+      
+      {/* Edit form modal */}
+      {editingId && editingSimulation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
+            <h2 className="text-xl font-semibold mb-4">Simulation bearbeiten</h2>
+            
+            <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Bezeichnung
+                  </label>
+                  <input
+                    id="edit_name"
+                    type="text"
+                    value={editingSimulation.name}
+                    onChange={(e) => setEditingSimulation({...editingSimulation, name: e.target.value})}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag (CHF)
+                  </label>
+                  <input
+                    id="edit_amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={editingSimulation.amount}
+                    onChange={(e) => setEditingSimulation({...editingSimulation, amount: parseFloat(e.target.value) || 0})}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="edit_details" className="block text-sm font-medium text-gray-700 mb-1">
+                  Details
+                </label>
+                <textarea
+                  id="edit_details"
+                  rows={2}
+                  value={editingSimulation.details || ''}
+                  onChange={(e) => setEditingSimulation({...editingSimulation, details: e.target.value})}
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum
+                  </label>
+                  <input
+                    id="edit_date"
+                    type="date"
+                    value={formatDate(editingSimulation.date)}
+                    onChange={(e) => setEditingSimulation({...editingSimulation, date: parseISO(e.target.value)})}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_direction" className="block text-sm font-medium text-gray-700 mb-1">
+                    Richtung
+                  </label>
+                  <select
+                    id="edit_direction"
+                    value={editingSimulation.direction}
+                    onChange={(e) => setEditingSimulation({...editingSimulation, direction: e.target.value as 'Incoming' | 'Outgoing'})}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Incoming">Einnahme</option>
+                    <option value="Outgoing">Ausgabe</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center mb-3">
+                  <input
+                    id="edit_recurring"
+                    type="checkbox"
+                    checked={editingSimulation.recurring || false}
+                    onChange={(e) => setEditingSimulation({...editingSimulation, recurring: e.target.checked})}
+                    disabled={loading}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="edit_recurring" className="ml-2 block text-sm font-medium text-gray-700">
+                    Wiederkehrende Simulation
+                  </label>
+                </div>
+                
+                {editingSimulation.recurring && (
+                  <div className="ml-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="edit_interval" className="block text-sm font-medium text-gray-700 mb-1">
+                          Intervall
+                        </label>
+                        <select
+                          id="edit_interval"
+                          value={editingSimulation.interval || 'monthly'}
+                          onChange={(e) => setEditingSimulation({...editingSimulation, interval: e.target.value as 'monthly' | 'quarterly' | 'yearly'})}
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="monthly">Monatlich</option>
+                          <option value="quarterly">Quartalsweise</option>
+                          <option value="yearly">Jährlich</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="edit_end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                          Enddatum (optional)
+                        </label>
+                        <input
+                          id="edit_end_date"
+                          type="date"
+                          value={editingSimulation.end_date ? formatDate(editingSimulation.end_date) : ''}
+                          onChange={(e) => setEditingSimulation({...editingSimulation, end_date: e.target.value ? parseISO(e.target.value) : null})}
+                          disabled={loading}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Aktualisieren'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

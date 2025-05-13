@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useNotification } from '@/components/ui/Notification';
 
@@ -19,6 +19,47 @@ export default function ExportButton({ type, className, dateRange, active }: Exp
   const [showDropdown, setShowDropdown] = useState(false);
   const { authState } = useAuth();
   const { showNotification } = useNotification();
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  // Get authentication tokens on component mount
+  useEffect(() => {
+    // Try to extract tokens from local storage
+    try {
+      const supabaseKey = Object.keys(localStorage).find(key => 
+        key.startsWith('sb-') && key.endsWith('-auth-token')
+      );
+      
+      if (supabaseKey) {
+        const authData = JSON.parse(localStorage.getItem(supabaseKey) || '{}');
+        if (authData.access_token && authData.refresh_token) {
+          setAccessToken(authData.access_token);
+          setRefreshToken(authData.refresh_token);
+          
+          // Set these as cookies to help with API authentication
+          document.cookie = `sb-access-token=${authData.access_token}; path=/; max-age=3600; SameSite=Strict`;
+          document.cookie = `sb-refresh-token=${authData.refresh_token}; path=/; max-age=3600; SameSite=Strict`;
+          
+          // Try to extract user ID from the JWT token
+          try {
+            const parts = authData.access_token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              if (payload.sub) {
+                setUserId(payload.sub);
+                console.log('User ID extracted from token:', payload.sub);
+              }
+            }
+          } catch (e) {
+            console.error('Error extracting user ID from token:', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error extracting auth tokens:', e);
+    }
+  }, []);
   
   // Map type to API endpoint and German label
   const typeMap = {
@@ -30,7 +71,7 @@ export default function ExportButton({ type, className, dateRange, active }: Exp
 
   // Handle CSV export
   const handleExport = async (format: 'csv') => {
-    if (!authState.is_authenticated) {
+    if (!authState.isAuthenticated) {
       showNotification('Sie müssen angemeldet sein, um Daten zu exportieren', 'error');
       return;
     }
@@ -58,8 +99,80 @@ export default function ExportButton({ type, className, dateRange, active }: Exp
         url += `&active=${active}`;
       }
       
-      // Use window.open to trigger file download
-      window.open(url, '_blank');
+      // Direct download approach - more reliable across browsers
+      if (accessToken) {
+        url += `&access_token=${encodeURIComponent(accessToken)}`;
+        
+        if (refreshToken) {
+          url += `&refresh_token=${encodeURIComponent(refreshToken)}`;
+        }
+        
+        if (userId) {
+          url += `&test_user_id=${encodeURIComponent(userId)}`;
+        }
+        
+        console.log('Opening download URL with auth tokens');
+        window.open(url, '_blank');
+        showNotification(`${typeMap[type].label} erfolgreich exportiert`, 'success');
+        setIsExporting(false);
+        return;
+      }
+      
+      // Fetch approach as fallback
+      const headers: Record<string, string> = {
+        'Accept': 'text/csv',
+        'Cache-Control': 'no-cache'
+      };
+      
+      // Make a fetch request instead of window.open to check for errors
+      const response = await fetch(url, {
+        credentials: 'include', // Important! Include cookies for authentication
+        headers
+      });
+      
+      if (!response.ok) {
+        // If we got a 401, show a better error
+        if (response.status === 401) {
+          throw new Error('Authentifizierungsfehler. Bitte neu anmelden und erneut versuchen.');
+        }
+        
+        // Otherwise handle the error
+        let errorMessage = 'Fehler beim Export';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.details || errorData.error || 'Unbekannter Fehler';
+        } catch {
+          // If we can't parse the JSON, use the status text
+          errorMessage = `Fehler: ${response.status} ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element to trigger the download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      // Get filename from the Content-Disposition header if available
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = contentDisposition?.split('filename=')[1]?.replace(/"/g, '') || 
+                     `${typeMap[type].endpoint}_export.${format}`;
+      
+      link.download = filename;
+      
+      // Append the link to the document, click it, and remove it
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL object
+      window.URL.revokeObjectURL(downloadUrl);
       
       showNotification(`${typeMap[type].label} erfolgreich exportiert`, 'success');
     } catch (error) {

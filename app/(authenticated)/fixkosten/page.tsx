@@ -59,21 +59,21 @@ export default function Fixkosten() {
         const data = await loadFixkosten(user.id);
         
         if (isMounted) {
-          setFixkosten(data);
-          applyFilters(data);
+        setFixkosten(data);
+        applyFilters(data);
           showNotification(`${data.length} Fixkosten geladen`, 'success');
         }
       } catch (err) {
         if (isMounted) {
           const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-          setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
+        setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
           showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-          setFixkosten([]);
-          setFilteredFixkosten([]);
+        setFixkosten([]);
+        setFilteredFixkosten([]);
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+        setLoading(false);
         }
       }
     }

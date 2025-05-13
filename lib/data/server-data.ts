@@ -1,10 +1,12 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { Database } from '@/lib/types/supabase';
+import { Buchung } from '@/models/types';
+import { shiftPastDueDateIfNeeded } from '@/lib/services/buchungen';
 
 // Types
-type Buchung = Database['public']['Tables']['buchungen']['Row'];
-type FixKosten = Database['public']['Tables']['fixkosten']['Row'];
-type Mitarbeiter = Database['public']['Tables']['mitarbeiter']['Row'];
+type BuchungDB = Database['public']['Tables']['buchungen']['Row'];
+type FixkostenDB = Database['public']['Tables']['fixkosten']['Row'];
+type MitarbeiterDB = Database['public']['Tables']['mitarbeiter']['Row'];
 type Lohn = Database['public']['Tables']['loehne']['Row'];
 type Simulation = Database['public']['Tables']['simulationen']['Row'];
 type UserSettings = Database['public']['Tables']['user_settings']['Row'];
@@ -22,7 +24,25 @@ export async function getBuchungen() {
     throw new Error(`Failed to fetch transactions: ${error.message}`);
   }
 
-  return data;
+  // Process the data to shift any past due dates
+  return data.map(item => {
+    // Convert the database record to our internal Buchung type
+    const transaction: Buchung = {
+      ...item,
+      date: new Date(item.date),
+      modified: item.modified || false,
+      kategorie: item.kategorie || undefined,
+      created_at: item.created_at || new Date().toISOString(),
+      user_id: item.user_id || ''
+    };
+    
+    // Apply date shifting for Incoming transactions
+    if (transaction.direction === 'Incoming') {
+      return shiftPastDueDateIfNeeded(transaction);
+    }
+    
+    return transaction;
+  });
 }
 
 export async function getBuchungById(id: string) {

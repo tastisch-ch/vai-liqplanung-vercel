@@ -15,27 +15,37 @@ import { getSignedAmount } from '@/lib/currency/format';
  */
 export async function loadBuchungen(userId?: string): Promise<Buchung[]> {
   try {
-    let query = supabase.from('buchungen').select('*');
-    
-    // Filter by user if specified
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
-    const { data, error } = await query.order('date', { ascending: true });
-    
-    if (error) {
-      console.error('Error loading transactions:', error.message, error.details);
-      if (error.code === '42P01') {
-        throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
+  let query = supabase.from('buchungen').select('*');
+  
+  // Filter by user if specified
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  
+  const { data, error } = await query.order('date', { ascending: true });
+  
+  if (error) {
+        console.error('Error loading transactions:', error.message, error.details);
+        if (error.code === '42P01') {
+          throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
+        }
+        throw new Error(`Failed to load transactions: ${error.message}`);
+  }
+  
+    // Convert dates and shift past due dates for Incoming transactions
+    return (data || []).map(item => {
+      const transaction = {
+    ...item,
+    date: new Date(item.date),
+      } as Buchung;
+      
+      // Apply the dynamic date shifting for past due dates
+      if (transaction.direction === 'Incoming') {
+        return shiftPastDueDateIfNeeded(transaction);
       }
-      throw new Error(`Failed to load transactions: ${error.message}`);
-    }
-    
-    return (data || []).map(item => ({
-      ...item,
-      date: new Date(item.date),
-    })) as Buchung[];
+      
+      return transaction;
+    });
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to load transactions')) {
       throw error;
@@ -43,6 +53,39 @@ export async function loadBuchungen(userId?: string): Promise<Buchung[]> {
     console.error('Unexpected error loading transactions:', error);
     throw new Error(`Failed to load transactions: ${error.message || 'Unknown error'}`);
   }
+}
+
+/**
+ * If an Incoming transaction has a date in the past, shift it to tomorrow
+ * This is applied dynamically when loading transactions, not when storing them
+ */
+export function shiftPastDueDateIfNeeded(transaction: Buchung): Buchung {
+  // Only apply to Incoming transactions (payments we expect to receive)
+  if (transaction.direction !== 'Incoming') {
+    return transaction;
+  }
+  
+  // Check if the date is in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+  
+  if (transaction.date < today) {
+    // For past due dates, shift to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0); // Reset time to start of day
+    
+    // Return a new object with the shifted date (don't modify the original)
+    return {
+      ...transaction,
+      date: tomorrow,
+      // Add a flag to indicate this date was shifted (for UI purposes if needed)
+      shifted: true
+    };
+  }
+  
+  // Date is not in the past, use as is
+  return transaction;
 }
 
 /**
@@ -57,27 +100,27 @@ export async function addBuchung(
   kategorie?: string
 ): Promise<Buchung> {
   try {
-    const now = new Date().toISOString();
-    const newBuchung = {
-      id: uuidv4(),
-      date: dateToIsoString(date) as string,
-      details,
-      amount,
-      direction,
-      modified: false,
-      kategorie: kategorie || 'Standard',
-      user_id: userId,
-      created_at: now,
-      updated_at: now
-    };
-    
-    const { data, error } = await supabase
-      .from('buchungen')
-      .insert(newBuchung)
-      .select()
-      .single();
-    
-    if (error) {
+  const now = new Date().toISOString();
+  const newBuchung = {
+    id: uuidv4(),
+    date: dateToIsoString(date) as string,
+    details,
+    amount,
+    direction,
+    modified: false,
+    kategorie: kategorie || 'Standard',
+    user_id: userId,
+    created_at: now,
+    updated_at: now
+  };
+  
+  const { data, error } = await supabase
+    .from('buchungen')
+    .insert(newBuchung)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error adding transaction:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
@@ -91,12 +134,12 @@ export async function addBuchung(
     
     if (!data) {
       throw new Error('No data returned after adding transaction');
-    }
-    
-    return {
-      ...data,
-      date: new Date(data.date),
-    } as Buchung;
+  }
+  
+  return {
+    ...data,
+    date: new Date(data.date),
+  } as Buchung;
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add transaction')) {
       throw error;
@@ -115,23 +158,23 @@ export async function updateBuchungById(
   userId: string
 ): Promise<Buchung> {
   try {
-    // Ensure the date is formatted correctly if provided
-    const formattedUpdates = {
-      ...updates,
-      date: updates.date ? dateToIsoString(updates.date) : undefined,
-      modified: true,
-      updated_at: new Date().toISOString(),
-      user_id: userId
-    };
-    
-    const { data, error } = await supabase
-      .from('buchungen')
-      .update(formattedUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
+  // Ensure the date is formatted correctly if provided
+  const formattedUpdates = {
+    ...updates,
+    date: updates.date ? dateToIsoString(updates.date) : undefined,
+    modified: true,
+    updated_at: new Date().toISOString(),
+    user_id: userId
+  };
+  
+  const { data, error } = await supabase
+    .from('buchungen')
+    .update(formattedUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error updating transaction:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'buchungen' not found`);
@@ -145,12 +188,12 @@ export async function updateBuchungById(
     
     if (!data) {
       throw new Error(`Transaction with ID ${id} not found`);
-    }
-    
-    return {
-      ...data,
-      date: new Date(data.date),
-    } as Buchung;
+  }
+  
+  return {
+    ...data,
+    date: new Date(data.date),
+  } as Buchung;
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update transaction') || error.message.includes('not found'))) {
       throw error;
@@ -165,12 +208,12 @@ export async function updateBuchungById(
  */
 export async function deleteBuchungById(id: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('buchungen')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
+  const { error } = await supabase
+    .from('buchungen')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
       console.error('Error deleting transaction:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'buchungen' not found`);
@@ -189,44 +232,48 @@ export async function deleteBuchungById(id: string): Promise<void> {
 }
 
 /**
- * Process transactions to calculate running balance and add markers
- * Similar to the functionality in planung.py in the Python app
+ * Enhance transactions with additional data like running balance
  */
-export function enhanceTransactions(
-  transactions: Buchung[], 
-  startBalance: number = 0
-): EnhancedTransaction[] {
+export function enhanceTransactions(transactions: Buchung[], startBalance: number = 0): EnhancedTransaction[] {
+  // Sort by date (oldest first)
+  const sortedTransactions = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+  // Apply date shifting for past due dates on Incoming transactions
+  const shiftedTransactions = sortedTransactions.map(tx => {
+    if (tx.direction === 'Incoming') {
+      return shiftPastDueDateIfNeeded(tx);
+    }
+    return tx;
+  });
+  
+  // Calculate running balance and create enhanced transactions
   let runningBalance = startBalance;
   
-  // Sort by date
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => a.date.getTime() - b.date.getTime()
-  );
-  
-  // Add calculated fields
-  return sortedTransactions.map(transaction => {
-    // Get the proper signed amount (negative for outgoing)
-    const signedAmount = getSignedAmount(transaction.amount, transaction.direction);
+  return shiftedTransactions.map(tx => {
+    // Update running balance based on transaction direction
+    if (tx.direction === 'Incoming') {
+      runningBalance += tx.amount;
+    } else {
+      runningBalance -= tx.amount;
+    }
     
-    // Update running balance
-    runningBalance += signedAmount;
-    
-    // Determine category
-    const kategorie = transaction.kategorie as TransactionCategory || 'Standard';
+    // Determine category for the enhanced transaction
+    const kategorie = tx.kategorie as TransactionCategory || 'Standard';
     
     // Generate hints icons
     let hinweis = '';
-    if (transaction.modified) hinweis += '✏️ ';
+    if (tx.modified) hinweis += '✏️ ';
     if (kategorie === 'Fixkosten') hinweis += '📌 ';
     if (kategorie === 'Simulation') hinweis += '🔮 ';
     if (kategorie === 'Lohn') hinweis += '💰 ';
     
-    // Return enhanced transaction
+    // Create enhanced transaction with running balance
     return {
-      ...transaction,
+      ...tx,
       kontostand: runningBalance,
-      hinweis: hinweis.trim(),
-      kategorie
+      signedAmount: getSignedAmount(tx.amount, tx.direction),
+      kategorie,
+      hinweis: hinweis.trim()
     };
   });
 }

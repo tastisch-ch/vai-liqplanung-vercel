@@ -43,7 +43,15 @@ const createAuthClient = () => {
   let supabase: ReturnType<typeof createClient> | null = null;
   
   try {
-    supabase = createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        storageKey: 'sb:session',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      }
+    });
     logger.info('Supabase client initialized', { component: 'client-auth' });
   } catch (error) {
     logger.logError(error, 'Failed to initialize Supabase client', { component: 'client-auth' });
@@ -353,6 +361,46 @@ const createAuthClient = () => {
     }
   };
   
+  const refreshSession = async (): Promise<void> => {
+    if (testModeActive) {
+      logger.debug('TEST MODE refreshSession - no action needed', { 
+        testMode: true, 
+        component: 'client-auth' 
+      });
+      return;
+    }
+    
+    try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
+      
+      // Get the current session
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!data.session) {
+        logger.debug('No session to refresh', { component: 'client-auth' });
+        return;
+      }
+      
+      // Refresh the session to ensure cookies are set
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        throw refreshError;
+      }
+      
+      logger.info('Session refreshed successfully', { component: 'client-auth' });
+    } catch (error) {
+      logger.logError(error, 'Error refreshing session', { component: 'client-auth' });
+      throw error;
+    }
+  };
+  
   return {
     supabase,
     signIn,
@@ -361,6 +409,7 @@ const createAuthClient = () => {
     getCurrentUser,
     getCurrentSession,
     getProfile,
+    refreshSession,
     isTestModeActive: () => testModeActive,
     forceRealSignIn
   };

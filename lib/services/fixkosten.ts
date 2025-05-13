@@ -14,25 +14,25 @@ import { dateToIsoString, getNextOccurrence } from '@/lib/date-utils/format';
  */
 export async function loadFixkosten(userId?: string): Promise<Fixkosten[]> {
   try {
-    let query = supabase.from('fixkosten').select('*');
-    
-    // Filter by user if specified
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
-    const { data, error } = await query.order('name', { ascending: true });
-    
-    if (error) {
+  let query = supabase.from('fixkosten').select('*');
+  
+  // Filter by user if specified
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  
+  const { data, error } = await query.order('name', { ascending: true });
+  
+  if (error) {
       console.error('Error loading fixkosten:', error.message, error.details);
       throw new Error(`Failed to load fixed costs: ${error.message}`);
-    }
-    
-    return (data || []).map(item => ({
-      ...item,
-      start: new Date(item.start),
-      enddatum: item.enddatum ? new Date(item.enddatum) : null,
-    })) as Fixkosten[];
+  }
+  
+  return (data || []).map(item => ({
+    ...item,
+    start: new Date(item.start),
+    enddatum: item.enddatum ? new Date(item.enddatum) : null,
+  })) as Fixkosten[];
   } catch (error: any) {
     console.error('Unexpected error loading fixkosten:', error);
     throw new Error(`Failed to load fixed costs: ${error.message || 'Unknown error'}`);
@@ -51,26 +51,26 @@ export async function addFixkosten(
   userId: string
 ): Promise<Fixkosten> {
   try {
-    const now = new Date().toISOString();
-    const newFixkosten = {
-      id: uuidv4(),
-      name,
-      betrag,
-      rhythmus,
-      start: dateToIsoString(start) as string,
-      enddatum: dateToIsoString(enddatum),
-      user_id: userId,
-      created_at: now,
-      updated_at: now
-    };
-    
-    const { data, error } = await supabase
-      .from('fixkosten')
-      .insert(newFixkosten)
-      .select()
-      .single();
-    
-    if (error) {
+  const now = new Date().toISOString();
+  const newFixkosten = {
+    id: uuidv4(),
+    name,
+    betrag,
+    rhythmus,
+    start: dateToIsoString(start) as string,
+    enddatum: dateToIsoString(enddatum),
+    user_id: userId,
+    created_at: now,
+    updated_at: now
+  };
+  
+  const { data, error } = await supabase
+    .from('fixkosten')
+    .insert(newFixkosten)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error adding fixkosten:', error.message, error.details);
       if (error.code === '23505') {
         throw new Error(`A fixed cost with this name already exists`);
@@ -86,13 +86,13 @@ export async function addFixkosten(
     
     if (!data) {
       throw new Error('No data returned after adding fixed cost');
-    }
-    
-    return {
-      ...data,
-      start: new Date(data.start),
-      enddatum: data.enddatum ? new Date(data.enddatum) : null,
-    } as Fixkosten;
+  }
+  
+  return {
+    ...data,
+    start: new Date(data.start),
+    enddatum: data.enddatum ? new Date(data.enddatum) : null,
+  } as Fixkosten;
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add fixed cost')) {
       throw error;
@@ -111,23 +111,23 @@ export async function updateFixkostenById(
   userId: string
 ): Promise<Fixkosten> {
   try {
-    // Ensure dates are formatted correctly
-    const formattedUpdates = {
-      ...updates,
-      start: updates.start ? dateToIsoString(updates.start) : undefined,
-      enddatum: updates.enddatum !== undefined ? dateToIsoString(updates.enddatum) : undefined,
-      updated_at: new Date().toISOString(),
-      user_id: userId
-    };
-    
-    const { data, error } = await supabase
-      .from('fixkosten')
-      .update(formattedUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
+  // Ensure dates are formatted correctly
+  const formattedUpdates = {
+    ...updates,
+    start: updates.start ? dateToIsoString(updates.start) : undefined,
+    enddatum: updates.enddatum !== undefined ? dateToIsoString(updates.enddatum) : undefined,
+    updated_at: new Date().toISOString(),
+    user_id: userId
+  };
+  
+  const { data, error } = await supabase
+    .from('fixkosten')
+    .update(formattedUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error updating fixkosten:', error.message, error.details);
       if (error.code === '23505') {
         throw new Error(`A fixed cost with this name already exists`);
@@ -143,13 +143,13 @@ export async function updateFixkostenById(
     
     if (!data) {
       throw new Error(`Fixed cost with ID ${id} not found`);
-    }
-    
-    return {
-      ...data,
-      start: new Date(data.start),
-      enddatum: data.enddatum ? new Date(data.enddatum) : null,
-    } as Fixkosten;
+  }
+  
+  return {
+    ...data,
+    start: new Date(data.start),
+    enddatum: data.enddatum ? new Date(data.enddatum) : null,
+  } as Fixkosten;
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update fixed cost') || error.message.includes('not found'))) {
       throw error;
@@ -164,12 +164,12 @@ export async function updateFixkostenById(
  */
 export async function deleteFixkostenById(id: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('fixkosten')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
+  const { error } = await supabase
+    .from('fixkosten')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
       console.error('Error deleting fixkosten:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'fixkosten' not found`);

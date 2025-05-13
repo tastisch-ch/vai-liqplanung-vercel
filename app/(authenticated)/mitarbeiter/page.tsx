@@ -72,7 +72,7 @@ export default function MitarbeiterPage() {
         const data = await loadMitarbeiter(user.id);
         
         if (isMounted) {
-          setMitarbeiter(data);
+        setMitarbeiter(data);
           showNotification(`${data.length} Mitarbeiter geladen`, 'success');
         }
       } catch (err) {
@@ -80,11 +80,11 @@ export default function MitarbeiterPage() {
           const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
           setError('Fehler beim Laden der Mitarbeiter. Bitte versuchen Sie es später erneut.');
           showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-          setMitarbeiter([]);
+        setMitarbeiter([]);
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+        setLoading(false);
         }
       }
     }
@@ -380,7 +380,7 @@ export default function MitarbeiterPage() {
       if (isEditingModal) {
         cancelEditingLohn();
       } else {
-        resetLohnForm();
+      resetLohnForm();
       }
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {

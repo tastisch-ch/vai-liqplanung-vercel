@@ -3,14 +3,29 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Database } from '@/lib/types/supabase';
+import { shiftPastDueDateIfNeeded } from '@/lib/services/buchungen';
+import { Buchung } from '@/models/types';
 
-// Basic types
-type Buchung = Database['public']['Tables']['buchungen']['Row'];
-type Fixkosten = Database['public']['Tables']['fixkosten']['Row'];
-type Mitarbeiter = Database['public']['Tables']['mitarbeiter']['Row'];
-type Lohn = Database['public']['Tables']['loehne']['Row'];
-type Simulation = Database['public']['Tables']['simulationen']['Row'];
-type UserSettings = Database['public']['Tables']['user_settings']['Row'];
+// Types for the database records
+type BuchungDB = Database['public']['Tables']['buchungen']['Row'];
+type FixKostenDB = Database['public']['Tables']['fixkosten']['Row'];
+type MitarbeiterDB = Database['public']['Tables']['mitarbeiter']['Row'];
+// Fix for lohn table - using loehne as per the Database type definition
+type LohnDB = Database['public']['Tables']['loehne']['Row'];
+type SimulationDB = Database['public']['Tables']['simulationen']['Row'];
+type UserSettingsDB = Database['public']['Tables']['user_settings']['Row'];
+// Either the szenarien table doesn't exist in the Database type yet or has a different name
+// For now we'll define a basic type that can be expanded later
+type SzenarioSpeicherDB = {
+  id: string;
+  name: string;
+  description?: string;
+  simulation_ids?: string[];
+  projection_months?: number;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 // Generic state type for all hooks
 interface DataState<T> {
@@ -41,7 +56,7 @@ export function useBuchungen(): DataState<Buchung> {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: dbData, error } = await supabase
         .from('buchungen')
         .select('*')
         .order('date', { ascending: false });
@@ -50,7 +65,27 @@ export function useBuchungen(): DataState<Buchung> {
         setError(error.message);
         setData(null);
       } else {
-        setData(data);
+        // Process the data to shift any past due dates
+        const processedData = dbData.map(item => {
+          // Convert date string to Date object
+          const transaction: Buchung = {
+            ...item,
+            date: new Date(item.date),
+            modified: item.modified || false,
+            kategorie: item.kategorie || undefined,
+            created_at: item.created_at || new Date().toISOString(),
+            user_id: item.user_id || ''
+          };
+          
+          // Apply date shifting for Incoming transactions
+          if (transaction.direction === 'Incoming') {
+            return shiftPastDueDateIfNeeded(transaction);
+          }
+          
+          return transaction;
+        });
+        
+        setData(processedData);
         setError(null);
       }
     } catch (err: any) {
@@ -112,8 +147,8 @@ export function useBuchungById(id: string): SingleDataState<Buchung> {
 }
 
 // Hook for fetching Fixkosten (fixed costs)
-export function useFixkosten(): DataState<Fixkosten> {
-  const [data, setData] = useState<Fixkosten[] | null>(null);
+export function useFixkosten(): DataState<FixKostenDB> {
+  const [data, setData] = useState<FixKostenDB[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -148,8 +183,8 @@ export function useFixkosten(): DataState<Fixkosten> {
 }
 
 // Hook for fetching a single Fixkosten by ID
-export function useFixkostenById(id: string): SingleDataState<Fixkosten> {
-  const [data, setData] = useState<Fixkosten | null>(null);
+export function useFixkostenById(id: string): SingleDataState<FixKostenDB> {
+  const [data, setData] = useState<FixKostenDB | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -191,8 +226,8 @@ export function useFixkostenById(id: string): SingleDataState<Fixkosten> {
 }
 
 // Hook for fetching Mitarbeiter (employees)
-export function useMitarbeiter(): DataState<Mitarbeiter> {
-  const [data, setData] = useState<Mitarbeiter[] | null>(null);
+export function useMitarbeiter(): DataState<MitarbeiterDB> {
+  const [data, setData] = useState<MitarbeiterDB[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -227,8 +262,8 @@ export function useMitarbeiter(): DataState<Mitarbeiter> {
 }
 
 // Hook for fetching a single Mitarbeiter by ID
-export function useMitarbeiterById(id: string): SingleDataState<Mitarbeiter> {
-  const [data, setData] = useState<Mitarbeiter | null>(null);
+export function useMitarbeiterById(id: string): SingleDataState<MitarbeiterDB> {
+  const [data, setData] = useState<MitarbeiterDB | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -270,8 +305,8 @@ export function useMitarbeiterById(id: string): SingleDataState<Mitarbeiter> {
 }
 
 // Hook for fetching Löhne (salaries)
-export function useLoehne(): DataState<Lohn> {
-  const [data, setData] = useState<Lohn[] | null>(null);
+export function useLoehne(): DataState<LohnDB> {
+  const [data, setData] = useState<LohnDB[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -306,8 +341,8 @@ export function useLoehne(): DataState<Lohn> {
 }
 
 // Hook for fetching Löhne by Mitarbeiter ID
-export function useLoehneByMitarbeiter(mitarbeiterId: string): DataState<Lohn> {
-  const [data, setData] = useState<Lohn[] | null>(null);
+export function useLoehneByMitarbeiter(mitarbeiterId: string): DataState<LohnDB> {
+  const [data, setData] = useState<LohnDB[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -349,8 +384,8 @@ export function useLoehneByMitarbeiter(mitarbeiterId: string): DataState<Lohn> {
 }
 
 // Hook for fetching Simulationen (simulations)
-export function useSimulationen(): DataState<Simulation> {
-  const [data, setData] = useState<Simulation[] | null>(null);
+export function useSimulationen(): DataState<SimulationDB> {
+  const [data, setData] = useState<SimulationDB[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -385,8 +420,8 @@ export function useSimulationen(): DataState<Simulation> {
 }
 
 // Hook for fetching active Simulation
-export function useActiveSimulation(): SingleDataState<Simulation> {
-  const [data, setData] = useState<Simulation | null>(null);
+export function useActiveSimulation(): SingleDataState<SimulationDB> {
+  const [data, setData] = useState<SimulationDB | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -422,8 +457,8 @@ export function useActiveSimulation(): SingleDataState<Simulation> {
 }
 
 // Hook for fetching User Settings
-export function useUserSettings(): SingleDataState<UserSettings> {
-  const [data, setData] = useState<UserSettings | null>(null);
+export function useUserSettings(): SingleDataState<UserSettingsDB> {
+  const [data, setData] = useState<UserSettingsDB | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 

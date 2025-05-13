@@ -75,36 +75,36 @@ export default function AuthenticatedLayout({
     <ClientOnly>
       <AuthProvider>
         <NotificationProvider>
-          <div className="min-h-screen flex flex-col">
-            <AuthNav onSidebarToggle={toggleSidebar} />
-            
-            <div className="flex-grow flex flex-row">
-              {/* Sidebar - hidden on mobile by default unless toggled */}
-              <div className={`
-                ${isSidebarOpen ? 'block' : 'hidden'} 
-                md:block fixed md:relative z-10 h-[calc(100vh-4rem)] md:h-auto
-                shadow-lg md:shadow-none
-              `}>
-                <Sidebar />
-              </div>
-              
-              {/* Main content */}
-              <main className="flex-grow p-4 md:p-6 w-full">
-                <div className="mx-auto max-w-7xl">
-                  {children}
-                </div>
-              </main>
+        <div className="min-h-screen flex flex-col">
+          <AuthNav onSidebarToggle={toggleSidebar} />
+          
+          <div className="flex-grow flex flex-row">
+            {/* Sidebar - hidden on mobile by default unless toggled */}
+            <div className={`
+              ${isSidebarOpen ? 'block' : 'hidden'} 
+              md:block fixed md:relative z-10 h-[calc(100vh-4rem)] md:h-auto
+              shadow-lg md:shadow-none
+            `}>
+              <Sidebar />
             </div>
             
-            <footer className="bg-white border-t border-gray-200 py-4">
-              <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-                © {new Date().getFullYear()} vaios - Alle Rechte vorbehalten
+            {/* Main content */}
+            <main className="flex-grow p-4 md:p-6 w-full">
+              <div className="mx-auto max-w-7xl">
+                {children}
               </div>
-            </footer>
+            </main>
           </div>
           
-          {/* Development tools */}
-          <DevTools />
+          <footer className="bg-white border-t border-gray-200 py-4">
+            <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+              © {new Date().getFullYear()} vaios - Alle Rechte vorbehalten
+            </div>
+          </footer>
+        </div>
+        
+        {/* Development tools */}
+        <DevTools />
         </NotificationProvider>
       </AuthProvider>
     </ClientOnly>

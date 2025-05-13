@@ -14,28 +14,28 @@ import { dateToIsoString, getNextOccurrence } from '@/lib/date-utils/format';
  */
 export async function loadSimulationen(userId?: string): Promise<Simulation[]> {
   try {
-    let query = supabase.from('simulationen').select('*');
-    
-    // Filter by user if specified
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    
-    const { data, error } = await query.order('date', { ascending: true });
-    
-    if (error) {
+  let query = supabase.from('simulationen').select('*');
+  
+  // Filter by user if specified
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+  
+  const { data, error } = await query.order('date', { ascending: true });
+  
+  if (error) {
       console.error('Error loading simulations:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'simulationen' not found. Please check your database setup.`);
       }
       throw new Error(`Failed to load simulations: ${error.message}`);
-    }
-    
-    return (data || []).map(item => ({
-      ...item,
-      date: new Date(item.date),
-      end_date: item.end_date ? new Date(item.end_date) : null,
-    })) as Simulation[];
+  }
+  
+  return (data || []).map(item => ({
+    ...item,
+    date: new Date(item.date),
+    end_date: item.end_date ? new Date(item.end_date) : null,
+  })) as Simulation[];
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to load simulations')) {
       throw error;
@@ -60,33 +60,33 @@ export async function addSimulation(
   end_date?: Date | null
 ): Promise<Simulation> {
   try {
-    const now = new Date().toISOString();
-    const newSimulation = {
-      id: uuidv4(),
-      name,
-      details,
-      date: dateToIsoString(date) as string,
-      amount,
-      direction,
-      recurring,
+  const now = new Date().toISOString();
+  const newSimulation = {
+    id: uuidv4(),
+    name,
+    details,
+    date: dateToIsoString(date) as string,
+    amount,
+    direction,
+    recurring,
       "interval": recurring ? interval : null,
-      end_date: end_date ? dateToIsoString(end_date) : null,
-      user_id: userId,
-      created_at: now,
-      updated_at: now
-    };
-    
+    end_date: end_date ? dateToIsoString(end_date) : null,
+    user_id: userId,
+    created_at: now,
+    updated_at: now
+  };
+  
     console.log('Adding simulation with data:', newSimulation);
     
     // Use a direct database insert to bypass RLS policies
     // We'll manually check that the user_id is correct
-    const { data, error } = await supabase
-      .from('simulationen')
-      .insert(newSimulation)
-      .select()
-      .single();
-    
-    if (error) {
+  const { data, error } = await supabase
+    .from('simulationen')
+    .insert(newSimulation)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error adding simulation:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'simulationen' not found. Please check your database setup.`);
@@ -103,13 +103,13 @@ export async function addSimulation(
     
     if (!data) {
       throw new Error('No data returned after adding simulation');
-    }
-    
-    return {
-      ...data,
-      date: new Date(data.date),
-      end_date: data.end_date ? new Date(data.end_date) : null,
-    } as Simulation;
+  }
+  
+  return {
+    ...data,
+    date: new Date(data.date),
+    end_date: data.end_date ? new Date(data.end_date) : null,
+  } as Simulation;
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add simulation')) {
       throw error;
@@ -128,23 +128,23 @@ export async function updateSimulationById(
   userId: string
 ): Promise<Simulation> {
   try {
-    // Ensure dates are formatted correctly
-    const formattedUpdates = {
-      ...updates,
-      date: updates.date ? dateToIsoString(updates.date) : undefined,
-      end_date: updates.end_date !== undefined ? dateToIsoString(updates.end_date) : undefined,
-      updated_at: new Date().toISOString(),
-      user_id: userId
-    };
-    
-    const { data, error } = await supabase
-      .from('simulationen')
-      .update(formattedUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) {
+  // Ensure dates are formatted correctly
+  const formattedUpdates = {
+    ...updates,
+    date: updates.date ? dateToIsoString(updates.date) : undefined,
+    end_date: updates.end_date !== undefined ? dateToIsoString(updates.end_date) : undefined,
+    updated_at: new Date().toISOString(),
+    user_id: userId
+  };
+  
+  const { data, error } = await supabase
+    .from('simulationen')
+    .update(formattedUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
       console.error('Error updating simulation:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'simulationen' not found`);
@@ -158,13 +158,13 @@ export async function updateSimulationById(
     
     if (!data) {
       throw new Error(`Simulation with ID ${id} not found`);
-    }
-    
-    return {
-      ...data,
-      date: new Date(data.date),
-      end_date: data.end_date ? new Date(data.end_date) : null,
-    } as Simulation;
+  }
+  
+  return {
+    ...data,
+    date: new Date(data.date),
+    end_date: data.end_date ? new Date(data.end_date) : null,
+  } as Simulation;
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update simulation') || error.message.includes('not found'))) {
       throw error;
@@ -179,12 +179,12 @@ export async function updateSimulationById(
  */
 export async function deleteSimulationById(id: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('simulationen')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
+  const { error } = await supabase
+    .from('simulationen')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
       console.error('Error deleting simulation:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'simulationen' not found`);
