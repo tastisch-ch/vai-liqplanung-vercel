@@ -89,8 +89,8 @@ export default function FixkostenClient({ initialFixkosten }: Props) {
     }).format(amount);
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateString: string | Date): string => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     return format(date, 'dd. MMMM yyyy', { locale: de });
   };
   
