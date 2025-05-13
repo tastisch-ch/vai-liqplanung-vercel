@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { loadBuchungen, enhanceTransactions } from '@/lib/services/buchungen';
 import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
@@ -7,6 +7,8 @@ import { loadSimulationen, convertSimulationenToBuchungen } from '@/lib/services
 import { convertLohneToBuchungen, loadMitarbeiter } from '@/lib/services/mitarbeiter';
 import { getUserSettings } from '@/lib/services/user-settings';
 import { transactionsToCSV, generatePDFContent, generateManagementSummary } from '@/lib/export';
+import { getMimeType, generateExportFilename } from '@/lib/export/utils';
+import { Buchung } from '@/models/types';
 
 /**
  * Export transactions to CSV
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
     console.log('Direct access token exists:', !!directAccessToken);
     
     // Create direct Supabase client
-    const supabase = createClient(request.cookies);
+    const supabase = createRouteHandlerSupabaseClient(request);
     
     // Try to extract user ID directly from JWT token
     let userId: string | null = null;
@@ -206,7 +208,14 @@ export async function GET(request: NextRequest) {
       date: new Date(t.date)
     })) as Buchung[];
     
-    const { content, filename } = transactionsToCsv(parsedTransactions, { dateRange });
+    // Enhance transactions with balances
+    const enhancedTransactions = enhanceTransactions(parsedTransactions, 0);
+    
+    // Generate CSV content
+    const content = transactionsToCSV(enhancedTransactions, { dateRange });
+    
+    // Generate filename
+    const filename = generateExportFilename('transactions', 'csv', dateRange);
     
     // Set headers for file download
     const headers2 = new Headers();
@@ -230,8 +239,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   // Get the current user from supabase auth
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createRouteHandlerSupabaseClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -353,4 +361,7 @@ export async function POST(request: NextRequest) {
     console.error('Export error:', error);
     return NextResponse.json(
       { error: 'Failed to generate export' },
+      { status: 500 }
+    );
+  }
 } 
