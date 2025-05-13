@@ -89,50 +89,63 @@ async function createDefaultSettings(userId: string): Promise<UserSettings> {
 /**
  * Get the global kontostand value that is shared between all users
  */
-export async function getGlobalKontostand(): Promise<number> {
+export async function getGlobalKontostand(): Promise<{ balance: number; lastUpdated: string | null }> {
   try {
     const { data, error } = await supabase
       .from('global_settings')
-      .select('setting_value')
+      .select('setting_value, updated_at')
       .eq('setting_key', 'kontostand')
       .single();
       
     if (error) {
       console.error('Error loading global kontostand:', error);
-      return DEFAULT_SETTINGS.start_balance;
+      return { 
+        balance: DEFAULT_SETTINGS.start_balance, 
+        lastUpdated: null 
+      };
     }
     
-    return data?.setting_value?.balance || DEFAULT_SETTINGS.start_balance;
+    return {
+      balance: data?.setting_value?.balance || DEFAULT_SETTINGS.start_balance,
+      lastUpdated: data?.updated_at || null
+    };
   } catch (err) {
     console.error('Exception in getGlobalKontostand:', err);
-    return DEFAULT_SETTINGS.start_balance;
+    return { 
+      balance: DEFAULT_SETTINGS.start_balance, 
+      lastUpdated: null 
+    };
   }
 }
 
 /**
  * Update the global kontostand value that is shared between all users
  */
-export async function updateGlobalKontostand(balance: number): Promise<number> {
+export async function updateGlobalKontostand(balance: number): Promise<{ balance: number; lastUpdated: string | null }> {
   try {
+    const now = new Date().toISOString();
     const { data, error } = await supabase
       .from('global_settings')
       .update({ 
         setting_value: { balance },
-        updated_at: new Date().toISOString()
+        updated_at: now
       })
       .eq('setting_key', 'kontostand')
-      .select('setting_value')
+      .select('setting_value, updated_at')
       .single();
       
     if (error) {
       console.error('Error updating global kontostand:', error);
-      return balance;
+      return { balance, lastUpdated: now };
     }
     
-    return data?.setting_value?.balance || balance;
+    return {
+      balance: data?.setting_value?.balance || balance,
+      lastUpdated: data?.updated_at || now
+    };
   } catch (err) {
     console.error('Exception in updateGlobalKontostand:', err);
-    return balance;
+    return { balance, lastUpdated: new Date().toISOString() };
   }
 }
 
@@ -144,7 +157,7 @@ export async function updateStartBalance(userId: string, balance: number): Promi
   // For backward compatibility, update both the user-specific and global balance
   try {
     // Update the global balance first
-    await updateGlobalKontostand(balance);
+    const globalResult = await updateGlobalKontostand(balance);
     
     // Also update the user-specific one (for backward compatibility)
     const { data, error } = await supabase
@@ -159,7 +172,7 @@ export async function updateStartBalance(userId: string, balance: number): Promi
       
     if (error) {
       console.error('Error updating start balance:', error);
-      return balance;
+      return globalResult.balance;
     }
     
     return data.start_balance;
@@ -300,7 +313,7 @@ export const getUserSettings = async (userId: string): Promise<UserSettings> => 
     // Override the start_balance with the global one
     return {
       ...userSettings,
-      start_balance: globalBalance
+      start_balance: globalBalance.balance
     };
   } catch (err) {
     console.error('Exception in getUserSettings:', err);

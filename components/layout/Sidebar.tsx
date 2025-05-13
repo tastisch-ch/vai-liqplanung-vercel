@@ -6,8 +6,10 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
-import { getUserSettings, updateStartBalance, updateGlobalKontostand } from '@/lib/services/user-settings';
+import { getUserSettings, updateStartBalance, updateGlobalKontostand, getGlobalKontostand } from '@/lib/services/user-settings';
 import { User } from '@supabase/supabase-js';
+import { format, formatDistanceToNow } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -75,6 +77,7 @@ export default function Sidebar() {
   const [kontostandInput, setKontostandInput] = useState(formatCHF(0));
   const [kontostandError, setKontostandError] = useState(false);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   // Load user settings including kontostand
   useEffect(() => {
@@ -86,6 +89,10 @@ export default function Sidebar() {
         const settings = await getUserSettings(user.id);
         setStartBalance(settings.start_balance);
         setKontostandInput(formatCHF(settings.start_balance));
+        
+        // Get the global kontostand to retrieve the last updated time
+        const globalKontostand = await getGlobalKontostand();
+        setLastUpdated(globalKontostand.lastUpdated);
       } catch (error) {
         logError(error, 'Error loading user settings');
       } finally {
@@ -104,15 +111,16 @@ export default function Sidebar() {
       if (parsedValue !== null) {
         setIsLoadingBalance(true);
         // Save to database - using the global kontostand function
-        const updatedBalance = await updateGlobalKontostand(parsedValue);
+        const result = await updateGlobalKontostand(parsedValue);
         
-        setStartBalance(updatedBalance);
-        setKontostandInput(formatCHF(updatedBalance));
+        setStartBalance(result.balance);
+        setKontostandInput(formatCHF(result.balance));
+        setLastUpdated(result.lastUpdated);
         setKontostandError(false);
         setIsBalanceEditing(false);
         
         logger.info('Kontostand updated', { 
-          value: updatedBalance, 
+          value: result.balance, 
           component: 'Sidebar'
         });
       } else {
@@ -233,6 +241,14 @@ export default function Sidebar() {
                     {formatCHF(startBalance)}
                   </p>
                   <p className="text-xs text-gray-500">Aktueller Kontostand</p>
+                  {lastUpdated && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Letzte Aktualisierung: {' '}
+                      <span title={format(new Date(lastUpdated), 'dd.MM.yyyy HH:mm', { locale: de })}>
+                        vor {formatDistanceToNow(new Date(lastUpdated), { locale: de })}
+                      </span>
+                    </p>
+                  )}
                 </>
               )}
             </div>
