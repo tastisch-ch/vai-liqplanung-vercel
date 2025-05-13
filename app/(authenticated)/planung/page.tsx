@@ -11,8 +11,8 @@ import { EnhancedTransaction, TransactionCategory } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths, addQuarters, addYears } from "date-fns";
 import { de } from "date-fns/locale";
-import LiquidityChart from "@/components/chart/LiquidityChart";
-import PlanungSummary from "@/components/summary/PlanungSummary";
+import LiquidityChart from "@/app/components/chart/LiquidityChart";
+import PlanungSummary from "@/app/components/summary/PlanungSummary";
 
 export default function Planung() {
   const { authState } = useAuth();
