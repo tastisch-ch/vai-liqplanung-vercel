@@ -11,32 +11,30 @@ import { getSignedAmount } from '@/lib/currency/format';
 
 /**
  * Load all transactions/buchungen from the database
- * @param userId Optional user ID to filter transactions
+ * All users can see all transactions
  */
 export async function loadBuchungen(userId?: string): Promise<Buchung[]> {
   try {
-  let query = supabase.from('buchungen').select('*');
-  
-  // Filter by user if specified
-  if (userId) {
-    query = query.eq('user_id', userId);
-  }
-  
-  const { data, error } = await query.order('date', { ascending: true });
-  
-  if (error) {
-        console.error('Error loading transactions:', error.message, error.details);
-        if (error.code === '42P01') {
-          throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
-        }
-        throw new Error(`Failed to load transactions: ${error.message}`);
-  }
-  
+    let query = supabase.from('buchungen').select('*');
+    
+    // No longer filtering by user_id
+    // All users see all transactions
+    
+    const { data, error } = await query.order('date', { ascending: true });
+    
+    if (error) {
+      console.error('Error loading transactions:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
+      }
+      throw new Error(`Failed to load transactions: ${error.message}`);
+    }
+    
     // Convert dates and shift past due dates for Incoming transactions
     return (data || []).map(item => {
       const transaction = {
-    ...item,
-    date: new Date(item.date),
+        ...item,
+        date: new Date(item.date),
       } as Buchung;
       
       // Apply the dynamic date shifting for past due dates
@@ -100,27 +98,28 @@ export async function addBuchung(
   kategorie?: string
 ): Promise<Buchung> {
   try {
-  const now = new Date().toISOString();
-  const newBuchung = {
-    id: uuidv4(),
-    date: dateToIsoString(date) as string,
-    details,
-    amount,
-    direction,
-    modified: false,
-    kategorie: kategorie || 'Standard',
-    user_id: userId,
-    created_at: now,
-    updated_at: now
-  };
-  
-  const { data, error } = await supabase
-    .from('buchungen')
-    .insert(newBuchung)
-    .select()
-    .single();
-  
-  if (error) {
+    const now = new Date().toISOString();
+    const newBuchung = {
+      id: uuidv4(),
+      date: dateToIsoString(date) as string,
+      details,
+      amount,
+      direction,
+      modified: false,
+      kategorie: kategorie || 'Standard',
+      // Still store the creator's user_id for reference, but won't filter by it
+      user_id: userId,
+      created_at: now,
+      updated_at: now
+    };
+    
+    const { data, error } = await supabase
+      .from('buchungen')
+      .insert(newBuchung)
+      .select()
+      .single();
+    
+    if (error) {
       console.error('Error adding transaction:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'buchungen' not found. Please check your database setup.`);
@@ -134,12 +133,12 @@ export async function addBuchung(
     
     if (!data) {
       throw new Error('No data returned after adding transaction');
-  }
-  
-  return {
-    ...data,
-    date: new Date(data.date),
-  } as Buchung;
+    }
+    
+    return {
+      ...data,
+      date: new Date(data.date),
+    } as Buchung;
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add transaction')) {
       throw error;
@@ -158,23 +157,29 @@ export async function updateBuchungById(
   userId: string
 ): Promise<Buchung> {
   try {
-  // Ensure the date is formatted correctly if provided
-  const formattedUpdates = {
-    ...updates,
-    date: updates.date ? dateToIsoString(updates.date) : undefined,
-    modified: true,
-    updated_at: new Date().toISOString(),
-    user_id: userId
-  };
-  
-  const { data, error } = await supabase
-    .from('buchungen')
-    .update(formattedUpdates)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) {
+    // Ensure the date is formatted correctly if provided
+    const formattedUpdates = {
+      ...updates,
+      date: updates.date ? dateToIsoString(updates.date) : undefined,
+      modified: true,
+      updated_at: new Date().toISOString(),
+      // Keep the original user_id, don't override it
+      // user_id: userId
+    };
+    
+    // Remove user_id from updates to preserve the original creator
+    if ('user_id' in formattedUpdates) {
+      delete formattedUpdates.user_id;
+    }
+    
+    const { data, error } = await supabase
+      .from('buchungen')
+      .update(formattedUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
       console.error('Error updating transaction:', error.message, error.details);
       if (error.code === '42P01') {
         throw new Error(`Database table 'buchungen' not found`);
@@ -188,12 +193,12 @@ export async function updateBuchungById(
     
     if (!data) {
       throw new Error(`Transaction with ID ${id} not found`);
-  }
-  
-  return {
-    ...data,
-    date: new Date(data.date),
-  } as Buchung;
+    }
+    
+    return {
+      ...data,
+      date: new Date(data.date),
+    } as Buchung;
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update transaction') || error.message.includes('not found'))) {
       throw error;
