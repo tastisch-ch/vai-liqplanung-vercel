@@ -92,8 +92,8 @@ export default function BuchungenClient({ initialTransactions }: Props) {
     return direction === 'Incoming' ? `+${formatted}` : `-${formatted}`;
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateString: string | Date): string => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     return format(date, 'dd. MMMM yyyy', { locale: de });
   };
   
