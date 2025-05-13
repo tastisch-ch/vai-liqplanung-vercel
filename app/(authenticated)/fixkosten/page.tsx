@@ -147,7 +147,7 @@ export default function Fixkosten() {
       return;
     }
     
-    if (newFixkosten.betrag <= 0) {
+    if (newFixkosten.betrag === undefined || newFixkosten.betrag <= 0) {
       setError('Bitte geben Sie einen gültigen Betrag ein.');
       return;
     }
@@ -159,11 +159,11 @@ export default function Fixkosten() {
       showNotification('Speichere Fixkosten in Supabase...', 'loading');
       const result = await addFixkosten(
         newFixkosten.name ? newFixkosten.name.trim() : '',
-        newFixkosten.betrag,
-        newFixkosten.rhythmus,
-        newFixkosten.start,
+        newFixkosten.betrag !== undefined ? newFixkosten.betrag : 0,
+        newFixkosten.rhythmus || 'monatlich',
+        newFixkosten.start || new Date(),
         newFixkosten.enddatum,
-        newFixkosten.kategorie,
+        newFixkosten.kategorie || 'Allgemein',
         user.id
       );
       
@@ -489,7 +489,7 @@ export default function Fixkosten() {
                 type="number"
                 min="0"
                 step="0.01"
-                value={newFixkosten.betrag}
+                value={newFixkosten.betrag !== undefined ? newFixkosten.betrag : 0}
                 onChange={(e) => setNewFixkosten({...newFixkosten, betrag: parseFloat(e.target.value)})}
                 disabled={isReadOnly || loading}
                 required
@@ -503,7 +503,7 @@ export default function Fixkosten() {
               </label>
               <select
                 id="rhythmus"
-                value={newFixkosten.rhythmus}
+                value={newFixkosten.rhythmus || 'monatlich'}
                 onChange={(e) => setNewFixkosten({
                   ...newFixkosten, 
                   rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
@@ -574,7 +574,7 @@ export default function Fixkosten() {
               <input
                 id="start_date"
                 type="date"
-                value={newFixkosten.start.toISOString().split('T')[0]}
+                value={(newFixkosten.start || new Date()).toISOString().split('T')[0]}
                 onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
                 disabled={isReadOnly || loading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
