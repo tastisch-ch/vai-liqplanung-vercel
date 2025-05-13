@@ -162,9 +162,9 @@ export default function Fixkosten() {
         newFixkosten.betrag !== undefined ? newFixkosten.betrag : 0,
         newFixkosten.rhythmus || 'monatlich',
         newFixkosten.start || new Date(),
-        newFixkosten.enddatum,
-        newFixkosten.kategorie || 'Allgemein',
-        user.id
+        newFixkosten.enddatum === undefined ? null : newFixkosten.enddatum,
+        user.id,
+        newFixkosten.kategorie || 'Allgemein'
       );
       
       setFixkosten([...fixkosten, result]);
