@@ -254,7 +254,20 @@ export function enhanceTransactions(transactions: Buchung[], startBalance: numbe
     // Then apply weekend/month-end adjustments to all transactions
     // Only apply if not already adjusted (check if it has a shifted flag)
     if (!transaction.shifted) {
-      const adjustedDate = adjustPaymentDate(new Date(transaction.date));
+      // Check if this is an end-of-month date (day 30+ or last day of month)
+      const originalDate = new Date(transaction.date);
+      const originalDay = originalDate.getDate();
+      const lastDayOfMonth = new Date(
+        originalDate.getFullYear(), 
+        originalDate.getMonth() + 1, 
+        0
+      ).getDate();
+      
+      // Detect if this is an end-of-month date
+      const isMonthEnd = originalDay === lastDayOfMonth || originalDay >= 30;
+      
+      // Use adjustPaymentDate with proper isMonthEnd parameter
+      const adjustedDate = adjustPaymentDate(new Date(transaction.date), isMonthEnd);
       
       // Only create a new object if the date actually changed
       if (adjustedDate.getTime() !== transaction.date.getTime()) {

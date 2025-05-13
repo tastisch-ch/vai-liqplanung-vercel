@@ -33,11 +33,42 @@ This improvement ensures that:
 
 ### 2. Consistent Application
 
-This logic was applied to both services that handle recurring transactions:
+This logic was applied to all services that handle recurring transactions:
 - `fixkosten.ts` - For fixed recurring costs
 - `simulationen.ts` - For simulated future transactions
+- `buchungen.ts` - For transaction processing and display
 
-### 3. Use of adjustPaymentDate Function
+### 3. Fix for Missing June Transactions
+
+A critical bug was identified and fixed in the `enhanceTransactions` function in `buchungen.ts`. The function was not passing the `isMonthEnd` parameter to `adjustPaymentDate`, causing June 30 (and other month-end dates) to be treated inconsistently:
+
+**Old Code (Missing Transactions):**
+```javascript
+// Missing isMonthEnd detection
+const adjustedDate = adjustPaymentDate(new Date(transaction.date));
+```
+
+**Fixed Code:**
+```javascript
+// Check if this is an end-of-month date (day 30+ or last day of month)
+const originalDate = new Date(transaction.date);
+const originalDay = originalDate.getDate();
+const lastDayOfMonth = new Date(
+  originalDate.getFullYear(), 
+  originalDate.getMonth() + 1, 
+  0
+).getDate();
+
+// Detect if this is an end-of-month date
+const isMonthEnd = originalDay === lastDayOfMonth || originalDay >= 30;
+
+// Use adjustPaymentDate with proper isMonthEnd parameter
+const adjustedDate = adjustPaymentDate(new Date(transaction.date), isMonthEnd);
+```
+
+This ensures that June 30 is properly recognized as an end-of-month date and handled consistently with all other month-end dates.
+
+### 4. Use of adjustPaymentDate Function
 
 The updated logic is used with the `adjustPaymentDate` function, which has two key behaviors:
 - Moves weekend dates (Saturday/Sunday) to the previous Friday
@@ -76,11 +107,14 @@ These improvements ensure that:
 
 3. **Accurate Financial Planning**: The liquidity planning view accurately represents all expected transactions, providing a reliable financial forecast.
 
+4. **Fixed Missing Transactions**: June rent and other month-end transactions now correctly appear in all months, regardless of the month length.
+
 ## Files Modified
 
 - `lib/date-utils/format.ts` - Added `isMonthEnd` parameter to `adjustPaymentDate` function
 - `lib/services/fixkosten.ts` - Improved end-of-month detection logic
 - `lib/services/simulationen.ts` - Improved end-of-month detection logic
+- `lib/services/buchungen.ts` - Added proper end-of-month detection when enhancing transactions
 
 ## Usage Notes
 
