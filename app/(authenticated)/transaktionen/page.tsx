@@ -15,16 +15,17 @@ import { formatCHF } from "@/lib/currency";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
+import ExportButton from "@/components/export/ExportButton";
 
 export default function TransaktionenPage() {
   const { authState } = useAuth();
   const { user, isReadOnly } = authState;
   const { showNotification } = useNotification();
   
-  // Add logging to check isReadOnly status
-  useEffect(() => {
-    console.log("Auth state loaded:", { isReadOnly, isAuthenticated: !!user });
-  }, [isReadOnly, user]);
+  // Add logging to check isReadOnly status - not needed in production
+  // useEffect(() => {
+  //   console.log("Auth state loaded:", { isReadOnly, isAuthenticated: !!user });
+  // }, [isReadOnly, user]);
   
   // State for transactions
   const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
@@ -37,10 +38,9 @@ export default function TransaktionenPage() {
   const [editingTransaction, setEditingTransaction] = useState<Buchung | null>(null);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   
-  // Add logging to track form visibility state
-  useEffect(() => {
-    console.log("Form visibility changed:", { showTransactionForm });
-  }, [showTransactionForm]);
+  // State for modal editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTransactionModal, setEditingTransactionModal] = useState<Buchung | null>(null);
   
   // Form state
   const [transactionForm, setTransactionForm] = useState({
@@ -57,6 +57,8 @@ export default function TransaktionenPage() {
   
   // Fetch transactions
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchData() {
       if (!user?.id) return;
       
@@ -75,28 +77,40 @@ export default function TransaktionenPage() {
         
         // Enhance transactions with running balance
         const enhancedTx = enhanceTransactions(data, startBalance);
+        
+        if (isMounted) {
         setTransactions(enhancedTx);
         applyFilters(enhancedTx);
-        
-        showNotification(`${data.length} Transaktionen geladen`, 'success');
+          showNotification(`${data.length} Transaktionen geladen`, 'success');
+        }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
         setError('Fehler beim Laden der Transaktionen. Bitte versuchen Sie es später erneut.');
-        showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+          showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
         setTransactions([]);
         setFilteredTransactions([]);
+        }
       } finally {
+        if (isMounted) {
         setLoading(false);
+        }
       }
     }
     
     fetchData();
-  }, [user?.id, showNotification]);
+    
+    return () => {
+      isMounted = false;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // intentionally remove showNotification from dependencies
   
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, showModifiedOnly]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchText, showModifiedOnly]); // transactions is intentionally omitted to avoid infinite loops
   
   // Apply filters
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
@@ -131,7 +145,6 @@ export default function TransaktionenPage() {
   
   // Reset form
   const resetForm = () => {
-    console.log("Resetting form");
     setTransactionForm({
       date: format(new Date(), 'yyyy-MM-dd'),
       details: '',
@@ -146,7 +159,6 @@ export default function TransaktionenPage() {
   
   // Prepare form for editing
   const prepareEditTransaction = (transaction: Buchung) => {
-    console.log("Preparing to edit transaction:", transaction.id);
     setEditingTransaction(transaction);
     setTransactionForm({
       date: format(transaction.date, 'yyyy-MM-dd'),
@@ -157,27 +169,47 @@ export default function TransaktionenPage() {
     });
     // Make sure the form is visible
     if (!showTransactionForm) {
-      console.log("Showing transaction form for editing");
       setShowTransactionForm(true);
     }
   };
   
+  // Start modal editing
+  const startEditingModal = (transaction: Buchung) => {
+    setEditingId(transaction.id);
+    setEditingTransactionModal({...transaction});
+  };
+  
+  // Cancel modal editing
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditingTransactionModal(null);
+  };
+  
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isModalEditing = false) => {
     e.preventDefault();
-    console.log("Form submitted");
     
     if (!user?.id) {
-      console.error("No user ID available for submission");
       return;
     }
     
-    if (!transactionForm.details.trim()) {
+    // Get data from the appropriate source
+    const formData = isModalEditing && editingTransactionModal 
+      ? {
+          date: format(editingTransactionModal.date, 'yyyy-MM-dd'),
+          details: editingTransactionModal.details,
+          amount: editingTransactionModal.amount,
+          direction: editingTransactionModal.direction,
+          kategorie: editingTransactionModal.kategorie || 'Standard'
+        }
+      : transactionForm;
+    
+    if (!formData.details.trim()) {
       setError('Bitte geben Sie eine Beschreibung ein.');
       return;
     }
     
-    if (transactionForm.amount <= 0) {
+    if (formData.amount <= 0) {
       setError('Bitte geben Sie einen gültigen Betrag ein.');
       return;
     }
@@ -187,16 +219,18 @@ export default function TransaktionenPage() {
     
     try {
       showNotification('Speichere Transaktion in Supabase...', 'loading');
-      const date = new Date(transactionForm.date);
-      const details = transactionForm.details.trim();
-      const amount = transactionForm.amount;
-      const direction = transactionForm.direction as 'Incoming' | 'Outgoing';
-      const kategorie = transactionForm.kategorie;
+      const date = new Date(formData.date);
+      const details = formData.details.trim();
+      const amount = formData.amount;
+      const direction = formData.direction as 'Incoming' | 'Outgoing';
+      const kategorie = formData.kategorie;
       
-      if (editingTransaction) {
+      const transactionId = isModalEditing ? editingId : editingTransaction?.id;
+      
+      if (transactionId) {
         // Update existing transaction
         const result = await updateBuchungById(
-          editingTransaction.id,
+          transactionId,
           {
             date,
             details,
@@ -207,11 +241,9 @@ export default function TransaktionenPage() {
           user.id
         );
         
-        console.log("Transaction updated:", result);
-        
         // Update state
         const updatedTransactions = transactions.map(tx => 
-          tx.id === editingTransaction.id ? { ...result } as EnhancedTransaction : tx
+          tx.id === transactionId ? { ...result } as EnhancedTransaction : tx
         );
         const enhancedTx = enhanceTransactions(updatedTransactions as Buchung[]);
         setTransactions(enhancedTx);
@@ -230,8 +262,6 @@ export default function TransaktionenPage() {
           kategorie
         );
         
-        console.log("New transaction added:", result);
-        
         // Update state
         const newTransactions = [...transactions, result] as Buchung[];
         const enhancedTx = enhanceTransactions(newTransactions);
@@ -242,9 +272,13 @@ export default function TransaktionenPage() {
         showNotification('Transaktion erfolgreich in Supabase gespeichert', 'success');
       }
       
-      // Reset form and hide it
+      // Reset form and clean up based on editing mode
+      if (isModalEditing) {
+        cancelEditing();
+      } else {
       resetForm();
       setShowTransactionForm(false);
+      }
       
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -289,7 +323,6 @@ export default function TransaktionenPage() {
   // Specific function to toggle form visibility
   const toggleTransactionForm = () => {
     const newState = !showTransactionForm;
-    console.log("Toggling form visibility to:", newState);
     setShowTransactionForm(newState);
     
     // If showing the form, reset form values
@@ -302,15 +335,18 @@ export default function TransaktionenPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Transaktionen-Editor</h1>
-        <button
-          onClick={toggleTransactionForm}
-          disabled={isReadOnly || loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          type="button"
-          aria-label={showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
-        >
-          {showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
-        </button>
+        <div className="flex">
+          <button
+            onClick={toggleTransactionForm}
+            disabled={isReadOnly || loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            aria-label={showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
+          >
+            {showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
+          </button>
+          <ExportButton type="transactions" className="ml-3" />
+        </div>
       </div>
       
       {/* Read-only warning if applicable */}
@@ -375,7 +411,7 @@ export default function TransaktionenPage() {
             {editingTransaction ? 'Transaktion bearbeiten' : 'Neue Transaktion erstellen'}
           </h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -571,7 +607,7 @@ export default function TransaktionenPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => prepareEditTransaction(transaction)}
+                          onClick={() => startEditingModal(transaction)}
                           disabled={isReadOnly || loading}
                           className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -593,6 +629,135 @@ export default function TransaktionenPage() {
           </div>
         )}
       </div>
+      
+      {/* Edit form modal */}
+      {editingId && editingTransactionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Transaktion bearbeiten</h2>
+            
+            <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum
+                  </label>
+                  <input
+                    id="edit_date"
+                    type="date"
+                    value={format(editingTransactionModal.date, 'yyyy-MM-dd')}
+                    onChange={(e) => setEditingTransactionModal({
+                      ...editingTransactionModal, 
+                      date: new Date(e.target.value)
+                    })}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag (CHF)
+                  </label>
+                  <input
+                    id="edit_amount"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={editingTransactionModal.amount}
+                    onChange={(e) => setEditingTransactionModal({
+                      ...editingTransactionModal, 
+                      amount: parseFloat(e.target.value) || 0
+                    })}
+                    disabled={loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="edit_details" className="block text-sm font-medium text-gray-700 mb-1">
+                  Beschreibung
+                </label>
+                <input
+                  id="edit_details"
+                  type="text"
+                  value={editingTransactionModal.details}
+                  onChange={(e) => setEditingTransactionModal({
+                    ...editingTransactionModal, 
+                    details: e.target.value
+                  })}
+                  disabled={loading}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="edit_direction" className="block text-sm font-medium text-gray-700 mb-1">
+                    Richtung
+                  </label>
+                  <select
+                    id="edit_direction"
+                    value={editingTransactionModal.direction}
+                    onChange={(e) => setEditingTransactionModal({
+                      ...editingTransactionModal, 
+                      direction: e.target.value as 'Incoming' | 'Outgoing'
+                    })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Incoming">Einnahme</option>
+                    <option value="Outgoing">Ausgabe</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="edit_kategorie" className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie
+                  </label>
+                  <select
+                    id="edit_kategorie"
+                    value={editingTransactionModal.kategorie || 'Standard'}
+                    onChange={(e) => setEditingTransactionModal({
+                      ...editingTransactionModal, 
+                      kategorie: e.target.value
+                    })}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Standard">Standard</option>
+                    <option value="Fixkosten">Fixkosten</option>
+                    <option value="Lohn">Lohn</option>
+                    <option value="Simulation">Simulation</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Aktualisieren'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
