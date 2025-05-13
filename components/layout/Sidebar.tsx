@@ -60,6 +60,14 @@ export default function Sidebar() {
     { name: 'Admin Panel', path: '/admin', icon: '⚙️', description: 'Systemverwaltung' },
   ];
 
+  // Define the type for navigation links
+  type NavLink = {
+    name: string;
+    path: string;
+    icon: string;
+    description: string;
+  };
+
   // Kontostand functionality
   const [startBalance, setStartBalance] = useState(0);
   const [kontostandInput, setKontostandInput] = useState(formatCHF(0));
@@ -88,7 +96,7 @@ export default function Sidebar() {
     }
   };
 
-  const renderLinks = (links) => (
+  const renderLinks = (links: NavLink[]) => (
     <ul className="space-y-1">
       {links.map((link) => (
         <li key={link.path}>

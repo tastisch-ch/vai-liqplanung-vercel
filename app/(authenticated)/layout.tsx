@@ -9,12 +9,6 @@ import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/client-auth";
 import { NotificationProvider } from "@/components/ui/Notification";
 
-export async function generateMetadata() {
-  return {
-    title: 'VAI-Liq-Planung',
-  };
-}
-
 export default function AuthenticatedLayout({
   children,
 }: {
