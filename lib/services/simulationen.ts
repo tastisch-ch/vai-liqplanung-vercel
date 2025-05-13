@@ -6,7 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
 import { Simulation, Buchung } from '@/models/types';
-import { dateToIsoString, getNextOccurrence } from '@/lib/date-utils/format';
+import { dateToIsoString, getNextOccurrence, adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all simulations from the database
@@ -232,9 +232,12 @@ export function convertSimulationenToBuchungen(
     if (!simulation.recurring) {
       // If the simulation date is in our range, add it
       if (simulation.date >= startDate && simulation.date <= endDate) {
+        // Apply date adjustment for business days and month-end scenarios
+        const adjustedDate = adjustPaymentDate(new Date(simulation.date));
+        
         result.push({
           id: uuidv4(),
-          date: new Date(simulation.date),
+          date: adjustedDate,
           details: `${simulation.name}: ${simulation.details}`,
           amount: simulation.amount,
           direction: simulation.direction,
@@ -257,10 +260,13 @@ export function convertSimulationenToBuchungen(
           break;
         }
         
+        // Apply date adjustment for business days and month-end scenarios
+        const adjustedDate = adjustPaymentDate(new Date(currentDate));
+        
         // Create a transaction for this occurrence
         result.push({
           id: uuidv4(),
-          date: new Date(currentDate),
+          date: adjustedDate,
           details: `${simulation.name}: ${simulation.details} (wiederkehrend)`,
           amount: simulation.amount,
           direction: simulation.direction,
@@ -310,9 +316,11 @@ export function generateSimulationProjections(
     if (!simulation.recurring) {
       // If the simulation date is in our range, add it
       if (simulation.date >= startDate && simulation.date <= endDate) {
+        // For non-recurring, also apply date adjustment
+        const adjustedDate = adjustPaymentDate(new Date(simulation.date));
         projections.push({
           ...simulation,
-          date: new Date(simulation.date)
+          date: adjustedDate
         });
       }
       return;
@@ -329,10 +337,13 @@ export function generateSimulationProjections(
           break;
         }
         
+        // Apply date adjustment for business days and month-end scenarios
+        const adjustedDate = adjustPaymentDate(new Date(currentDate));
+        
         // Add this occurrence
         projections.push({
           ...simulation,
-          date: new Date(currentDate)
+          date: adjustedDate
         });
         
         // Map our interval to rhythmus format for getNextOccurrence

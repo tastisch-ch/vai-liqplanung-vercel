@@ -6,7 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
 import { Buchung, EnhancedTransaction, TransactionCategory } from '@/models/types';
-import { dateToIsoString } from '@/lib/date-utils/format';
+import { dateToIsoString, adjustPaymentDate } from '@/lib/date-utils/format';
 import { getSignedAmount } from '@/lib/currency/format';
 
 /**
@@ -243,18 +243,36 @@ export function enhanceTransactions(transactions: Buchung[], startBalance: numbe
   // Sort by date (oldest first)
   const sortedTransactions = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
   
-  // Apply date shifting for past due dates on Incoming transactions
-  const shiftedTransactions = sortedTransactions.map(tx => {
+  // Apply weekend and month-end date adjustments to all transactions
+  const adjustedTransactions = sortedTransactions.map(tx => {
+    // First apply date shifting for past due incoming transactions
+    let transaction = tx;
     if (tx.direction === 'Incoming') {
-      return shiftPastDueDateIfNeeded(tx);
+      transaction = shiftPastDueDateIfNeeded(tx);
     }
-    return tx;
+    
+    // Then apply weekend/month-end adjustments to all transactions
+    // Only apply if not already adjusted (check if it has a shifted flag)
+    if (!transaction.shifted) {
+      const adjustedDate = adjustPaymentDate(new Date(transaction.date));
+      
+      // Only create a new object if the date actually changed
+      if (adjustedDate.getTime() !== transaction.date.getTime()) {
+        return {
+          ...transaction,
+          date: adjustedDate,
+          // Don't set 'shifted' flag here as that's only for past-due shifting
+        };
+      }
+    }
+    
+    return transaction;
   });
   
   // Calculate running balance and create enhanced transactions
   let runningBalance = startBalance;
   
-  return shiftedTransactions.map(tx => {
+  return adjustedTransactions.map(tx => {
     // Update running balance based on transaction direction
     if (tx.direction === 'Incoming') {
       runningBalance += tx.amount;
