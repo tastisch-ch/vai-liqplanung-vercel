@@ -232,7 +232,10 @@ export function convertSimulationenToBuchungen(
     const originalDate = new Date(simulation.date);
     const originalDay = originalDate.getDate();
     const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
-    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    // More robust end-of-month detection:
+    // 1. If it's exactly the last day of the month, or
+    // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
+    const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
     
     // Handle non-recurring simulations
     if (!simulation.recurring) {
@@ -322,7 +325,10 @@ export function generateSimulationProjections(
     const originalDate = new Date(simulation.date);
     const originalDay = originalDate.getDate();
     const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
-    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    // More robust end-of-month detection:
+    // 1. If it's exactly the last day of the month, or
+    // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
+    const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
     
     // Handle non-recurring simulations
     if (!simulation.recurring) {
