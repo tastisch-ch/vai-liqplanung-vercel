@@ -142,7 +142,7 @@ export default function Fixkosten() {
     e.preventDefault();
     if (!user?.id) return;
     
-    if (!newFixkosten.name.trim()) {
+    if (!newFixkosten.name || !newFixkosten.name.trim()) {
       setError('Bitte geben Sie eine Bezeichnung ein.');
       return;
     }
@@ -158,7 +158,7 @@ export default function Fixkosten() {
     try {
       showNotification('Speichere Fixkosten in Supabase...', 'loading');
       const result = await addFixkosten(
-        newFixkosten.name.trim(),
+        newFixkosten.name ? newFixkosten.name.trim() : '',
         newFixkosten.betrag,
         newFixkosten.rhythmus,
         newFixkosten.start,
@@ -381,7 +381,7 @@ export default function Fixkosten() {
   
   // Add handleAddCategory function
   const handleAddCategory = () => {
-    if (!newCategory.trim()) return;
+    if (!newCategory || !newCategory.trim()) return;
     
     // Verify the category doesn't already exist
     if (categories.includes(newCategory.trim())) {
