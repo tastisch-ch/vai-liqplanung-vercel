@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
+import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -72,18 +73,47 @@ export default function Sidebar() {
   const [startBalance, setStartBalance] = useState(0);
   const [kontostandInput, setKontostandInput] = useState(formatCHF(0));
   const [kontostandError, setKontostandError] = useState(false);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
 
-  const updateKontostand = () => {
+  // Load user settings including kontostand
+  useEffect(() => {
+    async function loadSettings() {
+      if (!user?.id) return;
+      
+      try {
+        setIsLoadingBalance(true);
+        const settings = await getUserSettings(user.id);
+        setStartBalance(settings.start_balance);
+        setKontostandInput(formatCHF(settings.start_balance));
+      } catch (error) {
+        logError(error, 'Error loading user settings');
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    }
+    
+    if (isAuthenticated && user?.id) {
+      loadSettings();
+    }
+  }, [isAuthenticated, user?.id]);
+
+  const updateKontostand = async () => {
+    if (!user?.id) return;
+    
     try {
       const parsedValue = parseCHF(kontostandInput);
       if (parsedValue !== null) {
-        setStartBalance(parsedValue);
-        setKontostandInput(formatCHF(parsedValue));
+        setIsLoadingBalance(true);
+        // Save to database
+        const updatedBalance = await updateStartBalance(user.id, parsedValue);
+        
+        setStartBalance(updatedBalance);
+        setKontostandInput(formatCHF(updatedBalance));
         setKontostandError(false);
         setIsBalanceEditing(false);
-        // In a real app, save to database or context here
+        
         logger.info('Kontostand updated', { 
-          value: parsedValue, 
+          value: updatedBalance, 
           component: 'Sidebar'
         });
       } else {
@@ -93,6 +123,8 @@ export default function Sidebar() {
       setKontostandError(true);
       setKontostandInput(formatCHF(startBalance));
       logError(error, 'Error updating kontostand');
+    } finally {
+      setIsLoadingBalance(false);
     }
   };
 
@@ -147,7 +179,7 @@ export default function Sidebar() {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-gray-700">💰 Kontostand</h3>
-            {!isBalanceEditing && (
+            {!isBalanceEditing && !isLoadingBalance && (
               <button 
                 onClick={() => setIsBalanceEditing(true)}
                 className="text-xs text-blue-600 hover:text-blue-800"
@@ -170,7 +202,10 @@ export default function Sidebar() {
               />
               <div className="flex justify-end mt-2 space-x-2">
                 <button
-                  onClick={() => setIsBalanceEditing(false)}
+                  onClick={() => {
+                    setIsBalanceEditing(false);
+                    setKontostandInput(formatCHF(startBalance));
+                  }}
                   className="px-2 py-1 text-xs text-gray-700 border border-gray-300 rounded"
                 >
                   Cancel
@@ -191,10 +226,16 @@ export default function Sidebar() {
             </div>
           ) : (
             <div className="bg-gray-50 rounded p-3">
-              <p className="text-xl font-bold text-gray-900">
-                {formatCHF(startBalance)}
-              </p>
-              <p className="text-xs text-gray-500">Aktueller Kontostand</p>
+              {isLoadingBalance ? (
+                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
+              ) : (
+                <>
+                  <p className="text-xl font-bold text-gray-900">
+                    {formatCHF(startBalance)}
+                  </p>
+                  <p className="text-xs text-gray-500">Aktueller Kontostand</p>
+                </>
+              )}
             </div>
           )}
         </div>

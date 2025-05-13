@@ -44,6 +44,12 @@ export default function Planung() {
   const [maxAmount, setMaxAmount] = useState(25000);
   const [sortOption, setSortOption] = useState('date-asc');
   
+  // State for export dialog
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState('csv');
+  const [exportTitle, setExportTitle] = useState('Liquiditätsplanung');
+  const [isExporting, setIsExporting] = useState(false);
+  
   // Fetch all data
   useEffect(() => {
     async function fetchData() {
@@ -170,29 +176,109 @@ export default function Planung() {
     setEndDate(end);
   };
   
+  // Handle export action
+  const handleExport = async () => {
+    if (isExporting) return;
+    
+    try {
+      setIsExporting(true);
+      
+      const response = await fetch('/api/export/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          includeFixkosten: showFixkosten,
+          includeSimulationen: showSimulationen,
+          includeLoehne: showLoehne,
+          format: exportFormat,
+          title: exportTitle,
+          subtitle: `Transaktionen ${format(startDate, 'dd.MM.yyyy', { locale: de })} - ${format(endDate, 'dd.MM.yyyy', { locale: de })}`
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      // Get the response data
+      const contentType = response.headers.get('Content-Type');
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      
+      // Set filename based on format
+      let filename;
+      switch (exportFormat) {
+        case 'csv':
+          filename = `vai-liquiditätsplanung-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+          break;
+        case 'pdf':
+        case 'management-summary':
+          filename = `vai-liquiditätsplanung-${format(new Date(), 'yyyy-MM-dd')}.html`;
+          break;
+        default:
+          filename = `vai-export-${format(new Date(), 'yyyy-MM-dd')}`;
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Fehler beim Export. Bitte versuchen Sie es später erneut.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Liquiditätsplanung</h1>
+        <h1 className="text-2xl font-bold text-vaios-primary">Liquiditätsplanung</h1>
+        
+        {/* Export button */}
+        <button
+          onClick={() => setShowExportModal(true)}
+          className="btn-vaios-primary flex items-center"
+          disabled={isLoading || filteredTransactions.length === 0}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Exportieren
+        </button>
       </div>
       
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex border-b">
           <button 
-            className={`px-4 py-3 font-medium ${activeTab === 'monthly' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+            className={`px-4 py-3 font-medium ${activeTab === 'monthly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
             onClick={() => handleTabChange('monthly')}
           >
             Monatsansicht
           </button>
           <button 
-            className={`px-4 py-3 font-medium ${activeTab === 'quarterly' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+            className={`px-4 py-3 font-medium ${activeTab === 'quarterly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
             onClick={() => handleTabChange('quarterly')}
           >
             Quartalsansicht
           </button>
           <button 
-            className={`px-4 py-3 font-medium ${activeTab === 'yearly' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+            className={`px-4 py-3 font-medium ${activeTab === 'yearly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
             onClick={() => handleTabChange('yearly')}
           >
             Jahresansicht
@@ -251,7 +337,7 @@ export default function Planung() {
                 type="checkbox" 
                 checked={showFixkosten} 
                 onChange={(e) => setShowFixkosten(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Fixkosten 📌</span>
             </label>
@@ -260,7 +346,7 @@ export default function Planung() {
                 type="checkbox" 
                 checked={showSimulationen} 
                 onChange={(e) => setShowSimulationen(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Simulationen 🔮</span>
             </label>
@@ -269,7 +355,7 @@ export default function Planung() {
                 type="checkbox" 
                 checked={showLoehne} 
                 onChange={(e) => setShowLoehne(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Lohnauszahlungen 💰</span>
             </label>

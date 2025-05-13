@@ -19,6 +19,7 @@ export interface Fixkosten {
   rhythmus: 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich';
   start: Date;
   enddatum?: Date | null;
+  kategorie?: string;
   user_id: string;
   created_at: string;
   updated_at?: string;

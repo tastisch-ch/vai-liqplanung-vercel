@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Vaios brand colors */
+  --color-primary: #02403D;    /* Main brand color */
+  --color-secondary: #000000;  /* Black */
+  --color-background: #ffffff; /* White background */
+  --color-accent: #D1F812;     /* Accent lime green */
+  --color-teal: #ADC7C8;       /* Light teal */
+  --color-gray: #DEE2E3;       /* Light gray */
 }
 
 @theme inline {
@@ -23,4 +31,67 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Utility classes for Vaios brand colors */
+.bg-vaios-primary {
+  background-color: var(--color-primary);
+}
+
+.text-vaios-primary {
+  color: var(--color-primary);
+}
+
+.bg-vaios-accent {
+  background-color: var(--color-accent);
+}
+
+.text-vaios-accent {
+  color: var(--color-accent);
+}
+
+.bg-vaios-teal {
+  background-color: var(--color-teal);
+}
+
+.text-vaios-teal {
+  color: var(--color-teal);
+}
+
+.bg-vaios-gray {
+  background-color: var(--color-gray);
+}
+
+.text-vaios-gray {
+  color: var(--color-gray);
+}
+
+/* Button styles with brand colors */
+.btn-vaios-primary {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.btn-vaios-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-vaios-accent {
+  background-color: var(--color-accent);
+  color: var(--color-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.btn-vaios-accent:hover {
+  opacity: 0.9;
+}
+
+/* Border utilities */
+.border-vaios-primary {
+  border-color: var(--color-primary);
 }

@@ -1,15 +1,15 @@
 /**
  * Service for handling user settings (like starting balance and design preferences)
- * TEMPORARY: All functions return default values without accessing the database
  */
 
+import { createClient } from '@/lib/supabase/client';
 import { DesignSettings } from '@/models/types';
 
 // Default values for settings
 const DEFAULT_SETTINGS = {
   start_balance: 0,
-  primary_color: '#4A90E2',
-  secondary_color: '#111',
+  primary_color: '#02403D', // Updated to vaios brand color
+  secondary_color: '#000',
   background_color: '#FFFFFF'
 };
 
@@ -23,8 +23,10 @@ interface UserSettings {
   updated_at: string | null;
 }
 
+const supabase = createClient();
+
 /**
- * Get default user settings without saving to DB
+ * Get default user settings
  */
 function getDefaultUserSettings(userId: string): UserSettings {
   const now = new Date().toISOString();
@@ -37,35 +39,112 @@ function getDefaultUserSettings(userId: string): UserSettings {
 }
 
 /**
- * Load user settings - TEMPORARY: returns default settings without DB access
+ * Load user settings from the database
  * @param userId User ID to load settings for
  */
 export async function loadUserSettings(userId: string): Promise<UserSettings> {
-  return getDefaultUserSettings(userId);
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error loading user settings:', error);
+      // If no settings exist yet, create default ones
+      return await createDefaultSettings(userId);
+    }
+    
+    return data as UserSettings;
+  } catch (err) {
+    console.error('Exception in loadUserSettings:', err);
+    return getDefaultUserSettings(userId);
+  }
 }
 
 /**
- * Create default settings for a new user - TEMPORARY: returns default without DB access
+ * Create default settings for a new user
  */
 async function createDefaultSettings(userId: string): Promise<UserSettings> {
-  return getDefaultUserSettings(userId);
+  const defaultSettings = getDefaultUserSettings(userId);
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .insert(defaultSettings)
+      .select()
+      .single();
+      
+    if (error) {
+      console.error('Error creating default settings:', error);
+      return defaultSettings;
+    }
+    
+    return data as UserSettings;
+  } catch (err) {
+    console.error('Exception in createDefaultSettings:', err);
+    return defaultSettings;
+  }
 }
 
 /**
- * Update the starting balance for a user - TEMPORARY: returns provided balance without DB access
+ * Update the starting balance for a user
  */
 export async function updateStartBalance(userId: string, balance: number): Promise<number> {
-  return balance;
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .update({ 
+        start_balance: balance,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .select('start_balance')
+      .single();
+      
+    if (error) {
+      console.error('Error updating start balance:', error);
+      return balance;
+    }
+    
+    return data.start_balance;
+  } catch (err) {
+    console.error('Exception in updateStartBalance:', err);
+    return balance;
+  }
 }
 
 /**
- * Update design settings for a user - TEMPORARY: returns provided settings without DB access
+ * Update design settings for a user
  */
 export async function updateDesignSettings(
   userId: string, 
   settings: DesignSettings
 ): Promise<DesignSettings> {
-  return settings;
+  try {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .update({ 
+        primary_color: settings.primary_color,
+        secondary_color: settings.secondary_color,
+        background_color: settings.background_color,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .select('primary_color, secondary_color, background_color')
+      .single();
+      
+    if (error) {
+      console.error('Error updating design settings:', error);
+      return settings;
+    }
+    
+    return data as DesignSettings;
+  } catch (err) {
+    console.error('Exception in updateDesignSettings:', err);
+    return settings;
+  }
 }
 
 /**
@@ -81,7 +160,6 @@ export function getDefaultDesignSettings(): DesignSettings {
 
 /**
  * Apply CSS custom properties for design settings
- * This is equivalent to the Python app's apply_custom_styles function
  */
 export function getDesignStylesCSS(settings: DesignSettings): string {
   return `
@@ -111,6 +189,9 @@ export function getDesignStylesCSS(settings: DesignSettings): string {
       --primary-color: ${settings.primary_color};
       --secondary-color: ${settings.secondary_color};
       --background-color: ${settings.background_color};
+      --accent-color: #D1F812;
+      --light-teal: #ADC7C8;
+      --lighter-gray: #DEE2E3;
     }
     
     body {
@@ -127,6 +208,14 @@ export function getDesignStylesCSS(settings: DesignSettings): string {
     
     .secondary-text {
       color: var(--secondary-color) !important;
+    }
+    
+    .accent-bg {
+      background-color: var(--accent-color) !important;
+    }
+    
+    .accent-text {
+      color: var(--accent-color) !important;
     }
     
     /* Button Styling */

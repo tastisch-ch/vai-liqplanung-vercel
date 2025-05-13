@@ -351,4 +351,36 @@ export function generateSimulationProjections(
   
   // Sort by date
   return projections.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+/**
+ * Delete all simulations for a user
+ * 
+ * @param userId User ID to delete simulations for
+ * @returns Number of deleted simulations
+ */
+export async function deleteAllSimulationsByUserId(userId: string): Promise<number> {
+  try {
+    const { data, error, count } = await supabase
+      .from('simulationen')
+      .delete()
+      .eq('user_id', userId)
+      .select('id');
+      
+    if (error) {
+      console.error('Error deleting all simulations:', error.message, error.details);
+      if (error.code === '42P01') {
+        throw new Error(`Database table 'simulationen' not found`);
+      } 
+      throw new Error(`Failed to delete all simulations: ${error.message}`);
+    }
+    
+    return count || 0;
+  } catch (error: any) {
+    if (error.message && error.message.includes('Failed to delete all simulations')) {
+      throw error;
+    }
+    console.error('Unexpected error deleting all simulations:', error);
+    throw new Error(`Failed to delete all simulations: ${error.message || 'Unknown error'}`);
+  }
 } 

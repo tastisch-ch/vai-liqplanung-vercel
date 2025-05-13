@@ -48,7 +48,8 @@ export async function addFixkosten(
   rhythmus: 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich',
   start: Date,
   enddatum: Date | null,
-  userId: string
+  userId: string,
+  kategorie: string = 'Allgemein'
 ): Promise<Fixkosten> {
   try {
   const now = new Date().toISOString();
@@ -60,6 +61,7 @@ export async function addFixkosten(
     start: dateToIsoString(start) as string,
     enddatum: dateToIsoString(enddatum),
     user_id: userId,
+    kategorie,
     created_at: now,
     updated_at: now
   };
@@ -251,27 +253,27 @@ export function convertFixkostenToBuchungen(
         break;
       }
       
-      // Create a transaction for this occurrence
-      const buchung: Buchung = {
-        id: uuidv4(),
+      // Create transaction
+      result.push({
+        id: `fixkosten_${fixkosten.id}_${currentDate.toISOString()}`,
         date: new Date(currentDate),
         details: fixkosten.name,
         amount: fixkosten.betrag,
         direction: 'Outgoing',
-        kategorie: 'Fixkosten',
         user_id: fixkosten.user_id,
-        created_at: new Date().toISOString()
-      };
+        kategorie: fixkosten.kategorie || 'Fixkosten',
+        created_at: fixkosten.created_at
+      });
       
-      result.push(buchung);
-      
-      // Get the next occurrence date
+      // Get next occurrence based on rhythm
       currentDate = getNextOccurrence(currentDate, fixkosten.rhythmus);
     }
   });
   
-  // Sort by date
-  return result.sort((a, b) => a.date.getTime() - b.date.getTime());
+  // Sort transactions by date
+  result.sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+  return result;
 }
 
 /**
@@ -329,4 +331,48 @@ export function filterActiveFixkosten(fixkosten: Fixkosten[], onlyActive: boolea
 export function isFixkostenActive(fixkosten: Fixkosten): boolean {
   const today = new Date();
   return !fixkosten.enddatum || fixkosten.enddatum > today;
+}
+
+/**
+ * Get all available fixkosten categories
+ */
+export async function getFixkostenCategories(userId: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('fixkosten')
+      .select('kategorie')
+      .eq('user_id', userId)
+      .order('kategorie');
+      
+    if (error) {
+      console.error('Error loading fixkosten categories:', error);
+      return ['Allgemein'];
+    }
+    
+    // Extract unique categories
+    const categories = data
+      .map(item => item.kategorie || 'Allgemein')
+      .filter((value, index, self) => self.indexOf(value) === index);
+    
+    // Always include "Allgemein" if it doesn't exist
+    if (!categories.includes('Allgemein')) {
+      categories.push('Allgemein');
+    }
+    
+    return categories.sort();
+  } catch (error) {
+    console.error('Unexpected error loading fixkosten categories:', error);
+    return ['Allgemein'];
+  }
+}
+
+/**
+ * Filter fixkosten by category
+ */
+export function filterFixkostenByCategory(fixkosten: Fixkosten[], category?: string): Fixkosten[] {
+  if (!category || category === 'Alle') {
+    return fixkosten;
+  }
+  
+  return fixkosten.filter(item => item.kategorie === category);
 } 

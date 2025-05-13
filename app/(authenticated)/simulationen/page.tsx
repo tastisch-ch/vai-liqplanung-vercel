@@ -8,7 +8,8 @@ import {
   addSimulation, 
   updateSimulationById, 
   deleteSimulationById,
-  generateSimulationProjections 
+  generateSimulationProjections,
+  deleteAllSimulationsByUserId
 } from "@/lib/services/simulationen";
 import { formatCHF } from "@/lib/currency";
 import { format, isBefore, isAfter, addMonths } from "date-fns";
@@ -66,6 +67,10 @@ export default function Simulationen() {
     interval: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
     end_date: ''
   });
+  
+  // State for delete all confirmation modal
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   
   // Fetch simulations data
   useEffect(() => {
@@ -400,9 +405,69 @@ export default function Simulationen() {
     return true;
   });
 
+  // Handle delete all simulations
+  const handleDeleteAll = async () => {
+    if (!user?.id || isReadOnly || isDeletingAll) return;
+    
+    try {
+      setIsDeletingAll(true);
+      showNotification('Lösche alle Simulationen...', 'loading');
+      
+      const count = await deleteAllSimulationsByUserId(user.id);
+      
+      // Refresh the simulations list
+      const updatedSimulations = await loadSimulationen(user.id);
+      setSimulationen(updatedSimulations);
+      
+      // Update projections and filtered list
+      const projected = generateSimulationProjections(updatedSimulations, projectionStart, projectionEnd);
+      setProjections(projected);
+      applyFilters(updatedSimulations);
+      
+      // Show success message
+      showNotification(`${count} Simulationen wurden gelöscht`, 'success');
+      setShowDeleteAllModal(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Finanzielle Simulationen</h1>
+      <div className="flex flex-wrap justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-vaios-primary">Simulationen</h1>
+        
+        <div className="flex space-x-2 mt-2 sm:mt-0">
+          {!isReadOnly && (
+            <>
+              <button
+                onClick={() => setShowSimulationForm(true)}
+                className="btn-vaios-primary flex items-center"
+                disabled={loading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Neue Simulation
+              </button>
+              
+              <button
+                onClick={() => setShowDeleteAllModal(true)}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
+                disabled={loading || simulationen.length === 0}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Alle löschen
+              </button>
+            </>
+          )}
+        </div>
+      </div>
       
       {/* Read-only warning if applicable */}
       {isReadOnly && (
@@ -924,6 +989,44 @@ export default function Simulationen() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAllModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4 text-red-600">Alle Simulationen löschen</h2>
+            
+            <p className="mb-4">
+              Möchten Sie wirklich <strong>alle {simulationen.length} Simulationen</strong> löschen? 
+              Dieser Vorgang kann nicht rückgängig gemacht werden.
+            </p>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                disabled={isDeletingAll}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 flex items-center"
+                disabled={isDeletingAll}
+              >
+                {isDeletingAll ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-opacity-50 border-t-white rounded-full"></div>
+                    Löschen...
+                  </>
+                ) : (
+                  <>Alle löschen</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

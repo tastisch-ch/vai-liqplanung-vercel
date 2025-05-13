@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
-import { transactionsToCsv } from '@/lib/export/csv';
-import { getMimeType } from '@/lib/export/utils';
-import { Buchung } from '@/models/types';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
+import { loadBuchungen, enhanceTransactions } from '@/lib/services/buchungen';
+import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
+import { loadSimulationen, convertSimulationenToBuchungen } from '@/lib/services/simulationen';
+import { convertLohneToBuchungen, loadMitarbeiter } from '@/lib/services/mitarbeiter';
+import { getUserSettings } from '@/lib/services/user-settings';
+import { transactionsToCSV, generatePDFContent, generateManagementSummary } from '@/lib/export';
 
 /**
  * Export transactions to CSV
@@ -57,12 +60,7 @@ export async function GET(request: NextRequest) {
     console.log('Direct access token exists:', !!directAccessToken);
     
     // Create direct Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    });
+    const supabase = createClient(request.cookies);
     
     // Try to extract user ID directly from JWT token
     let userId: string | null = null;
@@ -228,4 +226,131 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  // Get the current user from supabase auth
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    // Parse request body
+    const body = await request.json();
+    const {
+      startDate,
+      endDate,
+      includeFixkosten = true,
+      includeSimulationen = true,
+      includeLoehne = true,
+      format = 'csv', // csv, pdf, management-summary
+      title,
+      subtitle
+    } = body;
+    
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return NextResponse.json(
+        { error: 'Invalid date format' },
+        { status: 400 }
+      );
+    }
+    
+    // Load user settings for starting balance
+    const settings = await getUserSettings(user.id);
+    const startBalance = settings.start_balance;
+    
+    // Load data
+    const [buchungen, fixkosten, simulationen, mitarbeiter] = await Promise.all([
+      loadBuchungen(user.id),
+      includeFixkosten ? loadFixkosten(user.id) : Promise.resolve([]),
+      includeSimulationen ? loadSimulationen(user.id) : Promise.resolve([]),
+      includeLoehne ? loadMitarbeiter(user.id) : Promise.resolve([])
+    ]);
+    
+    // Build transactions list
+    let allTransactions = [...buchungen];
+    
+    if (includeFixkosten) {
+      const fixkostenBuchungen = convertFixkostenToBuchungen(start, end, fixkosten);
+      allTransactions = [...allTransactions, ...fixkostenBuchungen];
+    }
+    
+    if (includeSimulationen) {
+      const simulationBuchungen = convertSimulationenToBuchungen(start, end, simulationen);
+      allTransactions = [...allTransactions, ...simulationBuchungen];
+    }
+    
+    if (includeLoehne) {
+      const lohnBuchungen = convertLohneToBuchungen(start, end, mitarbeiter);
+      allTransactions = [...allTransactions, ...lohnBuchungen];
+    }
+    
+    // Enhance transactions with running balance and sort by date
+    const enhancedTx = enhanceTransactions(allTransactions, startBalance)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    // Create export options
+    const exportOptions = {
+      includeHeader: true,
+      title: title || 'Liquiditätsplanung',
+      subtitle: subtitle || '',
+      dateRange: {
+        start,
+        end
+      }
+    };
+    
+    // Generate export content based on format
+    let content: string;
+    let filename: string;
+    let contentType: string;
+    
+    switch (format) {
+      case 'csv':
+        content = transactionsToCSV(enhancedTx, exportOptions);
+        filename = 'transactions-export.csv';
+        contentType = 'text/csv';
+        break;
+        
+      case 'pdf':
+        content = generatePDFContent(enhancedTx, exportOptions);
+        filename = 'transactions-export.html'; // Client will convert to PDF
+        contentType = 'text/html';
+        break;
+        
+      case 'management-summary':
+        content = generateManagementSummary(enhancedTx, exportOptions);
+        filename = 'management-summary.html'; // Client will convert to PDF
+        contentType = 'text/html';
+        break;
+        
+      default:
+        return NextResponse.json(
+          { error: 'Invalid export format' },
+          { status: 400 }
+        );
+    }
+    
+    // Return the export content
+    return new NextResponse(content, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`
+      }
+    });
+  } catch (error) {
+    console.error('Export error:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate export' },
 } 

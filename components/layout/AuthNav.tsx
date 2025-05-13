@@ -93,7 +93,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
           {onSidebarToggle && (
             <button
               onClick={onSidebarToggle}
-              className="mr-4 md:hidden text-gray-700 hover:text-blue-500 focus:outline-none"
+              className="mr-4 md:hidden text-gray-700 hover:text-vaios-primary focus:outline-none"
               aria-label="Toggle sidebar"
             >
               <svg
@@ -121,7 +121,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
               height={30}
               priority
             />
-            <span className="ml-2 text-xl font-semibold text-blue-600">Liq-Planung</span>
+            <span className="ml-2 text-xl font-semibold text-vaios-primary">Liq-Planung</span>
           </Link>
         </div>
         
@@ -129,7 +129,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
         <div className="flex items-center space-x-2">
           <Link 
             href="/datenimport" 
-            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+            className="px-3 py-2 rounded-md text-sm font-medium text-vaios-primary hover:bg-vaios-gray"
             title="Daten importieren"
           >
             <span className="hidden md:inline">Import</span>
@@ -138,7 +138,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
           
           <button
             onClick={handleSignOut}
-            className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+            className="px-3 py-2 rounded-md text-sm font-medium text-vaios-primary hover:bg-vaios-gray"
             disabled={isSigningOut}
           >
             <span className="hidden md:inline">Abmelden</span>
@@ -150,11 +150,11 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
       {/* User info */}
       {isAuthenticated && user && (
         <div className="mt-2 container mx-auto flex items-center">
-          <div className="bg-green-100 text-green-800 px-3 py-1 text-sm rounded-full">
+          <div className="bg-vaios-teal text-vaios-primary px-3 py-1 text-sm rounded-full">
             {user.email}
           </div>
           {isAdmin && (
-            <div className="ml-2 bg-blue-100 text-blue-800 px-3 py-1 text-sm rounded-full">
+            <div className="ml-2 bg-vaios-accent text-vaios-primary px-3 py-1 text-sm rounded-full">
               Administrator
             </div>
           )}
