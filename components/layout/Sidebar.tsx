@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
-import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
+import { getUserSettings, updateStartBalance, updateGlobalKontostand } from '@/lib/services/user-settings';
 import { User } from '@supabase/supabase-js';
 
 export default function Sidebar() {
@@ -99,14 +99,12 @@ export default function Sidebar() {
   }, [isAuthenticated, user?.id]);
 
   const updateKontostand = async () => {
-    if (!user?.id) return;
-    
     try {
       const parsedValue = parseCHF(kontostandInput);
       if (parsedValue !== null) {
         setIsLoadingBalance(true);
-        // Save to database
-        const updatedBalance = await updateStartBalance(user.id, parsedValue);
+        // Save to database - using the global kontostand function
+        const updatedBalance = await updateGlobalKontostand(parsedValue);
         
         setStartBalance(updatedBalance);
         setKontostandInput(formatCHF(updatedBalance));

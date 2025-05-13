@@ -87,10 +87,66 @@ async function createDefaultSettings(userId: string): Promise<UserSettings> {
 }
 
 /**
+ * Get the global kontostand value that is shared between all users
+ */
+export async function getGlobalKontostand(): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('global_settings')
+      .select('setting_value')
+      .eq('setting_key', 'kontostand')
+      .single();
+      
+    if (error) {
+      console.error('Error loading global kontostand:', error);
+      return DEFAULT_SETTINGS.start_balance;
+    }
+    
+    return data?.setting_value?.balance || DEFAULT_SETTINGS.start_balance;
+  } catch (err) {
+    console.error('Exception in getGlobalKontostand:', err);
+    return DEFAULT_SETTINGS.start_balance;
+  }
+}
+
+/**
+ * Update the global kontostand value that is shared between all users
+ */
+export async function updateGlobalKontostand(balance: number): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('global_settings')
+      .update({ 
+        setting_value: { balance },
+        updated_at: new Date().toISOString()
+      })
+      .eq('setting_key', 'kontostand')
+      .select('setting_value')
+      .single();
+      
+    if (error) {
+      console.error('Error updating global kontostand:', error);
+      return balance;
+    }
+    
+    return data?.setting_value?.balance || balance;
+  } catch (err) {
+    console.error('Exception in updateGlobalKontostand:', err);
+    return balance;
+  }
+}
+
+/**
  * Update the starting balance for a user
+ * @deprecated Use updateGlobalKontostand instead for shared balance between all users
  */
 export async function updateStartBalance(userId: string, balance: number): Promise<number> {
+  // For backward compatibility, update both the user-specific and global balance
   try {
+    // Update the global balance first
+    await updateGlobalKontostand(balance);
+    
+    // Also update the user-specific one (for backward compatibility)
     const { data, error } = await supabase
       .from('user_settings')
       .update({ 
@@ -233,4 +289,21 @@ export function getDesignStylesCSS(settings: DesignSettings): string {
  * Get user settings - alias for loadUserSettings to maintain API consistency
  * @param userId User ID to load settings for 
  */
-export const getUserSettings = loadUserSettings; 
+export const getUserSettings = async (userId: string): Promise<UserSettings> => {
+  try {
+    // First get the global kontostand
+    const globalBalance = await getGlobalKontostand();
+    
+    // Then get user-specific settings
+    const userSettings = await loadUserSettings(userId);
+    
+    // Override the start_balance with the global one
+    return {
+      ...userSettings,
+      start_balance: globalBalance
+    };
+  } catch (err) {
+    console.error('Exception in getUserSettings:', err);
+    return getDefaultUserSettings(userId);
+  }
+}; 
