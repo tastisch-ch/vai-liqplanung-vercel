@@ -34,22 +34,30 @@ export default function Sidebar() {
     logError(error, 'Error accessing auth context');
   }
 
-  // Navigation links
+  // Core navigation links
   const navLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-    { name: 'Planung', path: '/planung', icon: '📆' },
-    { name: 'Analyse', path: '/analyse', icon: '📈' },
-    { name: 'Datenimport', path: '/datenimport', icon: '📥' },
-    { name: 'Transaktionen', path: '/transaktionen', icon: '✏️' },
-    { name: 'Fixkosten', path: '/fixkosten', icon: '💸' },
-    { name: 'Simulationen', path: '/simulationen', icon: '🔮' },
-    { name: 'Simulation-Projektionen', path: '/simulation-projections', icon: '🧮' },
-    { name: 'Mitarbeiter', path: '/mitarbeiter', icon: '👥' },
+    { name: 'Dashboard', path: '/dashboard', icon: '📊', description: 'Übersicht' },
+    { name: 'Planung', path: '/planung', icon: '📆', description: 'Finanzplanung' },
+    { name: 'Analyse', path: '/analyse', icon: '📈', description: 'Datenanalyse' },
+  ];
+  
+  // Financial tools
+  const financialTools = [
+    { name: 'Transaktionen', path: '/transaktionen', icon: '✏️', description: 'Buchungen bearbeiten' },
+    { name: 'Fixkosten', path: '/fixkosten', icon: '💸', description: 'Fixkosten verwalten' },
+    { name: 'Simulationen', path: '/simulationen', icon: '🔮', description: 'Szenarien erstellen' },
+  ];
+  
+  // Additional tools
+  const additionalTools = [
+    { name: 'Datenimport', path: '/datenimport', icon: '📥', description: 'CSV/Excel importieren' },
+    { name: 'Mitarbeiter', path: '/mitarbeiter', icon: '👥', description: 'Team verwalten' },
+    { name: 'Projektionen', path: '/simulation-projections', icon: '🧮', description: 'Prognosen' },
   ];
   
   // Admin links
   const adminLinks = [
-    { name: 'Admin Panel', path: '/admin', icon: '⚙️' },
+    { name: 'Admin Panel', path: '/admin', icon: '⚙️', description: 'Systemverwaltung' },
   ];
 
   // Kontostand functionality
@@ -80,17 +88,35 @@ export default function Sidebar() {
     }
   };
 
+  const renderLinks = (links) => (
+    <ul className="space-y-1">
+      {links.map((link) => (
+        <li key={link.path}>
+          <Link 
+            href={link.path}
+            className={`
+              flex items-center px-3 py-2 text-sm rounded-md group
+              ${pathname === link.path 
+                ? 'bg-blue-50 text-blue-700 font-medium' 
+                : 'text-gray-700 hover:bg-gray-100'}
+            `}
+          >
+            <span className="mr-3 text-lg">{link.icon}</span>
+            <div>
+              <div>{link.name}</div>
+              <div className="text-xs text-gray-500 group-hover:text-gray-700">{link.description}</div>
+            </div>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
       {/* Account Settings Section */}
       {isAuthenticated && user && (
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-700">Account</h3>
-            <button className="text-xs text-blue-600 hover:text-blue-800">
-              Settings
-            </button>
-          </div>
           <div className="flex items-center">
             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mr-3">
               {user.email?.charAt(0).toUpperCase() || 'U'}
@@ -101,6 +127,7 @@ export default function Sidebar() {
               </p>
               <p className="text-xs text-gray-500">
                 {isAdmin ? 'Administrator' : 'Standard User'}
+                {isReadOnly && ' (Nur Lesezugriff)'}
               </p>
             </div>
           </div>
@@ -159,7 +186,7 @@ export default function Sidebar() {
               <p className="text-xl font-bold text-gray-900">
                 {formatCHF(startBalance)}
               </p>
-              <p className="text-xs text-gray-500">Current Balance</p>
+              <p className="text-xs text-gray-500">Aktueller Kontostand</p>
             </div>
           )}
         </div>
@@ -167,55 +194,29 @@ export default function Sidebar() {
       
       {/* Navigation Links */}
       <div className="flex-grow p-4 overflow-y-auto">
-        <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Navigation</h3>
-        <nav>
-          <ul className="space-y-1">
-            {navLinks.map((link) => (
-              <li key={link.path}>
-                <Link 
-                  href={link.path}
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${pathname === link.path 
-                      ? 'bg-blue-50 text-blue-700 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-100'}
-                  `}
-                >
-                  <span className="mr-3">{link.icon}</span>
-                  {link.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        
-        {isAdmin && (
-          <>
-            <h3 className="font-semibold text-gray-600 mb-2 mt-6 text-xs uppercase tracking-wider">
-              Administration
-            </h3>
-            <nav>
-              <ul className="space-y-1">
-                {adminLinks.map((link) => (
-                  <li key={link.path}>
-                    <Link 
-                      href={link.path}
-                      className={`
-                        flex items-center px-3 py-2 text-sm rounded-md
-                        ${pathname === link.path 
-                          ? 'bg-blue-50 text-blue-700 font-medium' 
-                          : 'text-gray-700 hover:bg-gray-100'}
-                      `}
-                    >
-                      <span className="mr-3">{link.icon}</span>
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </>
-        )}
+        <div className="space-y-6">
+          <div>
+            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Hauptnavigation</h3>
+            {renderLinks(navLinks)}
+          </div>
+          
+          <div>
+            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Finanzverwaltung</h3>
+            {renderLinks(financialTools)}
+          </div>
+          
+          <div>
+            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Werkzeuge</h3>
+            {renderLinks(additionalTools)}
+          </div>
+          
+          {isAdmin && (
+            <div>
+              <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Administration</h3>
+              {renderLinks(adminLinks)}
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Footer */}

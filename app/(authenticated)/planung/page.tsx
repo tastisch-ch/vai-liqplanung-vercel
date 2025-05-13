@@ -174,14 +174,6 @@ export default function Planung() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Liquiditätsplanung</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => window.print()}
-            className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
-          >
-            Drucken
-          </button>
-        </div>
       </div>
       
       {/* Tabs */}

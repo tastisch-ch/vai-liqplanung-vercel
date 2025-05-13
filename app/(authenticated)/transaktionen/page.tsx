@@ -336,16 +336,7 @@ export default function TransaktionenPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Transaktionen-Editor</h1>
         <div className="flex">
-          <button
-            onClick={toggleTransactionForm}
-            disabled={isReadOnly || loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            type="button"
-            aria-label={showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
-          >
-            {showTransactionForm ? 'Abbrechen' : 'Neue Transaktion'}
-          </button>
-          <ExportButton type="transactions" className="ml-3" />
+          <ExportButton type="transactions" className="" />
         </div>
       </div>
       
@@ -361,7 +352,7 @@ export default function TransaktionenPage() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-yellow-800">Lesemodus aktiv</h3>
               <div className="mt-2 text-sm text-yellow-700">
-                <p>Sie haben nur Leserechte. Das Hinzufügen oder Bearbeiten von Transaktionen ist nicht möglich.</p>
+                <p>Sie haben nur Leserechte. Das Bearbeiten von Transaktionen ist nicht möglich.</p>
               </div>
             </div>
           </div>
@@ -401,117 +392,6 @@ export default function TransaktionenPage() {
               </p>
             </div>
           </div>
-        </div>
-      )}
-      
-      {/* Transaction Form */}
-      {showTransactionForm && (
-        <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingTransaction ? 'Transaktion bearbeiten' : 'Neue Transaktion erstellen'}
-          </h2>
-          
-          <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Datum
-                </label>
-                <input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={transactionForm.date}
-                  onChange={handleInputChange}
-                  disabled={isReadOnly || loading}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                  Betrag (CHF)
-                </label>
-                <input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={transactionForm.amount}
-                  onChange={handleInputChange}
-                  disabled={isReadOnly || loading}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-                Beschreibung
-              </label>
-              <input
-                id="details"
-                name="details"
-                type="text"
-                value={transactionForm.details}
-                onChange={handleInputChange}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="direction" className="block text-sm font-medium text-gray-700 mb-1">
-                  Richtung
-                </label>
-                <select
-                  id="direction"
-                  name="direction"
-                  value={transactionForm.direction}
-                  onChange={handleInputChange}
-                  disabled={isReadOnly || loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Incoming">Einnahme</option>
-                  <option value="Outgoing">Ausgabe</option>
-                </select>
-              </div>
-              
-              <div>
-                <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1">
-                  Kategorie
-                </label>
-                <select
-                  id="kategorie"
-                  name="kategorie"
-                  value={transactionForm.kategorie}
-                  onChange={handleInputChange}
-                  disabled={isReadOnly || loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="Standard">Standard</option>
-                  <option value="Fixkosten">Fixkosten</option>
-                  <option value="Lohn">Lohn</option>
-                  <option value="Simulation">Simulation</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={isReadOnly || loading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Wird gespeichert...' : editingTransaction ? 'Aktualisieren' : 'Hinzufügen'}
-              </button>
-            </div>
-          </form>
         </div>
       )}
       

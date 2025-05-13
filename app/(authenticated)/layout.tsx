@@ -7,8 +7,13 @@ import Sidebar from "@/components/layout/Sidebar";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/client-auth";
-import DevTools from "@/components/dev/DevTools";
 import { NotificationProvider } from "@/components/ui/Notification";
+
+export async function generateMetadata() {
+  return {
+    title: 'VAI-Liq-Planung',
+  };
+}
 
 export default function AuthenticatedLayout({
   children,
@@ -102,9 +107,6 @@ export default function AuthenticatedLayout({
             </div>
           </footer>
         </div>
-        
-        {/* Development tools */}
-        <DevTools />
         </NotificationProvider>
       </AuthProvider>
     </ClientOnly>
