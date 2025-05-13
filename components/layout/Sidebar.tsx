@@ -192,7 +192,7 @@ export default function Sidebar() {
                 className="text-xs text-blue-600 hover:text-blue-800"
                 disabled={isReadOnly}
               >
-                Edit
+                Aktualisieren
               </button>
             )}
           </div>

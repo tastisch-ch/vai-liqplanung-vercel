@@ -10,7 +10,9 @@ import {
   deleteFixkostenById,
   calculateMonthlyCosts,
   filterActiveFixkosten,
-  isFixkostenActive
+  isFixkostenActive,
+  getFixkostenCategories,
+  filterFixkostenByCategory
 } from "@/lib/services/fixkosten";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
@@ -29,14 +31,19 @@ export default function Fixkosten() {
   const [error, setError] = useState<string | null>(null);
   const [showOnlyActive, setShowOnlyActive] = useState(true);
   const [rhythmusFilter, setRhythmusFilter] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>(['Allgemein']);
+  const [newCategory, setNewCategory] = useState<string>('');
+  const [showAddCategory, setShowAddCategory] = useState(false);
   
   // State for creating new fixed cost
-  const [newFixkosten, setNewFixkosten] = useState({
+  const [newFixkosten, setNewFixkosten] = useState<Partial<Fixkosten>>({
     name: '',
     betrag: 0,
-    rhythmus: 'monatlich' as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich',
+    rhythmus: 'monatlich',
     start: new Date(),
-    enddatum: null as Date | null
+    enddatum: null,
+    kategorie: 'Allgemein'
   });
   
   // State for editing
@@ -56,24 +63,38 @@ export default function Fixkosten() {
       
       try {
         showNotification('Lade Fixkosten aus Supabase...', 'loading');
-        const data = await loadFixkosten(user.id);
+        const [fixkostenData, categoriesData] = await Promise.all([
+          loadFixkosten(user.id),
+          getFixkostenCategories(user.id)
+        ]);
         
-        if (isMounted) {
-        setFixkosten(data);
-        applyFilters(data);
-          showNotification(`${data.length} Fixkosten geladen`, 'success');
-        }
-      } catch (err) {
-        if (isMounted) {
-          const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-        setError('Fehler beim Laden der Fixkosten. Bitte versuchen Sie es später erneut.');
-          showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+        setFixkosten(fixkostenData);
+        setCategories(categoriesData);
+        applyFilters(fixkostenData);
+        showNotification(`${fixkostenData.length} Fixkosten geladen`, 'success');
+      } catch (err: any) {
+        console.error('Error loading data:', err);
+        setError(err.message || 'Fehler beim Laden der Daten');
         setFixkosten([]);
         setFilteredFixkosten([]);
-        }
+        setShowOnlyActive(true);
+        setRhythmusFilter([]);
+        setCategoryFilter(null);
+        setNewFixkosten({
+          name: '',
+          betrag: 0,
+          rhythmus: 'monatlich',
+          start: new Date(),
+          enddatum: null,
+          kategorie: 'Allgemein'
+        });
+        setEditingId(null);
+        setEditingFixkosten(null);
+        setSuccessMessage(null);
+        showNotification(`Fehler: ${error}`, 'error', 10000);
       } finally {
         if (isMounted) {
-        setLoading(false);
+          setLoading(false);
         }
       }
     }
@@ -89,11 +110,11 @@ export default function Fixkosten() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(fixkosten);
-  }, [showOnlyActive, rhythmusFilter]);
+  }, [showOnlyActive, rhythmusFilter, categoryFilter]);
   
   // Filter function
   const applyFilters = (data: Fixkosten[]) => {
-    let filtered = [...data];
+    let filtered = data;
     
     // Apply active/inactive filter
     if (showOnlyActive) {
@@ -103,6 +124,11 @@ export default function Fixkosten() {
     // Apply rhythm filter
     if (rhythmusFilter.length > 0) {
       filtered = filtered.filter(item => rhythmusFilter.includes(item.rhythmus));
+    }
+    
+    // Apply category filter
+    if (categoryFilter) {
+      filtered = filterFixkostenByCategory(filtered, categoryFilter);
     }
     
     // Sort by name
@@ -137,6 +163,7 @@ export default function Fixkosten() {
         newFixkosten.rhythmus,
         newFixkosten.start,
         newFixkosten.enddatum,
+        newFixkosten.kategorie,
         user.id
       );
       
@@ -149,7 +176,8 @@ export default function Fixkosten() {
         betrag: 0,
         rhythmus: 'monatlich',
         start: new Date(),
-        enddatum: null
+        enddatum: null,
+        kategorie: 'Allgemein'
       });
       
       setSuccessMessage('Fixkosten erfolgreich hinzugefügt.');
@@ -351,6 +379,27 @@ export default function Fixkosten() {
     };
   };
   
+  // Add handleAddCategory function
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    
+    // Verify the category doesn't already exist
+    if (categories.includes(newCategory.trim())) {
+      alert('Diese Kategorie existiert bereits');
+      return;
+    }
+    
+    // Add the new category to the list
+    setCategories([...categories, newCategory.trim()]);
+    
+    // Select the new category in the form
+    setNewFixkosten({...newFixkosten, kategorie: newCategory.trim()});
+    
+    // Clear the input and hide the add form
+    setNewCategory('');
+    setShowAddCategory(false);
+  };
+  
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
@@ -470,6 +519,53 @@ export default function Fixkosten() {
             </div>
           </div>
           
+          {/* Category field */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                <span>Kategorie</span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddCategory(!showAddCategory)}
+                  className="text-blue-600 hover:text-blue-800 text-xs"
+                >
+                  {showAddCategory ? 'Abbrechen' : 'Neue Kategorie hinzufügen'}
+                </button>
+              </label>
+              
+              {showAddCategory ? (
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Neue Kategorie"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Hinzufügen
+                  </button>
+                </div>
+              ) : (
+                <select
+                  id="kategorie"
+                  value={newFixkosten.kategorie || 'Allgemein'}
+                  onChange={(e) => setNewFixkosten({...newFixkosten, kategorie: e.target.value})}
+                  disabled={isReadOnly || loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
@@ -572,6 +668,18 @@ export default function Fixkosten() {
                 </button>
               ))}
             </div>
+
+            {/* Categories filter */}
+            <select 
+              value={categoryFilter || ''}
+              onChange={(e) => setCategoryFilter(e.target.value || null)}
+              className="text-sm border border-gray-300 rounded-md shadow-sm px-3 py-1"
+            >
+              <option value="">Alle Kategorien</option>
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
           </div>
         </div>
         
@@ -619,6 +727,9 @@ export default function Fixkosten() {
                         </div>
                         <div>
                           Monatlich: <span className="font-medium">{formatCHF(monthlyAmount)}</span>
+                        </div>
+                        <div>
+                          Kategorie: <span className="font-medium">{item.kategorie || 'Allgemein'}</span>
                         </div>
                       </div>
                       <div className="mt-1 text-sm text-gray-500">
@@ -736,15 +847,15 @@ export default function Fixkosten() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 <div>
-                  <label htmlFor="edit_start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="edit_start" className="block text-sm font-medium text-gray-700 mb-1">
                     Startdatum
                   </label>
                   <input
-                    id="edit_start_date"
+                    id="edit_start"
                     type="date"
-                    value={editingFixkosten.start instanceof Date ? editingFixkosten.start.toISOString().split('T')[0] : new Date(editingFixkosten.start).toISOString().split('T')[0]}
+                    value={editingFixkosten.start.toISOString().split('T')[0]}
                     onChange={(e) => setEditingFixkosten({...editingFixkosten, start: new Date(e.target.value)})}
                     disabled={loading}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -752,13 +863,13 @@ export default function Fixkosten() {
                 </div>
                 
                 <div>
-                  <label htmlFor="edit_end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="edit_end" className="block text-sm font-medium text-gray-700 mb-1">
                     Enddatum (optional)
                   </label>
                   <input
-                    id="edit_end_date"
+                    id="edit_end"
                     type="date"
-                    value={editingFixkosten.enddatum ? (editingFixkosten.enddatum instanceof Date ? editingFixkosten.enddatum.toISOString().split('T')[0] : new Date(editingFixkosten.enddatum).toISOString().split('T')[0]) : ''}
+                    value={editingFixkosten.enddatum ? editingFixkosten.enddatum.toISOString().split('T')[0] : ''}
                     onChange={(e) => setEditingFixkosten({
                       ...editingFixkosten, 
                       enddatum: e.target.value ? new Date(e.target.value) : null
@@ -766,6 +877,23 @@ export default function Fixkosten() {
                     disabled={loading}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_kategorie" className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie
+                  </label>
+                  <select
+                    id="edit_kategorie"
+                    value={editingFixkosten.kategorie || 'Allgemein'}
+                    onChange={(e) => setEditingFixkosten({...editingFixkosten, kategorie: e.target.value})}
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               
