@@ -196,10 +196,20 @@ export async function GET(request: NextRequest) {
     
     console.log(`Fetched ${transactions.length} transactions for export`);
     
-    // Generate CSV data
-    const dateRange = {
-      from: fromDate ? new Date(fromDate) : undefined,
-      to: toDate ? new Date(toDate) : undefined
+    // Create properly formatted date range for the export functions
+    const fromDate2 = fromDate ? new Date(fromDate) : new Date();
+    const toDate2 = toDate ? new Date(toDate) : new Date();
+    
+    // Format for generateExportFilename (from/to)
+    const dateRangeForFilename = {
+      from: fromDate2,
+      to: toDate2
+    };
+    
+    // Format for transactionsToCSV (start/end)
+    const exportDateRange = {
+      start: fromDate2,
+      end: toDate2
     };
     
     // Parse dates in transactions
@@ -212,10 +222,10 @@ export async function GET(request: NextRequest) {
     const enhancedTransactions = enhanceTransactions(parsedTransactions, 0);
     
     // Generate CSV content
-    const content = transactionsToCSV(enhancedTransactions, { dateRange });
+    const content = transactionsToCSV(enhancedTransactions, { dateRange: exportDateRange });
     
     // Generate filename
-    const filename = generateExportFilename('transactions', 'csv', dateRange);
+    const filename = generateExportFilename('transactions', 'csv', dateRangeForFilename);
     
     // Set headers for file download
     const headers2 = new Headers();
