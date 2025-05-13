@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
 import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
+import { User } from '@supabase/supabase-js';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -24,7 +25,7 @@ export default function Sidebar() {
   let isAuthenticated = false;
   let isAdmin = false;
   let isReadOnly = false;
-  let user = null;
+  let user: User | null = null;
   
   try {
     isAuthenticated = auth.authState.isAuthenticated;
