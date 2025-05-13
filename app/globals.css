@@ -11,6 +11,24 @@
   --color-accent: #D1F812;     /* Accent lime green */
   --color-teal: #ADC7C8;       /* Light teal */
   --color-gray: #DEE2E3;       /* Light gray */
+  
+  /* Blue color replacements */
+  --color-blue-50: #EAEEEE;    /* Very light teal/gray */
+  --color-blue-100: #DEE6E6;   /* Light teal/gray */
+  --color-blue-200: #C5D0D0;   /* Lighter teal */
+  --color-blue-300: #ADC7C8;   /* Light teal */
+  --color-blue-400: #8AADAE;   /* Medium teal */
+  --color-blue-500: #4D7F80;   /* Medium-dark teal */
+  --color-blue-600: #02403D;   /* Main brand dark teal */
+  --color-blue-700: #023331;   /* Darker teal */
+  --color-blue-800: #022422;   /* Very dark teal */
+  --color-blue-900: #011514;   /* Extremely dark teal */
+  
+  /* Additional functional colors */
+  --color-focus-ring: var(--color-primary);
+  --color-link: var(--color-primary);
+  --color-link-hover: #023331;
+  --color-highlight: var(--color-accent);
 }
 
 @theme inline {
@@ -94,4 +112,57 @@ body {
 /* Border utilities */
 .border-vaios-primary {
   border-color: var(--color-primary);
+}
+
+/* Override Tailwind blue classes with VAIOS colors */
+.bg-blue-50 { background-color: var(--color-blue-50) !important; }
+.bg-blue-100 { background-color: var(--color-blue-100) !important; }
+.bg-blue-200 { background-color: var(--color-blue-200) !important; }
+.bg-blue-300 { background-color: var(--color-blue-300) !important; }
+.bg-blue-400 { background-color: var(--color-blue-400) !important; }
+.bg-blue-500 { background-color: var(--color-blue-500) !important; }
+.bg-blue-600 { background-color: var(--color-blue-600) !important; }
+.bg-blue-700 { background-color: var(--color-blue-700) !important; }
+.bg-blue-800 { background-color: var(--color-blue-800) !important; }
+.bg-blue-900 { background-color: var(--color-blue-900) !important; }
+
+.text-blue-50 { color: var(--color-blue-50) !important; }
+.text-blue-100 { color: var(--color-blue-100) !important; }
+.text-blue-200 { color: var(--color-blue-200) !important; }
+.text-blue-300 { color: var(--color-blue-300) !important; }
+.text-blue-400 { color: var(--color-blue-400) !important; }
+.text-blue-500 { color: var(--color-blue-500) !important; }
+.text-blue-600 { color: var(--color-blue-600) !important; }
+.text-blue-700 { color: var(--color-blue-700) !important; }
+.text-blue-800 { color: var(--color-blue-800) !important; }
+.text-blue-900 { color: var(--color-blue-900) !important; }
+
+.border-blue-50 { border-color: var(--color-blue-50) !important; }
+.border-blue-100 { border-color: var(--color-blue-100) !important; }
+.border-blue-200 { border-color: var(--color-blue-200) !important; }
+.border-blue-300 { border-color: var(--color-blue-300) !important; }
+.border-blue-400 { border-color: var(--color-blue-400) !important; }
+.border-blue-500 { border-color: var(--color-blue-500) !important; }
+.border-blue-600 { border-color: var(--color-blue-600) !important; }
+.border-blue-700 { border-color: var(--color-blue-700) !important; }
+.border-blue-800 { border-color: var(--color-blue-800) !important; }
+.border-blue-900 { border-color: var(--color-blue-900) !important; }
+
+/* Focus ring override */
+*:focus-visible {
+  outline: 2px solid var(--color-focus-ring) !important;
+  outline-offset: 2px !important;
+}
+
+.focus\:ring-blue-500:focus {
+  --tw-ring-color: var(--color-focus-ring) !important;
+}
+
+.focus\:border-blue-500:focus {
+  border-color: var(--color-focus-ring) !important;
+}
+
+/* Spinner override */
+.animate-spin.border-b-2.border-blue-600 {
+  border-bottom-color: var(--color-primary) !important;
 }

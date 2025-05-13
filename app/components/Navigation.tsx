@@ -7,7 +7,7 @@ export default function Navigation() {
   const pathname = usePathname();
   
   const isActive = (path: string) => {
-    return pathname === path ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100';
+    return pathname === path ? 'bg-vaios-primary text-white' : 'text-gray-700 hover:bg-gray-100';
   };
   
   return (
@@ -16,7 +16,7 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="text-xl font-bold text-blue-600">
+              <Link href="/" className="text-xl font-bold text-vaios-primary">
                 VAI-Liq
               </Link>
             </div>
