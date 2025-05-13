@@ -4,10 +4,12 @@
  */
 
 import { loadBuchungen, enhanceTransactions } from './buchungen';
-import { loadFixkosten, generateFixkostenProjections } from './fixkosten';
-import { loadSimulationen, generateSimulationProjections } from './simulationen';
+import { loadFixkosten, generateFixkostenProjections, calculateMonthlyCosts } from './fixkosten';
+import { loadSimulationen, generateSimulationProjections, convertSimulationenToBuchungen } from './simulationen';
 import { getUserSettings } from './user-settings';
 import { Buchung, Fixkosten, Simulation } from '@/models/types';
+import { addMonths, format, eachMonthOfInterval, isWithinInterval, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 export interface FinancialSummary {
   currentBalance: number;
@@ -26,23 +28,57 @@ export interface Transaction {
   hint?: string;
 }
 
+export interface CategorySummary {
+  category: string;
+  amount: number;
+}
+
+export interface PaymentAlert extends Transaction {
+  daysUntilDue: number;
+}
+
+export interface MonthlyComparisonData {
+  currentMonthName: string;
+  previousMonthName: string;
+  metrics: Array<{
+    label: string;
+    currentMonth: number;
+    previousMonth: number;
+    isHigherBetter: boolean;
+  }>;
+}
+
+export interface CashFlowData {
+  labels: string[];
+  inflows: number[];
+  outflows: number[];
+  netFlow: number[];
+}
+
+export interface CashRunwayData {
+  currentBalance: number;
+  monthlyBurnRate: number;
+  monthsOfRunway: number;
+}
+
+export interface DashboardData {
+  summary: FinancialSummary;
+  recentTransactions: Transaction[];
+  upcomingPayments: PaymentAlert[];
+  expenseCategories: CategorySummary[];
+  monthlyComparison: MonthlyComparisonData;
+  cashFlow: CashFlowData;
+  cashRunway: CashRunwayData;
+}
+
 /**
  * Get complete dashboard data for a user
  */
-export async function getDashboardData(userId: string | undefined) {
+export async function getDashboardData(userId: string | undefined): Promise<DashboardData> {
   try {
     // If no user ID, return mock data
     if (!userId) {
-      return {
-        summary: {
-          currentBalance: 0,
-          monthlyIncome: 0,
-          monthlyExpenses: 0,
-          upcomingPayments: 0
-        },
-        recentTransactions: [],
-        upcomingPayments: []
-      };
+      return getEmptyDashboardData();
     }
     
     // Load all necessary data in parallel
@@ -53,37 +89,47 @@ export async function getDashboardData(userId: string | undefined) {
       getUserSettings(userId)
     ]);
     
+    const startBalance = userSettings?.start_balance || 0;
+    
     // Calculate financial summary
     const summary = calculateFinancialSummary(
       buchungen, 
       fixkosten, 
       simulationen, 
-      userSettings?.start_balance || 0
+      startBalance
     );
     
     // Get recent transactions
     const recentTransactions = getRecentTransactions(buchungen, 4);
     
-    // Get upcoming payments for the next 30 days
-    const upcomingPayments = getUpcomingPayments(fixkosten, simulationen, 30);
+    // Get upcoming payments for the next 30 days with days until due
+    const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, 30);
+    
+    // Get expense breakdown by category
+    const expenseCategories = getExpensesByCategory(buchungen);
+    
+    // Get monthly comparison data
+    const monthlyComparison = getMonthlyComparison(buchungen);
+    
+    // Get cash flow data for the last 6 months
+    const cashFlow = getCashFlowData(buchungen, 6);
+    
+    // Calculate cash runway
+    const cashRunway = calculateCashRunway(summary.currentBalance, summary.monthlyExpenses);
     
     return {
       summary,
       recentTransactions,
-      upcomingPayments
+      upcomingPayments,
+      expenseCategories,
+      monthlyComparison,
+      cashFlow,
+      cashRunway
     };
   } catch (error) {
+    console.error('Error getting dashboard data:', error);
     // Return default data on error
-    return {
-      summary: {
-        currentBalance: 0,
-        monthlyIncome: 0,
-        monthlyExpenses: 0,
-        upcomingPayments: 0
-      },
-      recentTransactions: [],
-      upcomingPayments: []
-    };
+    return getEmptyDashboardData();
   }
 }
 
@@ -123,7 +169,7 @@ function calculateFinancialSummary(
   }
   
   // Calculate upcoming payments for the next 30 days
-  const upcomingPayments = getUpcomingPayments(fixkosten, simulationen, 30)
+  const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, 30)
     .reduce((sum, payment) => sum + payment.amount, 0);
   
   return {
@@ -156,14 +202,16 @@ function getRecentTransactions(buchungen: Buchung[], limit: number = 5): Transac
 }
 
 /**
- * Get upcoming payments from fixed costs and simulations
+ * Get upcoming payments from fixed costs and simulations with days until due
  */
-function getUpcomingPayments(
+function getUpcomingPaymentsWithAlerts(
   fixkosten: Fixkosten[], 
   simulationen: Simulation[], 
   daysAhead: number = 30
-): Transaction[] {
+): PaymentAlert[] {
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time component
+  
   const endDate = new Date();
   endDate.setDate(today.getDate() + daysAhead);
   
@@ -173,28 +221,247 @@ function getUpcomingPayments(
   // Generate upcoming simulations
   const upcomingSimulationen = generateSimulationProjections(simulationen, today, endDate);
   
-  // Combine and convert to Transaction format
-  const fixkostenTransactions = upcomingFixkosten.map((fx: Fixkosten & { date: Date }) => ({
+  // Combine and convert to PaymentAlert format
+  const fixkostenAlerts = upcomingFixkosten.map((fx: Fixkosten & { date: Date }) => ({
     id: `fx-${fx.id}-${fx.date.getTime()}`,
     date: fx.date.toISOString().split('T')[0],
     description: fx.name,
     amount: fx.betrag,
-    category: 'Fixkosten',
+    category: fx.kategorie || 'Fixkosten',
     type: 'expense' as const,
-    hint: '📌'
+    hint: '📌',
+    daysUntilDue: differenceInDays(new Date(fx.date), today)
   }));
   
-  const simulationTransactions = upcomingSimulationen.map((sim: Simulation & { date: Date }) => ({
+  const simulationAlerts = upcomingSimulationen.map((sim: Simulation & { date: Date }) => ({
     id: `sim-${sim.id}-${sim.date.getTime()}`,
     date: sim.date.toISOString().split('T')[0],
     description: sim.name,
     amount: sim.amount,
     category: 'Simulation',
     type: sim.direction === 'Incoming' ? 'income' as const : 'expense' as const,
-    hint: '🔮'
+    hint: '🔮',
+    daysUntilDue: differenceInDays(new Date(sim.date), today)
   }));
   
-  // Combine and sort by date
-  return [...fixkostenTransactions, ...simulationTransactions]
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Combine and sort by days until due (ascending)
+  return [...fixkostenAlerts, ...simulationAlerts]
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+}
+
+/**
+ * Calculate expense breakdown by category
+ */
+function getExpensesByCategory(buchungen: Buchung[]): CategorySummary[] {
+  const lastMonthDate = new Date();
+  lastMonthDate.setDate(lastMonthDate.getDate() - 30);
+  
+  // Filter to expenses only from the last 30 days
+  const recentExpenses = buchungen.filter(tx => 
+    tx.direction === 'Outgoing' && tx.date >= lastMonthDate
+  );
+  
+  // Group by category
+  const categoryMap: Record<string, number> = {};
+  
+  recentExpenses.forEach(tx => {
+    const category = tx.kategorie || 'Standard';
+    if (!categoryMap[category]) {
+      categoryMap[category] = 0;
+    }
+    categoryMap[category] += tx.amount;
+  });
+  
+  // Convert to array format
+  return Object.entries(categoryMap).map(([category, amount]) => ({
+    category,
+    amount
+  }));
+}
+
+/**
+ * Get monthly comparison data
+ */
+function getMonthlyComparison(buchungen: Buchung[]): MonthlyComparisonData {
+  const today = new Date();
+  
+  // Current month
+  const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  // Previous month
+  const previousMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const previousMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+  
+  // Format month names
+  const currentMonthName = format(currentMonthStart, 'MMMM yyyy', { locale: de });
+  const previousMonthName = format(previousMonthStart, 'MMMM yyyy', { locale: de });
+  
+  // Calculate metrics for current month
+  const currentMonthTxs = buchungen.filter(tx => 
+    tx.date >= currentMonthStart && tx.date <= currentMonthEnd
+  );
+  
+  const currentMonthIncome = currentMonthTxs
+    .filter(tx => tx.direction === 'Incoming')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+    
+  const currentMonthExpenses = currentMonthTxs
+    .filter(tx => tx.direction === 'Outgoing')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+    
+  const currentMonthNet = currentMonthIncome - currentMonthExpenses;
+  
+  // Calculate metrics for previous month
+  const previousMonthTxs = buchungen.filter(tx => 
+    tx.date >= previousMonthStart && tx.date <= previousMonthEnd
+  );
+  
+  const previousMonthIncome = previousMonthTxs
+    .filter(tx => tx.direction === 'Incoming')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+    
+  const previousMonthExpenses = previousMonthTxs
+    .filter(tx => tx.direction === 'Outgoing')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+    
+  const previousMonthNet = previousMonthIncome - previousMonthExpenses;
+  
+  // Prepare the comparison data
+  return {
+    currentMonthName,
+    previousMonthName,
+    metrics: [
+      {
+        label: 'Einnahmen',
+        currentMonth: currentMonthIncome,
+        previousMonth: previousMonthIncome,
+        isHigherBetter: true
+      },
+      {
+        label: 'Ausgaben',
+        currentMonth: currentMonthExpenses,
+        previousMonth: previousMonthExpenses,
+        isHigherBetter: false
+      },
+      {
+        label: 'Nettoumsatz',
+        currentMonth: currentMonthNet,
+        previousMonth: previousMonthNet,
+        isHigherBetter: true
+      }
+    ]
+  };
+}
+
+/**
+ * Calculate cash flow data for the last N months
+ */
+function getCashFlowData(buchungen: Buchung[], monthCount: number = 6): CashFlowData {
+  const today = new Date();
+  const startDate = addMonths(today, -monthCount + 1);
+  startDate.setDate(1); // Start from the first day of the month
+  
+  // Get all months in the range
+  const monthRange = eachMonthOfInterval({
+    start: startDate,
+    end: today
+  });
+  
+  // Initialize data arrays
+  const labels: string[] = [];
+  const inflows: number[] = [];
+  const outflows: number[] = [];
+  const netFlow: number[] = [];
+  
+  // Process each month
+  monthRange.forEach(month => {
+    // Format month label
+    labels.push(format(month, 'MMM yy', { locale: de }));
+    
+    // Calculate total inflows and outflows for this month
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    
+    const monthTxs = buchungen.filter(tx => 
+      isWithinInterval(tx.date, { start: monthStart, end: monthEnd })
+    );
+    
+    const monthInflow = monthTxs
+      .filter(tx => tx.direction === 'Incoming')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+      
+    const monthOutflow = monthTxs
+      .filter(tx => tx.direction === 'Outgoing')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+      
+    const monthNet = monthInflow - monthOutflow;
+    
+    // Add to data arrays
+    inflows.push(monthInflow);
+    outflows.push(monthOutflow);
+    netFlow.push(monthNet);
+  });
+  
+  return { labels, inflows, outflows, netFlow };
+}
+
+/**
+ * Calculate cash runway based on current balance and monthly expenses
+ */
+function calculateCashRunway(currentBalance: number, monthlyExpenses: number): CashRunwayData {
+  // If monthly expenses are 0 or very small, runway is effectively infinite
+  const burnRate = monthlyExpenses > 0 ? monthlyExpenses : 1;
+  
+  // Calculate how many months the current balance will last
+  const monthsOfRunway = monthlyExpenses > 0 
+    ? Math.max(0, currentBalance / monthlyExpenses)
+    : Infinity;
+  
+  return {
+    currentBalance,
+    monthlyBurnRate: burnRate,
+    monthsOfRunway
+  };
+}
+
+/**
+ * Return empty dashboard data structure for initialization
+ */
+function getEmptyDashboardData(): DashboardData {
+  const today = new Date();
+  const currentMonthName = format(today, 'MMMM yyyy', { locale: de });
+  const previousMonthName = format(addMonths(today, -1), 'MMMM yyyy', { locale: de });
+  
+  return {
+    summary: {
+      currentBalance: 0,
+      monthlyIncome: 0,
+      monthlyExpenses: 0,
+      upcomingPayments: 0
+    },
+    recentTransactions: [],
+    upcomingPayments: [],
+    expenseCategories: [],
+    monthlyComparison: {
+      currentMonthName,
+      previousMonthName,
+      metrics: [
+        { label: 'Einnahmen', currentMonth: 0, previousMonth: 0, isHigherBetter: true },
+        { label: 'Ausgaben', currentMonth: 0, previousMonth: 0, isHigherBetter: false },
+        { label: 'Nettoumsatz', currentMonth: 0, previousMonth: 0, isHigherBetter: true }
+      ]
+    },
+    cashFlow: {
+      labels: [],
+      inflows: [],
+      outflows: [],
+      netFlow: []
+    },
+    cashRunway: {
+      currentBalance: 0,
+      monthlyBurnRate: 0,
+      monthsOfRunway: 0
+    }
+  };
 } 

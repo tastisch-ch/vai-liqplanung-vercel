@@ -4,7 +4,25 @@ import { useEffect, useState } from 'react';
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatCHF } from "@/lib/currency";
 import Link from "next/link";
-import { getDashboardData, FinancialSummary, Transaction } from "@/lib/services/dashboard";
+import { getDashboardData, DashboardData } from "@/lib/services/dashboard";
+
+// Import our new components
+import CashFlowChart from '@/app/components/chart/CashFlowChart';
+import ExpensePieChart from '@/app/components/chart/ExpensePieChart';
+import PaymentDueAlerts from '@/app/components/dashboard/PaymentDueAlerts';
+import MonthlyComparison from '@/app/components/dashboard/MonthlyComparison';
+import QuickActions from '@/app/components/dashboard/QuickActions';
+import CashRunwayIndicator from '@/app/components/dashboard/CashRunwayIndicator';
+
+// Import icons
+import {
+  PlanningIcon,
+  TransactionIcon,
+  FixkostenIcon,
+  MitarbeiterIcon,
+  SimulationIcon,
+  AddTransactionIcon
+} from '@/app/components/dashboard/DashboardIcons';
 
 export default function Dashboard() {
   const { authState } = useAuth();
@@ -13,15 +31,7 @@ export default function Dashboard() {
   // State for dashboard data
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [financialSummary, setFinancialSummary] = useState<FinancialSummary>({
-    currentBalance: 0,
-    monthlyIncome: 0,
-    monthlyExpenses: 0,
-    upcomingPayments: 0
-  });
-  
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-  const [upcomingPayments, setUpcomingPayments] = useState<Transaction[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     // Get user ID safely
@@ -38,10 +48,7 @@ export default function Dashboard() {
         setIsLoading(true);
         
         const data = await getDashboardData(userId);
-        
-        setFinancialSummary(data.summary);
-        setRecentTransactions(data.recentTransactions);
-        setUpcomingPayments(data.upcomingPayments);
+        setDashboardData(data);
         
       } catch (err) {
         setError('Fehler beim Laden der Dashboard-Daten. Bitte versuchen Sie es später erneut.');
@@ -52,6 +59,34 @@ export default function Dashboard() {
     
     fetchDashboardData();
   }, [user?.id]);
+
+  // Define Quick Actions
+  const quickActions = [
+    {
+      label: 'Neue Buchung',
+      href: '/planung?action=add',
+      icon: <AddTransactionIcon />,
+      accent: true
+    },
+    {
+      label: 'Planung',
+      href: '/planung',
+      icon: <PlanningIcon />,
+      accent: false
+    },
+    {
+      label: 'Fixkosten',
+      href: '/fixkosten',
+      icon: <FixkostenIcon />,
+      accent: false
+    },
+    {
+      label: 'Mitarbeiter',
+      href: '/mitarbeiter',
+      icon: <MitarbeiterIcon />,
+      accent: false
+    }
+  ];
 
   // Render loading state
   if (isLoading) {
@@ -111,6 +146,21 @@ export default function Dashboard() {
     );
   }
 
+  // Return null if dashboard data is not loaded yet
+  if (!dashboardData) {
+    return null;
+  }
+
+  const { 
+    summary, 
+    recentTransactions, 
+    upcomingPayments, 
+    expenseCategories, 
+    monthlyComparison,
+    cashFlow,
+    cashRunway
+  } = dashboardData;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,7 +168,7 @@ export default function Dashboard() {
         <div className="flex space-x-3">
           <Link 
             href="/planung" 
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+            className="bg-vaios-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-vaios-700"
           >
             Zur Planung
           </Link>
@@ -136,7 +186,7 @@ export default function Dashboard() {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-sm text-gray-500 font-medium">Aktueller Kontostand</h3>
           <p className="text-2xl font-bold text-gray-800 mt-1">
-            {formatCHF(financialSummary.currentBalance)}
+            {formatCHF(summary.currentBalance)}
           </p>
           <div className="mt-2 text-xs text-green-600 flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -149,7 +199,7 @@ export default function Dashboard() {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-sm text-gray-500 font-medium">Monatliche Einnahmen</h3>
           <p className="text-2xl font-bold text-gray-800 mt-1">
-            {formatCHF(financialSummary.monthlyIncome)}
+            {formatCHF(summary.monthlyIncome)}
           </p>
           <div className="mt-2 text-xs text-green-600 flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -162,7 +212,7 @@ export default function Dashboard() {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-sm text-gray-500 font-medium">Monatliche Ausgaben</h3>
           <p className="text-2xl font-bold text-gray-800 mt-1">
-            {formatCHF(financialSummary.monthlyExpenses)}
+            {formatCHF(summary.monthlyExpenses)}
           </p>
           <div className="mt-2 text-xs text-red-600 flex items-center">
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -175,7 +225,7 @@ export default function Dashboard() {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-sm text-gray-500 font-medium">Anstehende Zahlungen</h3>
           <p className="text-2xl font-bold text-gray-800 mt-1">
-            {formatCHF(financialSummary.upcomingPayments)}
+            {formatCHF(summary.upcomingPayments)}
           </p>
           <div className="mt-2 text-xs text-gray-600">
             Fällig in den nächsten 30 Tagen
@@ -183,154 +233,115 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* Main content */}
+      {/* Cash Flow Chart */}
+      <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+        <h2 className="text-lg font-semibold mb-2">Cash Flow Übersicht</h2>
+        <CashFlowChart
+          labels={cashFlow.labels}
+          inflows={cashFlow.inflows}
+          outflows={cashFlow.outflows}
+          netFlow={cashFlow.netFlow}
+        />
+      </div>
+      
+      {/* Main content - 3 column grid for desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent transactions */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Letzte Transaktionen</h2>
-            <Link href="/planung" className="text-sm text-blue-600 hover:text-blue-800">
-              Alle anzeigen →
-            </Link>
+        {/* Left column - Expense categories & Monthly comparison */}
+        <div className="space-y-6">
+          {/* Expense Categories */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-lg font-semibold mb-2">Ausgaben nach Kategorie</h2>
+            {expenseCategories.length > 0 ? (
+              <ExpensePieChart data={expenseCategories} />
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                <p>Keine Ausgaben vorhanden</p>
+                <p className="text-sm mt-2">Erstellen Sie Buchungen, um Kategorien anzuzeigen</p>
+              </div>
+            )}
           </div>
           
-          {recentTransactions.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
-              <p>Keine Transaktionen vorhanden</p>
-              <p className="text-sm mt-2">Erstellen Sie Buchungen, um sie hier anzuzeigen</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Datum
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Beschreibung
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kategorie
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Betrag
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {recentTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(transaction.date).toLocaleDateString('de-CH')}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                        {transaction.hint && <span className="mr-1">{transaction.hint}</span>}
-                        {transaction.description}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {transaction.category}
-                      </td>
-                      <td className={`px-4 py-3 whitespace-nowrap text-sm font-medium text-right ${
-                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {transaction.type === 'income' ? '+' : '-'}{formatCHF(transaction.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Monthly Comparison */}
+          <MonthlyComparison
+            currentMonthName={monthlyComparison.currentMonthName}
+            previousMonthName={monthlyComparison.previousMonthName}
+            metrics={monthlyComparison.metrics}
+          />
         </div>
         
-        {/* Upcoming payments & User info */}
+        {/* Middle column - Recent transactions */}
+        <div className="space-y-6">
+          {/* Recent transactions */}
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Letzte Transaktionen</h2>
+              <Link href="/planung" className="text-sm text-vaios-primary hover:text-vaios-600">
+                Alle anzeigen →
+              </Link>
+            </div>
+            
+            {recentTransactions.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                <p>Keine Transaktionen vorhanden</p>
+                <p className="text-sm mt-2">Erstellen Sie Buchungen, um sie hier anzuzeigen</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentTransactions.map((transaction) => (
+                  <div key={transaction.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="flex items-center">
+                        {transaction.hint && <span className="mr-2">{transaction.hint}</span>}
+                        <p className="font-medium text-gray-800">
+                          {transaction.description}
+                        </p>
+                        <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-white bg-opacity-70 text-gray-600">
+                          {transaction.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(transaction.date).toLocaleDateString('de-CH')}
+                      </p>
+                    </div>
+                    <div className={`font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCHF(transaction.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Cash Runway Indicator */}
+          <CashRunwayIndicator
+            currentBalance={cashRunway.currentBalance}
+            monthlyBurnRate={cashRunway.monthlyBurnRate}
+            monthsOfRunway={cashRunway.monthsOfRunway}
+          />
+        </div>
+        
+        {/* Right column - Payment alerts & Quick actions & User info */}
         <div className="space-y-6">
           {/* User welcome card */}
           {user && (
-            <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
-              <h2 className="text-lg font-semibold text-blue-800 mb-2">Willkommen zurück!</h2>
-              <p className="text-sm text-blue-700 mb-3">
+            <div className="bg-vaios-50 p-5 rounded-xl border border-vaios-200">
+              <h2 className="text-lg font-semibold text-vaios-primary mb-2">Willkommen zurück!</h2>
+              <p className="text-sm text-gray-700 mb-3">
                 Angemeldet als: <span className="font-semibold">{user.email}</span>
               </p>
               {isAdmin && (
-                <div className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded inline-block">
+                <div className="bg-vaios-100 text-vaios-primary text-xs font-medium px-2.5 py-1 rounded inline-block">
                   Administrator
                 </div>
               )}
             </div>
           )}
           
-          {/* Upcoming payments card */}
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold mb-4">Anstehende Zahlungen</h2>
-            
-            {upcomingPayments.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
-                <p>Keine anstehenden Zahlungen</p>
-                <p className="text-sm mt-2">Erstellen Sie Fixkosten oder Simulationen</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {upcomingPayments.slice(0, 3).map((payment) => (
-                  <div key={payment.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {payment.hint && <span className="mr-1">{payment.hint}</span>}
-                        {payment.description}
-                      </p>
-                      <p className="text-xs text-gray-500">Fällig am {new Date(payment.date).toLocaleDateString('de-CH')}</p>
-                    </div>
-                    <div className={payment.type === 'income' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                      {payment.type === 'income' ? '+' : '-'}{formatCHF(payment.amount)}
-                    </div>
-                  </div>
-                ))}
-                
-                {upcomingPayments.length > 3 && (
-                  <Link 
-                    href="/planung" 
-                    className="block text-center text-sm text-blue-600 hover:text-blue-800 mt-3"
-                  >
-                    Alle {upcomingPayments.length} anstehenden Zahlungen anzeigen
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Payment Due Alerts component */}
+          <PaymentDueAlerts payments={upcomingPayments} limit={4} />
           
-          {/* Quick links */}
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold mb-4">Schnellzugriff</h2>
-            <div className="space-y-2">
-              <Link 
-                href="/planung" 
-                className="block w-full p-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-              >
-                Finanzplanung
-              </Link>
-              <Link 
-                href="/fixkosten" 
-                className="block w-full p-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-              >
-                Fixkosten verwalten
-              </Link>
-              <Link 
-                href="/mitarbeiter" 
-                className="block w-full p-2 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-              >
-                Mitarbeiter verwalten
-              </Link>
-              {isAdmin && (
-                <Link 
-                  href="/admin" 
-                  className="block w-full p-2 bg-blue-50 hover:bg-blue-100 rounded-md text-blue-700"
-                >
-                  Admin-Bereich
-                </Link>
-              )}
-            </div>
-          </div>
+          {/* Quick Actions component */}
+          <QuickActions actions={quickActions} />
         </div>
       </div>
     </div>
