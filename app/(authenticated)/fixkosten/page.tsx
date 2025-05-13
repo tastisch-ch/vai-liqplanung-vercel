@@ -36,6 +36,9 @@ export default function Fixkosten() {
   const [newCategory, setNewCategory] = useState<string>('');
   const [showAddCategory, setShowAddCategory] = useState(false);
   
+  // State for showing the new fixkosten modal
+  const [showFixkostenModal, setShowFixkostenModal] = useState(false);
+  
   // State for creating new fixed cost
   const [newFixkosten, setNewFixkosten] = useState<Partial<Fixkosten>>({
     name: '',
@@ -402,7 +405,22 @@ export default function Fixkosten() {
   
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
+        
+        {!isReadOnly && (
+          <button
+            onClick={() => setShowFixkostenModal(true)}
+            className="btn-vaios-primary flex items-center"
+            disabled={loading}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Neue Fixkosten
+          </button>
+        )}
+      </div>
       
       {/* Read-only warning if applicable */}
       {isReadOnly && (
@@ -459,221 +477,56 @@ export default function Fixkosten() {
         </div>
       )}
       
-      {/* Add new fixed cost form */}
-      <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-        <h2 className="text-xl font-semibold mb-4">Neue Fixkosten hinzufügen</h2>
-        
-        <form onSubmit={handleAddFixkosten} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Bezeichnung
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={newFixkosten.name}
-                onChange={(e) => setNewFixkosten({...newFixkosten, name: e.target.value})}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Betrag (CHF)
-              </label>
-              <input
-                id="amount"
-                type="number"
-                min="0"
-                step="0.01"
-                value={newFixkosten.betrag !== undefined ? newFixkosten.betrag : 0}
-                onChange={(e) => setNewFixkosten({...newFixkosten, betrag: parseFloat(e.target.value)})}
-                disabled={isReadOnly || loading}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="rhythmus" className="block text-sm font-medium text-gray-700 mb-1">
-                Rhythmus
-              </label>
-              <select
-                id="rhythmus"
-                value={newFixkosten.rhythmus || 'monatlich'}
-                onChange={(e) => setNewFixkosten({
-                  ...newFixkosten, 
-                  rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
-                })}
-                disabled={isReadOnly || loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="monatlich">monatlich</option>
-                <option value="quartalsweise">quartalsweise</option>
-                <option value="halbjährlich">halbjährlich</option>
-                <option value="jährlich">jährlich</option>
-              </select>
-            </div>
-          </div>
-          
-          {/* Category field */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
-                <span>Kategorie</span>
-                <button 
-                  type="button" 
-                  onClick={() => setShowAddCategory(!showAddCategory)}
-                  className="text-blue-600 hover:text-blue-800 text-xs"
-                >
-                  {showAddCategory ? 'Abbrechen' : 'Neue Kategorie hinzufügen'}
-                </button>
-              </label>
-              
-              {showAddCategory ? (
-                <div className="flex items-center">
-                  <input
-                    type="text"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Neue Kategorie"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Hinzufügen
-                  </button>
-                </div>
-              ) : (
-                <select
-                  id="kategorie"
-                  value={newFixkosten.kategorie || 'Allgemein'}
-                  onChange={(e) => setNewFixkosten({...newFixkosten, kategorie: e.target.value})}
-                  disabled={isReadOnly || loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Startdatum
-              </label>
-              <input
-                id="start_date"
-                type="date"
-                value={(newFixkosten.start || new Date()).toISOString().split('T')[0]}
-                onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
-                disabled={isReadOnly || loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Enddatum (optional)
-              </label>
-              <input
-                id="end_date"
-                type="date"
-                value={newFixkosten.enddatum ? newFixkosten.enddatum.toISOString().split('T')[0] : ''}
-                onChange={(e) => setNewFixkosten({
-                  ...newFixkosten, 
-                  enddatum: e.target.value ? new Date(e.target.value) : null
-                })}
-                disabled={isReadOnly || loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={isReadOnly || loading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
-            </button>
-          </div>
-        </form>
-      </div>
-      
       {/* Filter controls */}
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold">Aktuelle Fixkosten</h2>
-            <p className="text-sm text-gray-500">
-              Monatliche Gesamtkosten: <span className="font-medium">{formatCHF(calculateMonthlyCosts(fixkosten))}</span>
-            </p>
+      <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
+        <h2 className="text-xl font-semibold mb-4">Filter</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={showOnlyActive}
+                onChange={(e) => setShowOnlyActive(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">Nur aktive Fixkosten anzeigen</span>
+            </label>
           </div>
           
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="inline-flex items-center">
-                <input 
-                  type="checkbox" 
-                  checked={showOnlyActive} 
-                  onChange={(e) => setShowOnlyActive(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-blue-600"
-                />
-                <span className="ml-2 text-sm text-gray-700">Nur aktive anzeigen</span>
-              </label>
-            </div>
-            
-            <select 
-              value={rhythmusFilter.length === 0 ? '' : 'selected'}
-              onChange={(e) => {
-                if (e.target.value === '') {
-                  setRhythmusFilter([]);
-                }
-              }}
-              className="text-sm border border-gray-300 rounded-md shadow-sm px-3 py-1"
-            >
-              <option value="">Alle Rhythmen</option>
-              <option value="selected" disabled>Filter aktiv</option>
-            </select>
-            
-            <div className="flex flex-wrap gap-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rhythmus Filter
+            </label>
+            <div className="space-x-2">
               {['monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'].map(rhythm => (
-                <button
-                  key={rhythm}
-                  onClick={() => {
-                    if (rhythmusFilter.includes(rhythm)) {
-                      setRhythmusFilter(rhythmusFilter.filter(r => r !== rhythm));
-                    } else {
-                      setRhythmusFilter([...rhythmusFilter, rhythm]);
-                    }
-                  }}
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    rhythmusFilter.includes(rhythm) 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {rhythm}
-                </button>
+                <label key={rhythm} className="inline-flex items-center mr-3">
+                  <input
+                    type="checkbox"
+                    checked={rhythmusFilter.includes(rhythm)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setRhythmusFilter([...rhythmusFilter, rhythm]);
+                      } else {
+                        setRhythmusFilter(rhythmusFilter.filter(r => r !== rhythm));
+                      }
+                    }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-1 text-sm text-gray-700">{rhythm}</span>
+                </label>
               ))}
             </div>
-
-            {/* Categories filter */}
-            <select 
+          </div>
+          
+          <div>
+            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">
+              Kategorie
+            </label>
+            <select
+              id="categoryFilter"
               value={categoryFilter || ''}
               onChange={(e) => setCategoryFilter(e.target.value || null)}
-              className="text-sm border border-gray-300 rounded-md shadow-sm px-3 py-1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Alle Kategorien</option>
               {categories.map(category => (
@@ -682,103 +535,281 @@ export default function Fixkosten() {
             </select>
           </div>
         </div>
-        
-        {/* Fixed costs list */}
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500">Daten werden geladen...</p>
-          </div>
-        ) : filteredFixkosten.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">Keine Fixkosten gefunden.</p>
-            {showOnlyActive && (
-              <button 
-                onClick={() => setShowOnlyActive(false)}
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
-              >
-                Alle anzeigen (auch beendete)
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="border rounded-lg divide-y">
-            {filteredFixkosten.map((item) => {
-              const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
-              
-              return (
-                <div key={item.id} className={`p-4 ${isActive ? '' : 'bg-gray-50'}`}>
-                  <div className="flex flex-wrap justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium flex items-center">
-                        {item.name}
-                        {!isActive && (
-                          <span className="ml-2 inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
-                            Beendet
-                          </span>
-                        )}
-                      </h3>
-                      <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-500">
-                        <div>
-                          Betrag: <span className="font-medium">{formatCHF(item.betrag)}</span>
-                        </div>
-                        <div>
-                          Rhythmus: <span className="font-medium">{item.rhythmus}</span>
-                        </div>
-                        <div>
-                          Monatlich: <span className="font-medium">{formatCHF(monthlyAmount)}</span>
-                        </div>
-                        <div>
-                          Kategorie: <span className="font-medium">{item.kategorie || 'Allgemein'}</span>
-                        </div>
+      </div>
+
+      {/* Fixkosten list */}
+      {loading ? (
+        <div className="p-8 text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-500">Daten werden geladen...</p>
+        </div>
+      ) : filteredFixkosten.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-gray-500">Keine Fixkosten gefunden.</p>
+          {showOnlyActive && (
+            <button 
+              onClick={() => setShowOnlyActive(false)}
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+            >
+              Alle anzeigen (auch beendete)
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="border rounded-lg divide-y">
+          {filteredFixkosten.map((item) => {
+            const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
+            
+            return (
+              <div key={item.id} className={`p-4 ${isActive ? '' : 'bg-gray-50'}`}>
+                <div className="flex flex-wrap justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-medium flex items-center">
+                      {item.name}
+                      {!isActive && (
+                        <span className="ml-2 inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
+                          Beendet
+                        </span>
+                      )}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-500">
+                      <div>
+                        Betrag: <span className="font-medium">{formatCHF(item.betrag)}</span>
                       </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        <span className="font-medium">{statusText}</span>
+                      <div>
+                        Rhythmus: <span className="font-medium">{item.rhythmus}</span>
+                      </div>
+                      <div>
+                        Monatlich: <span className="font-medium">{formatCHF(monthlyAmount)}</span>
+                      </div>
+                      <div>
+                        Kategorie: <span className="font-medium">{item.kategorie || 'Allgemein'}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex items-start gap-2 ml-4">
-                      <button
-                        onClick={() => startEditing(item)}
-                        disabled={isReadOnly || loading}
-                        className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Bearbeiten
-                      </button>
-                      
-                      {isActive ? (
-                        <button
-                          onClick={() => handleEndFixkosten(item.id)}
-                          disabled={isReadOnly || loading}
-                          className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Beenden
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleReactivateFixkosten(item.id)}
-                          disabled={isReadOnly || loading}
-                          className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Reaktivieren
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => handleDeleteFixkosten(item.id)}
-                        disabled={isReadOnly || loading}
-                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Löschen
-                      </button>
+                    <div className="mt-1 text-sm text-gray-500">
+                      <span className="font-medium">{statusText}</span>
                     </div>
                   </div>
+                  
+                  <div className="flex items-start gap-2 ml-4">
+                    <button
+                      onClick={() => startEditing(item)}
+                      disabled={isReadOnly || loading}
+                      className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Bearbeiten
+                    </button>
+                    
+                    {isActive ? (
+                      <button
+                        onClick={() => handleEndFixkosten(item.id)}
+                        disabled={isReadOnly || loading}
+                        className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Beenden
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleReactivateFixkosten(item.id)}
+                        disabled={isReadOnly || loading}
+                        className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Reaktivieren
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => handleDeleteFixkosten(item.id)}
+                      disabled={isReadOnly || loading}
+                      className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Löschen
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      
+      {/* Neue Fixkosten Modal */}
+      {showFixkostenModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
+            <h2 className="text-xl font-semibold mb-4">Neue Fixkosten hinzufügen</h2>
+            
+            <form onSubmit={(e) => {
+              handleAddFixkosten(e);
+              setShowFixkostenModal(false);
+            }} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Bezeichnung
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    value={newFixkosten.name}
+                    onChange={(e) => setNewFixkosten({...newFixkosten, name: e.target.value})}
+                    disabled={isReadOnly || loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag (CHF)
+                  </label>
+                  <input
+                    id="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newFixkosten.betrag !== undefined ? newFixkosten.betrag : 0}
+                    onChange={(e) => setNewFixkosten({...newFixkosten, betrag: parseFloat(e.target.value)})}
+                    disabled={isReadOnly || loading}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="rhythmus" className="block text-sm font-medium text-gray-700 mb-1">
+                    Rhythmus
+                  </label>
+                  <select
+                    id="rhythmus"
+                    value={newFixkosten.rhythmus || 'monatlich'}
+                    onChange={(e) => setNewFixkosten({
+                      ...newFixkosten, 
+                      rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
+                    })}
+                    disabled={isReadOnly || loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="monatlich">monatlich</option>
+                    <option value="quartalsweise">quartalsweise</option>
+                    <option value="halbjährlich">halbjährlich</option>
+                    <option value="jährlich">jährlich</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Category field */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                    <span>Kategorie</span>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowAddCategory(!showAddCategory)}
+                      className="text-blue-600 hover:text-blue-800 text-xs"
+                    >
+                      {showAddCategory ? 'Abbrechen' : 'Neue Kategorie hinzufügen'}
+                    </button>
+                  </label>
+                  
+                  {showAddCategory ? (
+                    <div className="flex items-center">
+                      <input
+                        type="text"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Neue Kategorie"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Hinzufügen
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      id="kategorie"
+                      value={newFixkosten.kategorie || 'Allgemein'}
+                      onChange={(e) => setNewFixkosten({...newFixkosten, kategorie: e.target.value})}
+                      disabled={isReadOnly || loading}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {categories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Startdatum
+                  </label>
+                  <input
+                    id="start_date"
+                    type="date"
+                    value={(newFixkosten.start || new Date()).toISOString().split('T')[0]}
+                    onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
+                    disabled={isReadOnly || loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Enddatum (optional)
+                  </label>
+                  <input
+                    id="end_date"
+                    type="date"
+                    value={newFixkosten.enddatum ? newFixkosten.enddatum.toISOString().split('T')[0] : ''}
+                    onChange={(e) => setNewFixkosten({
+                      ...newFixkosten, 
+                      enddatum: e.target.value ? new Date(e.target.value) : null
+                    })}
+                    disabled={isReadOnly || loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Reset form and close modal
+                    setNewFixkosten({
+                      name: '',
+                      betrag: 0,
+                      rhythmus: 'monatlich',
+                      start: new Date(),
+                      enddatum: null,
+                      kategorie: 'Allgemein'
+                    });
+                    setShowFixkostenModal(false);
+                  }}
+                  disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Edit form modal */}
       {editingId && editingFixkosten && (
