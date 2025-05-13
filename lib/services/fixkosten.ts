@@ -249,6 +249,12 @@ export function convertFixkostenToBuchungen(
       return;
     }
     
+    // Check if the original date is at the end of the month (e.g., 30th, 31st)
+    const originalDate = new Date(fixkosten.start);
+    const originalDay = originalDate.getDate();
+    const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    
     // Generate occurrences until end date
     while (currentDate <= endDate) {
       // If we've passed the end date of this fixed cost, stop
@@ -257,7 +263,7 @@ export function convertFixkostenToBuchungen(
       }
       
       // Adjust the payment date for weekends and month-end cases
-      const adjustedDate = adjustPaymentDate(new Date(currentDate));
+      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
       
       // Create transaction
       result.push({
@@ -299,6 +305,12 @@ export function generateFixkostenProjections(
   activeFixkosten.forEach(fixkost => {
     let currentDate = new Date(Math.max(fixkost.start.getTime(), startDate.getTime()));
     
+    // Check if the original date is at the end of the month (e.g., 30th, 31st)
+    const originalDate = new Date(fixkost.start);
+    const originalDay = originalDate.getDate();
+    const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    
     // Generate occurrences until end date
     while (currentDate <= endDate) {
       // If we've passed the end date of this fixed cost, stop
@@ -307,7 +319,7 @@ export function generateFixkostenProjections(
       }
       
       // Adjust the payment date for weekends and month-end cases
-      const adjustedDate = adjustPaymentDate(new Date(currentDate));
+      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
       
       // Add this occurrence
       projections.push({

@@ -228,12 +228,18 @@ export function convertSimulationenToBuchungen(
     // If simulation has an end date and it's before the start_date, skip
     if (simulation.end_date && simulation.end_date < startDate) return;
     
+    // Check if the original date is at the end of the month (e.g., 30th, 31st)
+    const originalDate = new Date(simulation.date);
+    const originalDay = originalDate.getDate();
+    const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    
     // Handle non-recurring simulations
     if (!simulation.recurring) {
       // If the simulation date is in our range, add it
       if (simulation.date >= startDate && simulation.date <= endDate) {
         // Apply date adjustment for business days and month-end scenarios
-        const adjustedDate = adjustPaymentDate(new Date(simulation.date));
+        const adjustedDate = adjustPaymentDate(new Date(simulation.date), isMonthEnd);
         
         result.push({
           id: uuidv4(),
@@ -261,7 +267,7 @@ export function convertSimulationenToBuchungen(
         }
         
         // Apply date adjustment for business days and month-end scenarios
-        const adjustedDate = adjustPaymentDate(new Date(currentDate));
+        const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
         
         // Create a transaction for this occurrence
         result.push({
@@ -312,12 +318,19 @@ export function generateSimulationProjections(
     // If simulation has an end date and it's before the start_date, skip
     if (simulation.end_date && simulation.end_date < startDate) return;
     
+    // Check if the original date is at the end of the month (e.g., 30th, 31st)
+    const originalDate = new Date(simulation.date);
+    const originalDay = originalDate.getDate();
+    const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+    const isMonthEnd = originalDay >= 28 && originalDay >= lastDayOfOriginalMonth - 1;
+    
     // Handle non-recurring simulations
     if (!simulation.recurring) {
       // If the simulation date is in our range, add it
       if (simulation.date >= startDate && simulation.date <= endDate) {
-        // For non-recurring, also apply date adjustment
-        const adjustedDate = adjustPaymentDate(new Date(simulation.date));
+        // Apply date adjustment for business days and month-end scenarios
+        const adjustedDate = adjustPaymentDate(new Date(simulation.date), isMonthEnd);
+        
         projections.push({
           ...simulation,
           date: adjustedDate
@@ -338,9 +351,9 @@ export function generateSimulationProjections(
         }
         
         // Apply date adjustment for business days and month-end scenarios
-        const adjustedDate = adjustPaymentDate(new Date(currentDate));
+        const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
         
-        // Add this occurrence
+        // Add this simulation occurrence
         projections.push({
           ...simulation,
           date: adjustedDate

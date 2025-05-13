@@ -554,7 +554,7 @@ export default function MitarbeiterPage() {
         ) : (
           <div className="border rounded-lg divide-y">
             {mitarbeiter.map((employee) => {
-              const currentSalary = currentSalaries.find(s => s.mitarbeiterId === employee.id);
+              const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
               return (
                 <div key={employee.id} className="p-4">
                   <div className="flex flex-wrap justify-between">
@@ -562,7 +562,7 @@ export default function MitarbeiterPage() {
                       <h3 className="font-medium">{employee.Name}</h3>
                       {currentSalary && (
                         <div className="mt-1 text-sm text-gray-600">
-                          Aktueller Lohn: {formatCHF(currentSalary.Betrag)} (seit {format(currentSalary.Start, 'dd.MM.yyyy', { locale: de })})
+                          Aktueller Lohn: {formatCHF(currentSalary.lohn.Betrag)} (seit {format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de })})
                         </div>
                       )}
                     </div>
@@ -604,11 +604,11 @@ export default function MitarbeiterPage() {
                   </div>
                   
                   {/* Salary history */}
-                  {employee.LohnDaten && employee.LohnDaten.length > 0 && (
+                  {employee.Lohn && employee.Lohn.length > 0 && (
                     <div className="mt-3 pl-4 border-l-2 border-gray-200">
                       <h4 className="text-sm font-semibold text-gray-700 mb-2">Lohnhistorie:</h4>
                       <div className="space-y-2">
-                        {employee.LohnDaten.sort((a, b) => b.Start.getTime() - a.Start.getTime()).map((lohn) => (
+                        {employee.Lohn.sort((a, b) => b.Start.getTime() - a.Start.getTime()).map((lohn) => (
                           <div key={lohn.id} className="flex justify-between text-sm">
                             <div>
                               <span className="font-medium">{formatCHF(lohn.Betrag)}</span>

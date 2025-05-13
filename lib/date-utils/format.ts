@@ -158,9 +158,10 @@ export function getNextOccurrence(date: Date, rhythmus: string): Date {
  * 2. If the date is e.g. 31st but the month doesn't have 31 days, moves it to the last day of that month
  * 
  * @param date - The original payment date
+ * @param isMonthEnd - Whether this date should always be treated as the end of month (e.g., for the 31st or the 30th)
  * @returns Adjusted date suitable for business payments
  */
-export function adjustPaymentDate(date: Date): Date {
+export function adjustPaymentDate(date: Date, isMonthEnd: boolean = false): Date {
   if (!date) return date;
   
   const result = new Date(date);
@@ -175,8 +176,12 @@ export function adjustPaymentDate(date: Date): Date {
   // Get the actual last day of the month
   const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
   
-  // If intended day exceeds the last day of this month, use last day instead
-  if (intendedDay > lastDayOfMonth) {
+  // If isMonthEnd is true, always use the last day of the month
+  if (isMonthEnd) {
+    result.setDate(lastDayOfMonth);
+  } 
+  // Otherwise, only adjust if the intended day exceeds the last day of this month
+  else if (intendedDay > lastDayOfMonth) {
     result.setDate(lastDayOfMonth);
   }
   
