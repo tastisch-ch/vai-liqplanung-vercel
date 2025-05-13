@@ -6,7 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
 import { Fixkosten, Buchung } from '@/models/types';
-import { dateToIsoString, getNextOccurrence } from '@/lib/date-utils/format';
+import { dateToIsoString, getNextOccurrence, adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all fixed costs from the database
@@ -256,10 +256,13 @@ export function convertFixkostenToBuchungen(
         break;
       }
       
+      // Adjust the payment date for weekends and month-end cases
+      const adjustedDate = adjustPaymentDate(new Date(currentDate));
+      
       // Create transaction
       result.push({
         id: `fixkosten_${fixkosten.id}_${currentDate.toISOString()}`,
-        date: new Date(currentDate),
+        date: adjustedDate,
         details: fixkosten.name,
         amount: fixkosten.betrag,
         direction: 'Outgoing',
@@ -303,10 +306,13 @@ export function generateFixkostenProjections(
         break;
       }
       
+      // Adjust the payment date for weekends and month-end cases
+      const adjustedDate = adjustPaymentDate(new Date(currentDate));
+      
       // Add this occurrence
       projections.push({
         ...fixkost,
-        date: new Date(currentDate)
+        date: adjustedDate
       });
       
       // Get the next occurrence date

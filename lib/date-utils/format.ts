@@ -148,4 +148,46 @@ export function getNextOccurrence(date: Date, rhythmus: string): Date {
   }
   
   return result;
+}
+
+/**
+ * Adjusts payment date for business days and month-end scenarios
+ * 
+ * Handles two special cases:
+ * 1. If the date falls on a weekend (Saturday/Sunday), moves it to the previous Friday
+ * 2. If the date is e.g. 31st but the month doesn't have 31 days, moves it to the last day of that month
+ * 
+ * @param date - The original payment date
+ * @returns Adjusted date suitable for business payments
+ */
+export function adjustPaymentDate(date: Date): Date {
+  if (!date) return date;
+  
+  const result = new Date(date);
+  
+  // First preserve the intended day of month
+  const intendedDay = result.getDate();
+  
+  // Handle month-end cases (e.g., trying to use the 31st in a month with only 30 days)
+  const month = result.getMonth();
+  const year = result.getFullYear();
+  
+  // Get the actual last day of the month
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+  
+  // If intended day exceeds the last day of this month, use last day instead
+  if (intendedDay > lastDayOfMonth) {
+    result.setDate(lastDayOfMonth);
+  }
+  
+  // Now handle weekend cases
+  const dayOfWeek = result.getDay(); // 0 = Sunday, 6 = Saturday
+  
+  if (dayOfWeek === 0) { // Sunday → Friday
+    result.setDate(result.getDate() - 2);
+  } else if (dayOfWeek === 6) { // Saturday → Friday
+    result.setDate(result.getDate() - 1);
+  }
+  
+  return result;
 } 
