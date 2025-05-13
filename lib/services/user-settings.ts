@@ -2,7 +2,7 @@
  * Service for handling user settings (like starting balance and design preferences)
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { DesignSettings } from '@/models/types';
 
 // Default values for settings
@@ -22,8 +22,6 @@ interface UserSettings {
   created_at: string;
   updated_at: string | null;
 }
-
-const supabase = createClient();
 
 /**
  * Get default user settings
