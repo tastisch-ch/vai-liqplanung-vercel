@@ -6,6 +6,7 @@
 import { convertLohneToBuchungen, getAktuelleLohne, loadMitarbeiter } from './mitarbeiter';
 import { Buchung, LohnDaten, Mitarbeiter } from '@/models/types';
 import { addMonths } from 'date-fns';
+import { adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all salary costs data from the mitarbeiter service
@@ -61,17 +62,20 @@ export function generateLohnkostenProjections(
     const paymentDate = new Date(currentMonthDate);
     paymentDate.setDate(25); // Salary payment on the 25th
     
+    // Apply weekend adjustment - move to Friday if on weekend
+    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false);
+    
     // Only process if the payment date is within our range
-    if (paymentDate >= startDate && paymentDate <= endDate) {
+    if (adjustedPaymentDate >= startDate && adjustedPaymentDate <= endDate) {
       // For each employee with an active salary
       lohnkosten.forEach(({ mitarbeiter, lohn }) => {
         // Check if the salary is valid for this month
-        if (lohn.Start <= paymentDate && (!lohn.Ende || lohn.Ende >= paymentDate)) {
+        if (lohn.Start <= adjustedPaymentDate && (!lohn.Ende || lohn.Ende >= adjustedPaymentDate)) {
           // Create a projection for this salary payment
           result.push({
             mitarbeiter,
             lohn,
-            date: paymentDate
+            date: adjustedPaymentDate
           });
         }
       });

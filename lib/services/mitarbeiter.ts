@@ -6,7 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
 import { Mitarbeiter, LohnDaten, Buchung } from '@/models/types';
-import { dateToIsoString } from '@/lib/date-utils/format';
+import { dateToIsoString, adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all employees from the database
@@ -460,16 +460,20 @@ export function convertLohneToBuchungen(
     const paymentDate = new Date(currentMonthDate);
     paymentDate.setDate(25); // Salary payment on the 25th
     
+    // Apply weekend adjustment - move to Friday if on weekend
+    // This ensures salary payments are never scheduled for weekends
+    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false);
+    
     // Only process if the payment date is within our range
-    if (paymentDate >= startDate && paymentDate <= endDate) {
+    if (adjustedPaymentDate >= startDate && adjustedPaymentDate <= endDate) {
       // For each employee with an active salary
       aktuelleLohne.forEach(({ mitarbeiter, lohn }) => {
         // Check if the salary is valid for this month
-        if (lohn.Start <= paymentDate && (!lohn.Ende || lohn.Ende >= paymentDate)) {
+        if (lohn.Start <= adjustedPaymentDate && (!lohn.Ende || lohn.Ende >= adjustedPaymentDate)) {
           // Create a transaction for this salary payment
           const buchung: Buchung = {
             id: uuidv4(),
-            date: paymentDate,
+            date: adjustedPaymentDate,
             details: `Lohn: ${mitarbeiter.Name}`,
             amount: lohn.Betrag,
             direction: 'Outgoing',
