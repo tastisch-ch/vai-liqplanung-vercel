@@ -142,8 +142,8 @@ export default function TransaktionenPage() {
       filtered = filtered.filter(tx => tx.modified);
     }
     
-    // Sort by date (most recent first)
-    filtered = [...filtered].sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Sort by date (ascending order, oldest first, like in Planung)
+    filtered = [...filtered].sort((a, b) => a.date.getTime() - b.date.getTime());
     
     setFilteredTransactions(filtered);
   };

@@ -31,7 +31,8 @@ export default function Planung() {
   // Filter states
   const [startDate, setStartDate] = useState<Date>(() => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
+    // Start from today rather than first day of month
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
   
   const [endDate, setEndDate] = useState<Date>(() => {
@@ -44,6 +45,7 @@ export default function Planung() {
   const [showFixkosten, setShowFixkosten] = useState(true);
   const [showSimulationen, setShowSimulationen] = useState(true);
   const [showLoehne, setShowLoehne] = useState(true);
+  const [showPastTransactions, setShowPastTransactions] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [minAmount, setMinAmount] = useState(0);
   const [maxAmount, setMaxAmount] = useState(25000);
@@ -115,7 +117,7 @@ export default function Planung() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, minAmount, maxAmount, sortOption]);
+  }, [searchText, minAmount, maxAmount, sortOption, showPastTransactions]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
@@ -130,6 +132,13 @@ export default function Planung() {
         maxAmount
       }
     );
+    
+    // Hide past transactions if needed
+    if (!showPastTransactions) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(tx => tx.date >= today);
+    }
     
     // Apply sorting
     switch (sortOption) {
@@ -410,6 +419,15 @@ export default function Planung() {
                 className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Lohnauszahlungen 💰</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input 
+                type="checkbox" 
+                checked={showPastTransactions} 
+                onChange={(e) => setShowPastTransactions(e.target.checked)}
+                className="form-checkbox h-5 w-5 text-vaios-primary"
+              />
+              <span className="ml-2 text-sm text-gray-700">Vergangene Buchungen anzeigen 📆</span>
             </label>
           </div>
         </div>
