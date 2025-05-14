@@ -191,7 +191,7 @@ export default function TransaktionenPage() {
   const startEditingModal = (transaction: Buchung) => {
     // Don't allow editing of Lohnkosten entries
     if (transaction.kategorie === 'Lohn') {
-      showNotification('Lohndaten können nicht direkt bearbeitet werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'warning');
+      showNotification('Lohndaten können nicht direkt bearbeitet werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'info');
       return;
     }
     
@@ -316,7 +316,7 @@ export default function TransaktionenPage() {
     // First check if this is a Lohnkosten entry
     const txToDelete = transactions.find(tx => tx.id === id);
     if (txToDelete && txToDelete.kategorie === 'Lohn') {
-      showNotification('Lohndaten können nicht direkt gelöscht werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'warning');
+      showNotification('Lohndaten können nicht direkt gelöscht werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'info');
       return;
     }
     

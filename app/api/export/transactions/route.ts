@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
     
     try {
       // Load fixkosten
-      const { data: fixkosten } = await loadFixkosten(userId);
+      const fixkosten = await loadFixkosten(userId);
       if (fixkosten && fixkosten.length > 0) {
         const fixkostenBuchungen = convertFixkostenToBuchungen(
           fromDate2, toDate2, fixkosten
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
       
       // Load simulationen (optional based on URL parameter)
       if (searchParams.get('include_simulationen') === 'true') {
-        const { data: simulationen } = await loadSimulationen(userId);
+        const simulationen = await loadSimulationen(userId);
         if (simulationen && simulationen.length > 0) {
           const simulationenBuchungen = convertSimulationenToBuchungen(
             fromDate2, toDate2, simulationen
@@ -228,10 +228,10 @@ export async function GET(request: NextRequest) {
       }
       
       // Load lohnkosten
-      const lohnkostenRaw = await loadLohnkosten(userId, fromDate2, toDate2);
+      const lohnkostenRaw = await loadLohnkosten(userId);
       if (lohnkostenRaw && lohnkostenRaw.length > 0) {
         const lohnkostenBuchungen = convertLohnkostenToBuchungen(
-          fromDate2, toDate2, lohnkostenRaw
+          fromDate2, toDate2, lohnkostenRaw.map(item => item.mitarbeiter)
         );
         lohnkostenData = lohnkostenBuchungen;
       }
