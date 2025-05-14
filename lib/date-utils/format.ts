@@ -129,22 +129,47 @@ export function addMonths(date: Date, months: number): Date {
 export function getNextOccurrence(date: Date, rhythmus: string): Date {
   const result = new Date(date);
   
+  // Store the original day
+  const originalDay = result.getDate();
+  
+  // Check if it's month-end (30th or 31st)
+  const lastDayOfOriginalMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+  const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
+  
+  let monthsToAdd = 0;
+  
   switch (rhythmus) {
     case 'monatlich':
-      result.setMonth(result.getMonth() + 1);
+      monthsToAdd = 1;
       break;
     case 'quartalsweise':
-      result.setMonth(result.getMonth() + 3);
+      monthsToAdd = 3;
       break;
     case 'halbjährlich':
-      result.setMonth(result.getMonth() + 6);
+      monthsToAdd = 6;
       break;
     case 'jährlich':
+      // For yearly, we still use setFullYear to maintain the exact day
       result.setFullYear(result.getFullYear() + 1);
-      break;
+      return result;
     default:
       // Default to monthly if unknown
-      result.setMonth(result.getMonth() + 1);
+      monthsToAdd = 1;
+  }
+  
+  // First set to the first day of the next month to avoid date overflow issues
+  result.setDate(1);
+  result.setMonth(result.getMonth() + monthsToAdd);
+  
+  // Now adjust the day based on whether it was month-end or a specific day
+  if (isMonthEnd) {
+    // For month-end dates, use the last day of the target month
+    const lastDayOfTargetMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+    result.setDate(lastDayOfTargetMonth);
+  } else {
+    // For specific days, try to use the same day, but cap at month end if needed
+    const lastDayOfTargetMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+    result.setDate(Math.min(originalDay, lastDayOfTargetMonth));
   }
   
   return result;

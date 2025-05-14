@@ -18,6 +18,7 @@ import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
+import Link from "next/link";
 
 export default function Fixkosten() {
   const { authState } = useAuth();
@@ -408,18 +409,26 @@ export default function Fixkosten() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
         
-        {!isReadOnly && (
-          <button
-            onClick={() => setShowFixkostenModal(true)}
-            className="btn-vaios-primary flex items-center"
-            disabled={loading}
+        <div className="flex items-center">
+          <Link 
+            href="/fixkosten/test-date" 
+            className="text-xs text-gray-500 hover:text-blue-600 mr-4"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Neue Fixkosten
-          </button>
-        )}
+            Test Date Fix
+          </Link>
+          {!isReadOnly && (
+            <button
+              onClick={() => setShowFixkostenModal(true)}
+              className="btn-vaios-primary flex items-center"
+              disabled={loading}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Neue Fixkosten
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Read-only warning if applicable */}
