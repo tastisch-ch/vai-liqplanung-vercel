@@ -8,4 +8,5 @@ export * from './mitarbeiter';
 export * from './simulationen';
 export * from './user-settings';
 export * from './dashboard';
-export * from './scenarios'; 
+export * from './scenarios';
+export * from './lohnkosten'; 

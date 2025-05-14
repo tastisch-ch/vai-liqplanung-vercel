@@ -8,6 +8,10 @@ import { supabase } from '@/lib/supabase/client';
 import { Buchung, EnhancedTransaction, TransactionCategory } from '@/models/types';
 import { dateToIsoString, adjustPaymentDate } from '@/lib/date-utils/format';
 import { getSignedAmount } from '@/lib/currency/format';
+import { convertFixkostenToBuchungen } from './fixkosten';
+import { convertSimulationenToBuchungen } from './simulationen';
+import { convertLohnkostenToBuchungen } from './lohnkosten';
+import { loadMitarbeiter } from './mitarbeiter';
 
 /**
  * Load all transactions/buchungen from the database
@@ -353,4 +357,64 @@ export function filterTransactions(
     
     return true;
   });
+}
+
+/**
+ * Get all transactions for planning, including fixed costs, simulations, and salary costs
+ */
+export async function getAllTransactionsForPlanning(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  options?: {
+    includeFixkosten?: boolean;
+    includeSimulationen?: boolean;
+    includeLohnkosten?: boolean;
+  }
+): Promise<Buchung[]> {
+  try {
+    // Default options
+    const { 
+      includeFixkosten = true, 
+      includeSimulationen = true,
+      includeLohnkosten = true 
+    } = options || {};
+    
+    // Load all data types in parallel
+    const [buchungen, fixkosten, simulationen, mitarbeiter] = await Promise.all([
+      loadBuchungen(userId),
+      includeFixkosten ? loadFixkosten(userId) : Promise.resolve([]),
+      includeSimulationen ? loadSimulationen(userId) : Promise.resolve([]),
+      includeLohnkosten ? loadMitarbeiter(userId) : Promise.resolve([])
+    ]);
+    
+    // Filter Buchungen within date range
+    const filteredBuchungen = buchungen.filter(
+      tx => tx.date >= startDate && tx.date <= endDate
+    );
+    
+    // Generate transactions from other sources
+    const fixkostenBuchungen = includeFixkosten 
+      ? convertFixkostenToBuchungen(startDate, endDate, fixkosten)
+      : [];
+      
+    const simulationenBuchungen = includeSimulationen
+      ? convertSimulationenToBuchungen(startDate, endDate, simulationen)
+      : [];
+      
+    const lohnkostenBuchungen = includeLohnkosten
+      ? convertLohnkostenToBuchungen(startDate, endDate, mitarbeiter)
+      : [];
+    
+    // Combine all transactions and return
+    return [
+      ...filteredBuchungen,
+      ...fixkostenBuchungen,
+      ...simulationenBuchungen,
+      ...lohnkostenBuchungen
+    ];
+  } catch (error: any) {
+    console.error('Error getting all transactions:', error);
+    throw new Error(`Failed to get all transactions: ${error.message || 'Unknown error'}`);
+  }
 } 

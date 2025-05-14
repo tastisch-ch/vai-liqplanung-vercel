@@ -6,8 +6,9 @@
 import { loadBuchungen, enhanceTransactions } from './buchungen';
 import { loadFixkosten, generateFixkostenProjections, calculateMonthlyCosts } from './fixkosten';
 import { loadSimulationen, generateSimulationProjections, convertSimulationenToBuchungen } from './simulationen';
+import { loadLohnkosten, generateLohnkostenProjections, calculateMonthlyLohnkosten } from './lohnkosten';
 import { getUserSettings } from './user-settings';
-import { Buchung, Fixkosten, Simulation } from '@/models/types';
+import { Buchung, Fixkosten, Simulation, Mitarbeiter, LohnDaten } from '@/models/types';
 import { addMonths, format, eachMonthOfInterval, isWithinInterval, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -16,6 +17,7 @@ export interface FinancialSummary {
   monthlyIncome: number;
   monthlyExpenses: number;
   upcomingPayments: number;
+  monthlyLohnkosten: number;
 }
 
 export interface Transaction {
@@ -82,10 +84,11 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
     }
     
     // Load all necessary data in parallel
-    const [buchungen, fixkosten, simulationen, userSettings] = await Promise.all([
+    const [buchungen, fixkosten, simulationen, lohnkostenData, userSettings] = await Promise.all([
       loadBuchungen(userId),
       loadFixkosten(userId),
       loadSimulationen(userId),
+      loadLohnkosten(userId),
       getUserSettings(userId)
     ]);
     
@@ -95,7 +98,8 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
     const summary = calculateFinancialSummary(
       buchungen, 
       fixkosten, 
-      simulationen, 
+      simulationen,
+      lohnkostenData,
       startBalance
     );
     
@@ -103,7 +107,7 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
     const recentTransactions = getRecentTransactions(buchungen, 4);
     
     // Get upcoming payments for the next 30 days with days until due
-    const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, 30);
+    const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, lohnkostenData, 30);
     
     // Get expense breakdown by category
     const expenseCategories = getExpensesByCategory(buchungen);
@@ -114,8 +118,11 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
     // Get cash flow data for the last 6 months
     const cashFlow = getCashFlowData(buchungen, 6);
     
-    // Calculate cash runway
-    const cashRunway = calculateCashRunway(summary.currentBalance, summary.monthlyExpenses);
+    // Calculate cash runway (including salary costs in the burn rate)
+    const cashRunway = calculateCashRunway(
+      summary.currentBalance, 
+      summary.monthlyExpenses + summary.monthlyLohnkosten
+    );
     
     return {
       summary,
@@ -140,6 +147,7 @@ function calculateFinancialSummary(
   buchungen: Buchung[],
   fixkosten: Fixkosten[],
   simulationen: Simulation[],
+  lohnkostenData: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
   startBalance: number
 ): FinancialSummary {
   // Get enhanced transactions with running balance
@@ -168,15 +176,19 @@ function calculateFinancialSummary(
     }
   }
   
+  // Calculate monthly salary costs
+  const monthlyLohnkosten = calculateMonthlyLohnkosten(lohnkostenData);
+  
   // Calculate upcoming payments for the next 30 days
-  const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, 30)
+  const upcomingPayments = getUpcomingPaymentsWithAlerts(fixkosten, simulationen, lohnkostenData, 30)
     .reduce((sum, payment) => sum + payment.amount, 0);
   
   return {
     currentBalance,
     monthlyIncome,
     monthlyExpenses,
-    upcomingPayments
+    upcomingPayments,
+    monthlyLohnkosten
   };
 }
 
@@ -202,11 +214,12 @@ function getRecentTransactions(buchungen: Buchung[], limit: number = 5): Transac
 }
 
 /**
- * Get upcoming payments from fixed costs and simulations with days until due
+ * Get upcoming payments from fixed costs, simulations, and salary costs with days until due
  */
 function getUpcomingPaymentsWithAlerts(
   fixkosten: Fixkosten[], 
   simulationen: Simulation[], 
+  lohnkostenData: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
   daysAhead: number = 30
 ): PaymentAlert[] {
   const today = new Date();
@@ -220,6 +233,9 @@ function getUpcomingPaymentsWithAlerts(
   
   // Generate upcoming simulations
   const upcomingSimulationen = generateSimulationProjections(simulationen, today, endDate);
+
+  // Generate upcoming salary costs
+  const upcomingLohnkosten = generateLohnkostenProjections(lohnkostenData, today, endDate);
   
   // Combine and convert to PaymentAlert format
   const fixkostenAlerts = upcomingFixkosten.map((fx: Fixkosten & { date: Date }) => ({
@@ -243,9 +259,20 @@ function getUpcomingPaymentsWithAlerts(
     hint: '🔮',
     daysUntilDue: differenceInDays(new Date(sim.date), today)
   }));
+
+  const lohnkostenAlerts = upcomingLohnkosten.map((lohn) => ({
+    id: `lohn-${lohn.mitarbeiter.id}-${lohn.date.getTime()}`,
+    date: lohn.date.toISOString().split('T')[0],
+    description: `Lohn: ${lohn.mitarbeiter.Name}`,
+    amount: lohn.lohn.Betrag,
+    category: 'Lohn',
+    type: 'expense' as const,
+    hint: '💰',
+    daysUntilDue: differenceInDays(new Date(lohn.date), today)
+  }));
   
   // Combine and sort by days until due (ascending)
-  return [...fixkostenAlerts, ...simulationAlerts]
+  return [...fixkostenAlerts, ...simulationAlerts, ...lohnkostenAlerts]
     .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
 }
 
@@ -438,7 +465,8 @@ function getEmptyDashboardData(): DashboardData {
       currentBalance: 0,
       monthlyIncome: 0,
       monthlyExpenses: 0,
-      upcomingPayments: 0
+      upcomingPayments: 0,
+      monthlyLohnkosten: 0
     },
     recentTransactions: [],
     upcomingPayments: [],
