@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase/client';
 import { Buchung, EnhancedTransaction, TransactionCategory } from '@/models/types';
 import { dateToIsoString, adjustPaymentDate } from '@/lib/date-utils/format';
 import { getSignedAmount } from '@/lib/currency/format';
-import { convertFixkostenToBuchungen } from './fixkosten';
-import { convertSimulationenToBuchungen } from './simulationen';
+import { convertFixkostenToBuchungen, loadFixkosten } from './fixkosten';
+import { convertSimulationenToBuchungen, loadSimulationen } from './simulationen';
 import { convertLohnkostenToBuchungen } from './lohnkosten';
 import { loadMitarbeiter } from './mitarbeiter';
 
