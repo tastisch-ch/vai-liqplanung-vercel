@@ -5,8 +5,9 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
-import { Fixkosten, Buchung } from '@/models/types';
+import { Fixkosten, Buchung, FixkostenOverride } from '@/models/types';
 import { dateToIsoString, getNextOccurrence, adjustPaymentDate } from '@/lib/date-utils/format';
+import { findOverrideForDate } from './fixkosten-overrides';
 
 /**
  * Load all fixed costs from the database
@@ -231,12 +232,13 @@ export function calculateMonthlyCosts(fixkosten: Fixkosten[]): number {
 
 /**
  * Convert fixed costs to transactions for a given date range
- * Similar to convert_fixkosten_to_buchungen in the Python app
+ * With support for fixkosten overrides (exceptions)
  */
 export function convertFixkostenToBuchungen(
   startDate: Date, 
   endDate: Date, 
-  fixkosten: Fixkosten[]
+  fixkosten: Fixkosten[],
+  overrides: FixkostenOverride[] = []
 ): Buchung[] {
   const result: Buchung[] = [];
   
@@ -256,31 +258,47 @@ export function convertFixkostenToBuchungen(
         break;
       }
       
+      // Check for overrides for this specific fixkosten+date combination
+      const override = findOverrideForDate(overrides, fixkosten.id, currentDate);
+      
+      // If this occurrence is skipped by an override, skip to the next occurrence
+      if (override && override.is_skipped) {
+        // Get next occurrence based on rhythm and continue with the loop
+        currentDate = getNextOccurrence(currentDate, fixkosten.rhythmus);
+        continue;
+      }
+      
       // Check if the original date is at the end of the month (e.g., 30th, 31st)
       const originalDate = new Date(fixkosten.start);
       const originalDay = originalDate.getDate();
       const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
-      // More robust end-of-month detection:
-      // 1. If it's exactly the last day of the month, or
-      // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
       const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
       
-      // Adjust the payment date for weekends and month-end cases
-      // Always move weekend dates to previous Friday for better business practice
-      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd, true);
-      
-      // Create transaction
+      // Use the appropriate date - either the override date or the adjusted regular date
+      let transactionDate = override && override.new_date 
+        ? new Date(override.new_date) 
+        : adjustPaymentDate(new Date(currentDate), isMonthEnd, true);
+        
+      // Use the appropriate amount - either the override amount or the regular amount
+      const transactionAmount = override && override.new_amount !== null
+        ? override.new_amount
+        : fixkosten.betrag;
+        
+      // Create transaction with potential override details
       result.push({
         id: `fixkosten_${fixkosten.id}_${currentDate.toISOString()}`,
-        date: adjustedDate,
+        date: transactionDate,
         details: fixkosten.name,
-        amount: fixkosten.betrag,
+        amount: transactionAmount,
         direction: 'Outgoing',
         user_id: fixkosten.user_id,
         kategorie: fixkosten.kategorie || 'Fixkosten',
         created_at: fixkosten.created_at,
-        // Add a flag to indicate if the date was shifted due to weekend or month-end
-        shifted: adjustedDate.getTime() !== currentDate.getTime()
+        // Flag for shifted date (either by weekend adjustment or override)
+        shifted: transactionDate.getTime() !== currentDate.getTime(),
+        // Add override information
+        isOverridden: !!override,
+        overrideNotes: override?.notes || undefined
       });
       
       // Get next occurrence based on rhythm

@@ -8,12 +8,14 @@ import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
 import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
 import { getUserSettings } from "@/lib/services/user-settings";
-import { EnhancedTransaction, TransactionCategory } from "@/models/types";
+import { EnhancedTransaction, TransactionCategory, FixkostenOverride } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths, addQuarters, addYears } from "date-fns";
 import { de } from "date-fns/locale";
 import LiquidityChart from "@/app/components/chart/LiquidityChart";
 import PlanungSummary from "@/app/components/summary/PlanungSummary";
+import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
+import OverrideModal from "@/app/components/fixkosten/OverrideModal";
 
 export default function Planung() {
   const { authState } = useAuth();
@@ -57,6 +59,12 @@ export default function Planung() {
   const [exportTitle, setExportTitle] = useState('Liquiditätsplanung');
   const [isExporting, setIsExporting] = useState(false);
   
+  // Add new state variables
+  const [overrides, setOverrides] = useState<FixkostenOverride[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<EnhancedTransaction | null>(null);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [selectedOverride, setSelectedOverride] = useState<FixkostenOverride | null>(null);
+  
   // Fetch all data
   useEffect(() => {
     async function fetchData() {
@@ -70,19 +78,23 @@ export default function Planung() {
         const settings = await getUserSettings(user.id);
         const startBalance = settings.start_balance;
         
-        // Load transactions, fixed costs, simulations, and employees
-        const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
+        // Load transactions, fixed costs, simulations, employees, and now overrides
+        const [buchungen, fixkosten, simulationen, lohnkostenData, overridesData] = await Promise.all([
           loadBuchungen(user.id),
           loadFixkosten(user.id),
           loadSimulationen(user.id),
-          loadLohnkosten(user.id)
+          loadLohnkosten(user.id),
+          loadFixkostenOverrides(user.id)
         ]);
+        
+        // Set overrides state
+        setOverrides(overridesData);
         
         // Convert fixed costs, simulations, and salaries to transactions
         let allTransactions = [...buchungen];
         
         if (showFixkosten) {
-          const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten);
+          const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
           allTransactions = [...allTransactions, ...fixkostenBuchungen];
         }
         
@@ -269,6 +281,82 @@ export default function Planung() {
       alert('Fehler beim Export. Bitte versuchen Sie es später erneut.');
     } finally {
       setIsExporting(false);
+    }
+  };
+  
+  // Function to handle transaction context menu (right-click)
+  const handleTransactionContextMenu = (e: React.MouseEvent, transaction: EnhancedTransaction) => {
+    // Only show for Fixkosten
+    if (!transaction.id.startsWith('fixkosten_')) return;
+    
+    e.preventDefault();
+    setSelectedTransaction(transaction);
+    
+    // Find any existing override for this transaction
+    if (transaction.id.startsWith('fixkosten_')) {
+      const fixkostenId = transaction.id.split('_')[1];
+      const override = overrides.find(o => 
+        o.fixkosten_id === fixkostenId && 
+        o.original_date.getTime() === new Date(transaction.date.getFullYear(), transaction.date.getMonth(), transaction.date.getDate()).getTime()
+      );
+      setSelectedOverride(override || null);
+    } else {
+      setSelectedOverride(null);
+    }
+    
+    setShowOverrideModal(true);
+  };
+
+  // Function to refresh data after saving an override
+  const handleOverrideSaved = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Reload overrides data
+      const overridesData = await loadFixkostenOverrides(user.id);
+      setOverrides(overridesData);
+      
+      // Re-fetch all data to update transactions with the new overrides
+      // This reuses the fetchData function in the useEffect
+      
+      // Load user settings for starting balance
+      const settings = await getUserSettings(user.id);
+      const startBalance = settings.start_balance;
+      
+      // Load transactions, fixed costs, simulations, employees
+      const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
+        loadBuchungen(user.id),
+        loadFixkosten(user.id),
+        loadSimulationen(user.id),
+        loadLohnkosten(user.id)
+      ]);
+      
+      // Convert fixed costs, simulations, and salaries to transactions
+      let allTransactions = [...buchungen];
+      
+      if (showFixkosten) {
+        const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
+        allTransactions = [...allTransactions, ...fixkostenBuchungen];
+      }
+      
+      if (showSimulationen) {
+        const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
+        allTransactions = [...allTransactions, ...simulationBuchungen];
+      }
+      
+      if (showLoehne) {
+        const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
+        allTransactions = [...allTransactions, ...lohnBuchungen];
+      }
+      
+      // Enhance transactions with running balance
+      const enhancedTx = enhanceTransactions(allTransactions, startBalance);
+      setTransactions(enhancedTx);
+      
+      // Apply filters
+      applyFilters(enhancedTx);
+    } catch (error) {
+      console.error('Error refreshing data after override:', error);
     }
   };
   
@@ -544,7 +632,9 @@ export default function Planung() {
                               ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
                               ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
                               ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
+                              ${transaction.isOverridden ? 'border-l-4 border-orange-400' : ''}
                             `}
+                            onContextMenu={(e) => handleTransactionContextMenu(e, transaction)}
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
@@ -554,10 +644,30 @@ export default function Planung() {
                                   verschoben
                                 </span>
                               )}
+                              {transaction.isOverridden && (
+                                <span className="ml-1 inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800 ring-1 ring-inset ring-orange-600/20" 
+                                      title={transaction.overrideNotes || 'Manuell angepasst'}>
+                                  angepasst
+                                </span>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
                               {transaction.details}
+                              {transaction.id.startsWith('fixkosten_') && (
+                                <button 
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTransactionContextMenu(e, transaction);
+                                  }}
+                                  title="Transaktion anpassen"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {transaction.kategorie === 'Lohn' ? (
@@ -672,6 +782,19 @@ export default function Planung() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Override Modal */}
+      {selectedTransaction && showOverrideModal && (
+        <OverrideModal
+          transaction={selectedTransaction}
+          override={selectedOverride}
+          existingOverrides={overrides}
+          userId={user?.id || ''}
+          isOpen={showOverrideModal}
+          onClose={() => setShowOverrideModal(false)}
+          onSave={handleOverrideSaved}
+        />
       )}
     </div>
   );

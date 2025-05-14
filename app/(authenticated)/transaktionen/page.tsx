@@ -8,15 +8,22 @@ import {
   updateBuchungById, 
   deleteBuchungById,
   enhanceTransactions,
-  getAllTransactionsForPlanning
+  getAllTransactionsForPlanning,
+  filterTransactions
 } from "@/lib/services/buchungen";
+import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
+import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
+import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
+import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
+import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { getUserSettings } from "@/lib/services/user-settings";
-import { Buchung, EnhancedTransaction } from "@/models/types";
+import { Buchung, EnhancedTransaction, TransactionCategory, FixkostenOverride } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, addQuarters, addYears } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import ExportButton from "@/components/export/ExportButton";
+import OverrideModal from "@/app/components/fixkosten/OverrideModal";
 
 export default function TransaktionenPage() {
   const { authState } = useAuth();
@@ -56,6 +63,26 @@ export default function TransaktionenPage() {
   const [searchText, setSearchText] = useState('');
   const [showModifiedOnly, setShowModifiedOnly] = useState(false);
   
+  // Add new state variables
+  const [overrides, setOverrides] = useState<FixkostenOverride[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<EnhancedTransaction | null>(null);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [selectedOverride, setSelectedOverride] = useState<FixkostenOverride | null>(null);
+  
+  // Filters
+  const [showFixkosten, setShowFixkosten] = useState(true);
+  const [showSimulationen, setShowSimulationen] = useState(false);
+  const [showLoehne, setShowLoehne] = useState(true);
+  const [showPastTransactions, setShowPastTransactions] = useState(true);
+  
+  // Date range for transactions
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - 6); // 6 months back
+    return date;
+  });
+  const [endDate, setEndDate] = useState(() => addMonths(new Date(), 6)); // 6 months ahead
+  
   // Fetch transactions
   useEffect(() => {
     let isMounted = true;
@@ -73,21 +100,35 @@ export default function TransaktionenPage() {
         const settings = await getUserSettings(user.id);
         const startBalance = settings.start_balance;
         
-        // Load all transaction types including Lohnkosten
-        const startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 6); // 6 months back
-        const endDate = addMonths(new Date(), 6); // 6 months ahead
+        // Load transactions, fixed costs, simulations, and overrides
+        const [buchungen, fixkosten, simulationen, lohnkostenData, overridesData] = await Promise.all([
+          loadBuchungen(user.id),
+          loadFixkosten(user.id),
+          loadSimulationen(user.id),
+          loadLohnkosten(user.id),
+          loadFixkostenOverrides(user.id)
+        ]);
         
-        const allTransactions = await getAllTransactionsForPlanning(
-          user.id,
-          startDate,
-          endDate,
-          {
-            includeFixkosten: true,
-            includeSimulationen: false, // Don't include simulations by default in the transaction view
-            includeLohnkosten: true
-          }
-        );
+        // Set overrides state
+        setOverrides(overridesData);
+        
+        // Convert fixed costs and simulations to transactions for the date range
+        let allTransactions = [...buchungen];
+        
+        if (showFixkosten) {
+          const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
+          allTransactions = [...allTransactions, ...fixkostenBuchungen];
+        }
+        
+        if (showSimulationen) {
+          const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
+          allTransactions = [...allTransactions, ...simulationBuchungen];
+        }
+        
+        if (showLoehne) {
+          const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
+          allTransactions = [...allTransactions, ...lohnBuchungen];
+        }
         
         // Enhance transactions with running balance
         const enhancedTx = enhanceTransactions(allTransactions, startBalance);
@@ -355,6 +396,77 @@ export default function TransaktionenPage() {
       resetForm();
     }
   };
+
+  // Function to handle transaction context menu (right-click)
+  const handleTransactionContextMenu = (e: React.MouseEvent, transaction: EnhancedTransaction) => {
+    // Only show for Fixkosten
+    if (!transaction.id.startsWith('fixkosten_')) return;
+    
+    e.preventDefault();
+    setSelectedTransaction(transaction);
+    
+    // Find any existing override for this transaction
+    if (transaction.id.startsWith('fixkosten_')) {
+      const fixkostenId = transaction.id.split('_')[1];
+      const override = overrides.find(o => 
+        o.fixkosten_id === fixkostenId && 
+        o.original_date.getTime() === new Date(transaction.date.getFullYear(), transaction.date.getMonth(), transaction.date.getDate()).getTime()
+      );
+      setSelectedOverride(override || null);
+    } else {
+      setSelectedOverride(null);
+    }
+    
+    setShowOverrideModal(true);
+  };
+
+  // Function to refresh data after saving an override
+  const handleOverrideSaved = async () => {
+    if (!user?.id) return;
+    
+    try {
+      // Reload overrides data
+      const overridesData = await loadFixkostenOverrides(user.id);
+      setOverrides(overridesData);
+      
+      // Refresh the data
+      const settings = await getUserSettings(user.id);
+      const startBalance = settings.start_balance;
+      
+      const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
+        loadBuchungen(user.id),
+        loadFixkosten(user.id),
+        loadSimulationen(user.id),
+        loadLohnkosten(user.id)
+      ]);
+      
+      let allTransactions = [...buchungen];
+      
+      if (showFixkosten) {
+        const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
+        allTransactions = [...allTransactions, ...fixkostenBuchungen];
+      }
+      
+      if (showSimulationen) {
+        const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
+        allTransactions = [...allTransactions, ...simulationBuchungen];
+      }
+      
+      if (showLoehne) {
+        const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
+        allTransactions = [...allTransactions, ...lohnBuchungen];
+      }
+      
+      // Enhance transactions with running balance
+      const enhancedTx = enhanceTransactions(allTransactions, startBalance);
+      setTransactions(enhancedTx);
+      
+      // Apply filters
+      applyFilters(enhancedTx);
+    } catch (error) {
+      console.error('Error refreshing data after override:', error);
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -421,38 +533,89 @@ export default function TransaktionenPage() {
       )}
       
       {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="searchText" className="block text-sm font-medium text-gray-700 mb-1">
-              Suche in Beschreibung
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <h2 className="text-lg font-semibold mb-2">Filter</h2>
+        
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex items-center">
+            <label htmlFor="search" className="mr-2 text-sm font-medium text-gray-700">
+              Suche:
             </label>
             <input
-              id="searchText"
               type="text"
+              id="search"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Suchbegriff eingeben..."
+              className="px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Suchbegriff..."
             />
           </div>
           
-          <div className="flex items-end">
-            <label className="inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={showModifiedOnly}
-                onChange={(e) => setShowModifiedOnly(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
-              />
-              <span className="ml-2 text-sm text-gray-700">Nur bearbeitete Einträge anzeigen ✏️</span>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showPastTransactions"
+              checked={showPastTransactions}
+              onChange={(e) => setShowPastTransactions(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showPastTransactions" className="ml-2 text-sm text-gray-700">
+              Vergangene Transaktionen anzeigen
             </label>
           </div>
           
-          <div className="flex items-end justify-end">
-            <span className="text-sm text-gray-500">
-              {filteredTransactions.length} Transaktion(en) gefunden
-            </span>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showModifiedOnly"
+              checked={showModifiedOnly}
+              onChange={(e) => setShowModifiedOnly(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showModifiedOnly" className="ml-2 text-sm text-gray-700">
+              Nur angepasste Transaktionen
+            </label>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showFixkosten"
+              checked={showFixkosten}
+              onChange={(e) => setShowFixkosten(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showFixkosten" className="ml-2 text-sm text-gray-700">
+              Fixkosten anzeigen
+            </label>
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showSimulationen"
+              checked={showSimulationen}
+              onChange={(e) => setShowSimulationen(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showSimulationen" className="ml-2 text-sm text-gray-700">
+              Simulationen anzeigen
+            </label>
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showLoehne"
+              checked={showLoehne}
+              onChange={(e) => setShowLoehne(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="showLoehne" className="ml-2 text-sm text-gray-700">
+              Lohnkosten anzeigen
+            </label>
           </div>
         </div>
       </div>
@@ -496,16 +659,48 @@ export default function TransaktionenPage() {
                   const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
                   
                   return (
-                    <tr key={transaction.id} className={`
-                      ${transaction.modified ? 'bg-blue-50' : 'hover:bg-gray-50'}
-                      ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
-                    `}>
+                    <tr 
+                      key={transaction.id} 
+                      className={`
+                        hover:bg-gray-50
+                        ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
+                        ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
+                        ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
+                        ${transaction.isOverridden ? 'border-l-4 border-orange-400' : ''}
+                      `}
+                      onContextMenu={(e) => handleTransactionContextMenu(e, transaction)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(transaction.date, 'dd.MM.yyyy')}
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                        {transaction.shifted && (
+                          <span className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20" 
+                                title="Ursprünglicher Termin ist Wochenende - auf Freitag verschoben">
+                            verschoben
+                          </span>
+                        )}
+                        {transaction.isOverridden && (
+                          <span className="ml-1 inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800 ring-1 ring-inset ring-orange-600/20" 
+                                title={transaction.overrideNotes || 'Manuell angepasst'}>
+                            angepasst
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
                         {transaction.details}
+                        {transaction.id.startsWith('fixkosten_') && (
+                          <button 
+                            className="ml-2 text-xs text-gray-400 hover:text-blue-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTransactionContextMenu(e, transaction);
+                            }}
+                            title="Transaktion anpassen"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {transaction.kategorie === 'Lohn' ? (
@@ -669,6 +864,19 @@ export default function TransaktionenPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* OverrideModal at the end of the component's return */}
+      {selectedTransaction && showOverrideModal && (
+        <OverrideModal
+          transaction={selectedTransaction}
+          override={selectedOverride}
+          existingOverrides={overrides}
+          userId={user?.id || ''}
+          isOpen={showOverrideModal}
+          onClose={() => setShowOverrideModal(false)}
+          onSave={handleOverrideSaved}
+        />
       )}
     </div>
   );

@@ -10,6 +10,8 @@ export interface Buchung {
   user_id: string;
   created_at: string;
   updated_at?: string;
+  isOverridden?: boolean;
+  overrideNotes?: string;
 }
 
 export interface Fixkosten {
@@ -18,11 +20,11 @@ export interface Fixkosten {
   betrag: number;
   rhythmus: 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich';
   start: Date;
-  enddatum?: Date | null;
-  kategorie?: string;
+  enddatum: Date | null;
   user_id: string;
+  kategorie?: string;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
 }
 
 export interface LohnDaten {
@@ -105,4 +107,18 @@ export interface EnhancedTransaction extends Buchung {
   kontostand?: number;
   hinweis?: string;
   kategorie: TransactionCategory;
+}
+
+// New type for fixkosten overrides (exceptions)
+export interface FixkostenOverride {
+  id: string;
+  fixkosten_id: string;
+  original_date: Date;
+  new_date: Date | null;
+  new_amount: number | null;
+  is_skipped: boolean;
+  notes: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 } 
