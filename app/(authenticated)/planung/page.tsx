@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
-import { convertLohneToBuchungen, loadMitarbeiter } from "@/lib/services/mitarbeiter";
+import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
+import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
 import { getUserSettings } from "@/lib/services/user-settings";
 import { EnhancedTransaction, TransactionCategory } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
@@ -68,11 +69,11 @@ export default function Planung() {
         const startBalance = settings.start_balance;
         
         // Load transactions, fixed costs, simulations, and employees
-        const [buchungen, fixkosten, simulationen, mitarbeiter] = await Promise.all([
+        const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
           loadBuchungen(user.id),
           loadFixkosten(user.id),
           loadSimulationen(user.id),
-          loadMitarbeiter(user.id)
+          loadLohnkosten(user.id)
         ]);
         
         // Convert fixed costs, simulations, and salaries to transactions
@@ -89,7 +90,7 @@ export default function Planung() {
         }
         
         if (showLoehne) {
-          const lohnBuchungen = convertLohneToBuchungen(startDate, endDate, mitarbeiter);
+          const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
           allTransactions = [...allTransactions, ...lohnBuchungen];
         }
         

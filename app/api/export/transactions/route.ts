@@ -4,7 +4,8 @@ import { cookies } from 'next/headers';
 import { loadBuchungen, enhanceTransactions } from '@/lib/services/buchungen';
 import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
 import { loadSimulationen, convertSimulationenToBuchungen } from '@/lib/services/simulationen';
-import { convertLohneToBuchungen, loadMitarbeiter } from '@/lib/services/mitarbeiter';
+import { loadMitarbeiter } from '@/lib/services/mitarbeiter';
+import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
 import { getUserSettings } from '@/lib/services/user-settings';
 import { transactionsToCSV, generatePDFContent, generateManagementSummary } from '@/lib/export';
 import { getMimeType, generateExportFilename } from '@/lib/export/utils';
@@ -267,7 +268,7 @@ export async function POST(request: NextRequest) {
       endDate,
       includeFixkosten = true,
       includeSimulationen = true,
-      includeLoehne = true,
+      includeLohnkosten = true,
       format = 'csv', // csv, pdf, management-summary
       title,
       subtitle
@@ -289,11 +290,11 @@ export async function POST(request: NextRequest) {
     const startBalance = settings.start_balance;
     
     // Load data
-    const [buchungen, fixkosten, simulationen, mitarbeiter] = await Promise.all([
+    const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
       loadBuchungen(user.id),
       includeFixkosten ? loadFixkosten(user.id) : Promise.resolve([]),
       includeSimulationen ? loadSimulationen(user.id) : Promise.resolve([]),
-      includeLoehne ? loadMitarbeiter(user.id) : Promise.resolve([])
+      includeLohnkosten ? loadLohnkosten(user.id) : Promise.resolve([])
     ]);
     
     // Build transactions list
@@ -309,8 +310,8 @@ export async function POST(request: NextRequest) {
       allTransactions = [...allTransactions, ...simulationBuchungen];
     }
     
-    if (includeLoehne) {
-      const lohnBuchungen = convertLohneToBuchungen(start, end, mitarbeiter);
+    if (includeLohnkosten) {
+      const lohnBuchungen = convertLohnkostenToBuchungen(start, end, lohnkostenData.map(item => item.mitarbeiter));
       allTransactions = [...allTransactions, ...lohnBuchungen];
     }
     
