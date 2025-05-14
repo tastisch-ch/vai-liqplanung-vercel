@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from "@/components/auth/AuthProvider";
-import { loadBuchungen, enhanceTransactions } from "@/lib/services/buchungen";
+import { loadBuchungen, enhanceTransactions, getAllTransactionsForPlanning } from "@/lib/services/buchungen";
 import { getUserSettings } from "@/lib/services/user-settings";
 import { EnhancedTransaction } from "@/models/types";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
@@ -82,11 +82,26 @@ export default function AnalysePage() {
         const settings = await getUserSettings(user.id);
         const startBalance = settings.start_balance;
         
-        // Load transactions
-        const buchungen = await loadBuchungen(user.id);
+        // Load transactions including Lohnkosten
+        // Use getAllTransactionsForPlanning to get all transaction types including Lohnkosten
+        const allTransactionsStartDate = new Date();
+        allTransactionsStartDate.setFullYear(allTransactionsStartDate.getFullYear() - 1); // 1 year back
+        const allTransactionsEndDate = new Date();
+        allTransactionsEndDate.setFullYear(allTransactionsEndDate.getFullYear() + 1); // 1 year ahead
+        
+        const allTransactions = await getAllTransactionsForPlanning(
+          user.id,
+          allTransactionsStartDate,
+          allTransactionsEndDate,
+          {
+            includeFixkosten: true,
+            includeSimulationen: false, // Don't include simulations by default
+            includeLohnkosten: true
+          }
+        );
         
         // Enhance transactions with running balance
-        const enhancedTx = enhanceTransactions(buchungen, startBalance);
+        const enhancedTx = enhanceTransactions(allTransactions, startBalance);
         setTransactions(enhancedTx);
       } catch (err) {
         setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');
@@ -457,7 +472,9 @@ export default function AnalysePage() {
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
-                {category} {isShown ? '✓' : ''}
+                {category === 'Lohn' ? (
+                  <>💰 Lohn</>
+                ) : category} {isShown ? '✓' : ''}
               </button>
             ))}
           </div>

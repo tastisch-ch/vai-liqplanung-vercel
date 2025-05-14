@@ -201,6 +201,44 @@ export async function GET(request: NextRequest) {
     const fromDate2 = fromDate ? new Date(fromDate) : new Date();
     const toDate2 = toDate ? new Date(toDate) : new Date();
     
+    // Get additional data types (fixkosten, simulationen, lohnkosten)
+    let fixkostenData: any[] = [];
+    let simulationenData: any[] = [];
+    let lohnkostenData: any[] = [];
+    
+    try {
+      // Load fixkosten
+      const { data: fixkosten } = await loadFixkosten(userId);
+      if (fixkosten && fixkosten.length > 0) {
+        const fixkostenBuchungen = convertFixkostenToBuchungen(
+          fromDate2, toDate2, fixkosten
+        );
+        fixkostenData = fixkostenBuchungen;
+      }
+      
+      // Load simulationen (optional based on URL parameter)
+      if (searchParams.get('include_simulationen') === 'true') {
+        const { data: simulationen } = await loadSimulationen(userId);
+        if (simulationen && simulationen.length > 0) {
+          const simulationenBuchungen = convertSimulationenToBuchungen(
+            fromDate2, toDate2, simulationen
+          );
+          simulationenData = simulationenBuchungen;
+        }
+      }
+      
+      // Load lohnkosten
+      const lohnkostenRaw = await loadLohnkosten(userId, fromDate2, toDate2);
+      if (lohnkostenRaw && lohnkostenRaw.length > 0) {
+        const lohnkostenBuchungen = convertLohnkostenToBuchungen(
+          fromDate2, toDate2, lohnkostenRaw
+        );
+        lohnkostenData = lohnkostenBuchungen;
+      }
+    } catch (e) {
+      console.error('Error loading additional data for export:', e);
+    }
+    
     // Format for generateExportFilename (from/to)
     const dateRangeForFilename = {
       from: fromDate2,
@@ -219,8 +257,16 @@ export async function GET(request: NextRequest) {
       date: new Date(t.date)
     })) as Buchung[];
     
+    // Combine all transaction types
+    const allTransactions = [
+      ...parsedTransactions,
+      ...fixkostenData,
+      ...simulationenData,
+      ...lohnkostenData
+    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+    
     // Enhance transactions with balances
-    const enhancedTransactions = enhanceTransactions(parsedTransactions, 0);
+    const enhancedTransactions = enhanceTransactions(allTransactions, 0);
     
     // Generate CSV content
     const content = transactionsToCSV(enhancedTransactions, { dateRange: exportDateRange });

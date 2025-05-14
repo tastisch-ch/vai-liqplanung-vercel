@@ -7,12 +7,13 @@ import {
   addBuchung, 
   updateBuchungById, 
   deleteBuchungById,
-  enhanceTransactions 
+  enhanceTransactions,
+  getAllTransactionsForPlanning
 } from "@/lib/services/buchungen";
 import { getUserSettings } from "@/lib/services/user-settings";
 import { Buchung, EnhancedTransaction } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import ExportButton from "@/components/export/ExportButton";
@@ -72,28 +73,41 @@ export default function TransaktionenPage() {
         const settings = await getUserSettings(user.id);
         const startBalance = settings.start_balance;
         
-        // Load transactions
-        const data = await loadBuchungen(user.id);
+        // Load all transaction types including Lohnkosten
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 6); // 6 months back
+        const endDate = addMonths(new Date(), 6); // 6 months ahead
+        
+        const allTransactions = await getAllTransactionsForPlanning(
+          user.id,
+          startDate,
+          endDate,
+          {
+            includeFixkosten: true,
+            includeSimulationen: false, // Don't include simulations by default in the transaction view
+            includeLohnkosten: true
+          }
+        );
         
         // Enhance transactions with running balance
-        const enhancedTx = enhanceTransactions(data, startBalance);
+        const enhancedTx = enhanceTransactions(allTransactions, startBalance);
         
         if (isMounted) {
-        setTransactions(enhancedTx);
-        applyFilters(enhancedTx);
-          showNotification(`${data.length} Transaktionen geladen`, 'success');
+          setTransactions(enhancedTx);
+          applyFilters(enhancedTx);
+          showNotification(`${allTransactions.length} Transaktionen geladen`, 'success');
         }
       } catch (err) {
         if (isMounted) {
           const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-        setError('Fehler beim Laden der Transaktionen. Bitte versuchen Sie es später erneut.');
+          setError('Fehler beim Laden der Transaktionen. Bitte versuchen Sie es später erneut.');
           showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
-        setTransactions([]);
-        setFilteredTransactions([]);
+          setTransactions([]);
+          setFilteredTransactions([]);
         }
       } finally {
         if (isMounted) {
-        setLoading(false);
+          setLoading(false);
         }
       }
     }
@@ -175,6 +189,12 @@ export default function TransaktionenPage() {
   
   // Start modal editing
   const startEditingModal = (transaction: Buchung) => {
+    // Don't allow editing of Lohnkosten entries
+    if (transaction.kategorie === 'Lohn') {
+      showNotification('Lohndaten können nicht direkt bearbeitet werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'warning');
+      return;
+    }
+    
     setEditingId(transaction.id);
     setEditingTransactionModal({...transaction});
   };
@@ -293,15 +313,22 @@ export default function TransaktionenPage() {
   
   // Handle transaction deletion
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Möchten Sie diese Transaktion wirklich löschen? Dieser Vorgang wirkt sich direkt auf die Supabase-Datenbank aus.')) {
+    // First check if this is a Lohnkosten entry
+    const txToDelete = transactions.find(tx => tx.id === id);
+    if (txToDelete && txToDelete.kategorie === 'Lohn') {
+      showNotification('Lohndaten können nicht direkt gelöscht werden. Bitte bearbeiten Sie die Mitarbeiterdaten.', 'warning');
+      return;
+    }
+    
+    if (!confirm('Sind Sie sicher, dass Sie diese Transaktion löschen möchten?')) {
       return;
     }
     
     setLoading(true);
-    setError(null);
     
     try {
-      showNotification('Lösche Transaktion aus Supabase...', 'loading');
+      showNotification('Lösche Transaktion...', 'loading');
+      
       await deleteBuchungById(id);
       
       // Update state
@@ -309,12 +336,10 @@ export default function TransaktionenPage() {
       setTransactions(updatedTransactions);
       applyFilters(updatedTransactions);
       
-      setSuccessMessage('Transaktion erfolgreich gelöscht.');
-      showNotification('Transaktion erfolgreich aus Supabase gelöscht', 'success');
+      showNotification('Transaktion erfolgreich gelöscht', 'success');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      setError('Fehler beim Löschen der Transaktion.');
-      showNotification(`Fehler: ${errorMessage}`, 'error', 10000);
+      showNotification(`Fehler beim Löschen der Transaktion: ${errorMessage}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -471,7 +496,10 @@ export default function TransaktionenPage() {
                   const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
                   
                   return (
-                    <tr key={transaction.id} className={transaction.modified ? 'bg-blue-50' : 'hover:bg-gray-50'}>
+                    <tr key={transaction.id} className={`
+                      ${transaction.modified ? 'bg-blue-50' : 'hover:bg-gray-50'}
+                      ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
+                    `}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {format(transaction.date, 'dd.MM.yyyy')}
                       </td>
@@ -480,7 +508,11 @@ export default function TransaktionenPage() {
                         {transaction.details}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.kategorie}
+                        {transaction.kategorie === 'Lohn' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            💰 Lohn
+                          </span>
+                        ) : transaction.kategorie}
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
                         {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}

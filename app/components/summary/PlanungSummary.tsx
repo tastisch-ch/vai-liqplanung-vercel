@@ -191,7 +191,13 @@ export default function PlanungSummary({ transactions, startDate, endDate }: Pla
               <tbody>
                 {metrics.categorySummary.map((category, index) => (
                   <tr key={index} className="border-b last:border-0">
-                    <td className="py-2">{category.name}</td>
+                    <td className="py-2">
+                      {category.name === 'Lohn' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          💰 Lohn
+                        </span>
+                      ) : category.name}
+                    </td>
                     <td className="py-2">{category.count}</td>
                     <td className={`py-2 text-right ${category.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {category.amount >= 0 ? '+' : ''}{formatCHF(category.amount)}
