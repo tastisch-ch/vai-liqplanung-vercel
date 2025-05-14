@@ -410,12 +410,6 @@ export default function Fixkosten() {
         <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
         
         <div className="flex items-center">
-          <Link 
-            href="/fixkosten/test-date" 
-            className="text-xs text-gray-500 hover:text-blue-600 mr-4"
-          >
-            Test Date Fix
-          </Link>
           {!isReadOnly && (
             <button
               onClick={() => setShowFixkostenModal(true)}
