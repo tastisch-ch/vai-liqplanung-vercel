@@ -159,9 +159,14 @@ export function getNextOccurrence(date: Date, rhythmus: string): Date {
  * 
  * @param date - The original payment date
  * @param isMonthEnd - Whether this date should always be treated as the end of month (e.g., for the 31st or the 30th)
+ * @param moveToPreviousFriday - Whether weekend dates should be moved to the previous Friday (default: true)
  * @returns Adjusted date suitable for business payments
  */
-export function adjustPaymentDate(date: Date, isMonthEnd: boolean = false): Date {
+export function adjustPaymentDate(
+  date: Date, 
+  isMonthEnd: boolean = false,
+  moveToPreviousFriday: boolean = true
+): Date {
   if (!date) return date;
   
   const result = new Date(date);
@@ -186,12 +191,14 @@ export function adjustPaymentDate(date: Date, isMonthEnd: boolean = false): Date
   }
   
   // Now handle weekend cases
-  const dayOfWeek = result.getDay(); // 0 = Sunday, 6 = Saturday
-  
-  if (dayOfWeek === 0) { // Sunday → Friday
-    result.setDate(result.getDate() - 2);
-  } else if (dayOfWeek === 6) { // Saturday → Friday
-    result.setDate(result.getDate() - 1);
+  if (moveToPreviousFriday) {
+    const dayOfWeek = result.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    if (dayOfWeek === 0) { // Sunday → Friday
+      result.setDate(result.getDate() - 2);
+    } else if (dayOfWeek === 6) { // Saturday → Friday
+      result.setDate(result.getDate() - 1);
+    }
   }
   
   return result;

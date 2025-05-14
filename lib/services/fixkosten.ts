@@ -249,15 +249,6 @@ export function convertFixkostenToBuchungen(
       return;
     }
     
-    // Check if the original date is at the end of the month (e.g., 30th, 31st)
-    const originalDate = new Date(fixkosten.start);
-    const originalDay = originalDate.getDate();
-    const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
-    // More robust end-of-month detection:
-    // 1. If it's exactly the last day of the month, or
-    // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
-    const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
-    
     // Generate occurrences until end date
     while (currentDate <= endDate) {
       // If we've passed the end date of this fixed cost, stop
@@ -265,8 +256,18 @@ export function convertFixkostenToBuchungen(
         break;
       }
       
+      // Check if the original date is at the end of the month (e.g., 30th, 31st)
+      const originalDate = new Date(fixkosten.start);
+      const originalDay = originalDate.getDate();
+      const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+      // More robust end-of-month detection:
+      // 1. If it's exactly the last day of the month, or
+      // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
+      const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
+      
       // Adjust the payment date for weekends and month-end cases
-      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
+      // Always move weekend dates to previous Friday for better business practice
+      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd, true);
       
       // Create transaction
       result.push({
@@ -277,7 +278,9 @@ export function convertFixkostenToBuchungen(
         direction: 'Outgoing',
         user_id: fixkosten.user_id,
         kategorie: fixkosten.kategorie || 'Fixkosten',
-        created_at: fixkosten.created_at
+        created_at: fixkosten.created_at,
+        // Add a flag to indicate if the date was shifted due to weekend or month-end
+        shifted: adjustedDate.getTime() !== currentDate.getTime()
       });
       
       // Get next occurrence based on rhythm
@@ -324,8 +327,18 @@ export function generateFixkostenProjections(
         break;
       }
       
+      // Check if the original date is at the end of the month (e.g., 30th, 31st)
+      const originalDate = new Date(fixkost.start);
+      const originalDay = originalDate.getDate();
+      const lastDayOfOriginalMonth = new Date(originalDate.getFullYear(), originalDate.getMonth() + 1, 0).getDate();
+      // More robust end-of-month detection:
+      // 1. If it's exactly the last day of the month, or
+      // 2. If it's day 30 or 31 (which are commonly used to mean "end of month")
+      const isMonthEnd = originalDay === lastDayOfOriginalMonth || originalDay >= 30;
+      
       // Adjust the payment date for weekends and month-end cases
-      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd);
+      // Always move weekend dates to previous Friday for better business practice
+      const adjustedDate = adjustPaymentDate(new Date(currentDate), isMonthEnd, true);
       
       // Add this occurrence
       projections.push({

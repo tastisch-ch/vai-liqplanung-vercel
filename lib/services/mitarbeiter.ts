@@ -462,7 +462,7 @@ export function convertLohneToBuchungen(
     
     // Apply weekend adjustment - move to Friday if on weekend
     // This ensures salary payments are never scheduled for weekends
-    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false);
+    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false, true);
     
     // Only process if the payment date is within our range
     if (adjustedPaymentDate >= startDate && adjustedPaymentDate <= endDate) {
@@ -479,7 +479,9 @@ export function convertLohneToBuchungen(
             direction: 'Outgoing',
             kategorie: 'Lohn',
             user_id: mitarbeiter.user_id,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            // Add a flag to indicate if the date was shifted due to weekend
+            shifted: adjustedPaymentDate.getTime() !== paymentDate.getTime()
           };
           
           result.push(buchung);

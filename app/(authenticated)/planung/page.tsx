@@ -537,12 +537,20 @@ export default function Planung() {
                         const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
                         
                         return (
-                          <tr key={transaction.id} className="hover:bg-gray-50">
+                          <tr 
+                            key={transaction.id} 
+                            className={`
+                              hover:bg-gray-50
+                              ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
+                              ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
+                              ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
+                            `}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
                               {transaction.shifted && (
                                 <span className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20" 
-                                      title="Ursprünglicher Termin ist überfällig - auf morgen verschoben">
+                                      title="Ursprünglicher Termin ist Wochenende - auf Freitag verschoben">
                                   verschoben
                                 </span>
                               )}
@@ -552,7 +560,19 @@ export default function Planung() {
                               {transaction.details}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {transaction.kategorie}
+                              {transaction.kategorie === 'Lohn' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                  💰 Lohn
+                                </span>
+                              ) : transaction.kategorie === 'Fixkosten' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  📌 Fixkosten
+                                </span>
+                              ) : transaction.kategorie === 'Simulation' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  🔮 Simulation
+                                </span>
+                              ) : transaction.kategorie}
                             </td>
                             <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
                               {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}

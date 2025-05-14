@@ -51,8 +51,8 @@ export function generateLohnkostenProjections(
   lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
   startDate: Date,
   endDate: Date
-): Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date }> {
-  const result: Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date }> = [];
+): Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date; shifted: boolean }> {
+  const result: Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date; shifted: boolean }> = [];
   
   // For each month in the date range, create salary projections
   let currentMonthDate = new Date(startDate);
@@ -63,7 +63,7 @@ export function generateLohnkostenProjections(
     paymentDate.setDate(25); // Salary payment on the 25th
     
     // Apply weekend adjustment - move to Friday if on weekend
-    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false);
+    const adjustedPaymentDate = adjustPaymentDate(paymentDate, false, true);
     
     // Only process if the payment date is within our range
     if (adjustedPaymentDate >= startDate && adjustedPaymentDate <= endDate) {
@@ -75,7 +75,9 @@ export function generateLohnkostenProjections(
           result.push({
             mitarbeiter,
             lohn,
-            date: adjustedPaymentDate
+            date: adjustedPaymentDate,
+            // Add information to indicate if the date was shifted
+            shifted: adjustedPaymentDate.getTime() !== paymentDate.getTime()
           });
         }
       });
