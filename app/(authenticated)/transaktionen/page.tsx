@@ -15,7 +15,7 @@ import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixko
 import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
 import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
-import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
+import { loadFixkostenOverrides, deleteFixkostenOverrideById } from "@/lib/services/fixkosten-overrides";
 import { getUserSettings } from "@/lib/services/user-settings";
 import { Buchung, EnhancedTransaction, TransactionCategory, FixkostenOverride } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
@@ -159,7 +159,7 @@ export default function TransaktionenPage() {
       isMounted = false;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // intentionally remove showNotification from dependencies
+  }, [user?.id, startDate, endDate, showFixkosten, showSimulationen, showLoehne, showPastTransactions]); // Add filter dependencies
   
   // Apply filters when filter criteria change
   useEffect(() => {
@@ -425,6 +425,9 @@ export default function TransaktionenPage() {
     if (!user?.id) return;
     
     try {
+      setLoading(true);
+      showNotification('Aktualisiere Daten...', 'loading');
+      
       // Reload overrides data
       const overridesData = await loadFixkostenOverrides(user.id);
       setOverrides(overridesData);
@@ -440,6 +443,7 @@ export default function TransaktionenPage() {
         loadLohnkosten(user.id)
       ]);
       
+      // Create a fresh transactions array
       let allTransactions = [...buchungen];
       
       if (showFixkosten) {
@@ -459,12 +463,40 @@ export default function TransaktionenPage() {
       
       // Enhance transactions with running balance
       const enhancedTx = enhanceTransactions(allTransactions, startBalance);
-      setTransactions(enhancedTx);
       
-      // Apply filters
+      // Update state
+      setTransactions(enhancedTx);
       applyFilters(enhancedTx);
+      
+      showNotification('Daten wurden aktualisiert', 'success');
     } catch (error) {
       console.error('Error refreshing data after override:', error);
+      showNotification('Fehler beim Aktualisieren der Daten', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle the deletion of an override
+  const handleDeleteOverride = async (id: string) => {
+    try {
+      setLoading(true);
+      showNotification('Lösche Ausnahme...', 'loading');
+      
+      await deleteFixkostenOverrideById(id);
+      showNotification('Ausnahme wurde gelöscht', 'success');
+      
+      // Refresh data
+      await handleOverrideSaved();
+      
+      // Close modal
+      setShowOverrideModal(false);
+    } catch (error) {
+      console.error('Error deleting override:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      showNotification(`Fehler beim Löschen: ${errorMessage}`, 'error');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -876,6 +908,7 @@ export default function TransaktionenPage() {
           isOpen={showOverrideModal}
           onClose={() => setShowOverrideModal(false)}
           onSave={handleOverrideSaved}
+          onDelete={handleDeleteOverride}
         />
       )}
     </div>

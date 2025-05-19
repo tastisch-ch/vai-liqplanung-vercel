@@ -14,7 +14,8 @@ type OverrideModalProps = {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
 };
 
 export default function OverrideModal({
@@ -24,7 +25,8 @@ export default function OverrideModal({
   userId,
   isOpen,
   onClose,
-  onSave
+  onSave,
+  onDelete
 }: OverrideModalProps) {
   const { showNotification } = useNotification();
   
@@ -97,8 +99,8 @@ export default function OverrideModal({
         showNotification('Ausnahme wurde erstellt', 'success');
       }
       
-      // Refresh data and close modal
-      onSave();
+      // Refresh data and close modal - ensure onSave completes before closing
+      await onSave();
       onClose();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
@@ -120,10 +122,17 @@ export default function OverrideModal({
     setIsLoading(true);
     
     try {
-      await deleteFixkostenOverrideById(override.id);
-      showNotification('Ausnahme wurde gelöscht', 'success');
-      onSave();
-      onClose();
+      if (onDelete) {
+        // Use parent component's delete handler if provided
+        await onDelete(override.id);
+        // Parent handler will handle notification, refresh, and closing
+      } else {
+        // Fallback to internal delete handling
+        await deleteFixkostenOverrideById(override.id);
+        showNotification('Ausnahme wurde gelöscht', 'success');
+        await onSave();
+        onClose();
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       setError(`Fehler beim Löschen: ${errorMessage}`);

@@ -12,14 +12,16 @@ import { EnhancedTransaction, TransactionCategory, FixkostenOverride } from "@/m
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths, addQuarters, addYears } from "date-fns";
 import { de } from "date-fns/locale";
+import { useNotification } from "@/components/ui/Notification";
 import LiquidityChart from "@/app/components/chart/LiquidityChart";
 import PlanungSummary from "@/app/components/summary/PlanungSummary";
-import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
+import { loadFixkostenOverrides, deleteFixkostenOverrideById } from "@/lib/services/fixkosten-overrides";
 import OverrideModal from "@/app/components/fixkosten/OverrideModal";
 
 export default function Planung() {
   const { authState } = useAuth();
   const { user } = authState;
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
   const [viewMode, setViewMode] = useState<'table' | 'chart' | 'summary'>('summary');
   const [chartPeriod, setChartPeriod] = useState<'day' | 'week' | 'month'>('month');
@@ -312,18 +314,17 @@ export default function Planung() {
     if (!user?.id) return;
     
     try {
+      setIsLoading(true);
+      
       // Reload overrides data
       const overridesData = await loadFixkostenOverrides(user.id);
       setOverrides(overridesData);
       
-      // Re-fetch all data to update transactions with the new overrides
-      // This reuses the fetchData function in the useEffect
-      
-      // Load user settings for starting balance
+      // Get settings for starting balance
       const settings = await getUserSettings(user.id);
       const startBalance = settings.start_balance;
       
-      // Load transactions, fixed costs, simulations, employees
+      // Load all necessary data
       const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
         loadBuchungen(user.id),
         loadFixkosten(user.id),
@@ -331,7 +332,7 @@ export default function Planung() {
         loadLohnkosten(user.id)
       ]);
       
-      // Convert fixed costs, simulations, and salaries to transactions
+      // Create a fresh transactions array
       let allTransactions = [...buchungen];
       
       if (showFixkosten) {
@@ -351,12 +352,40 @@ export default function Planung() {
       
       // Enhance transactions with running balance
       const enhancedTx = enhanceTransactions(allTransactions, startBalance);
-      setTransactions(enhancedTx);
       
-      // Apply filters
+      // Update state
+      setTransactions(enhancedTx);
       applyFilters(enhancedTx);
+      
+      showNotification('Daten wurden aktualisiert', 'success');
     } catch (error) {
       console.error('Error refreshing data after override:', error);
+      showNotification('Fehler beim Aktualisieren der Daten', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Function to handle deleting an override
+  const handleDeleteOverride = async (id: string) => {
+    try {
+      setIsLoading(true);
+      showNotification('Lösche Ausnahme...', 'loading');
+      
+      await deleteFixkostenOverrideById(id);
+      showNotification('Ausnahme wurde gelöscht', 'success');
+      
+      // Refresh data
+      await handleOverrideSaved();
+      
+      // Close modal
+      setShowOverrideModal(false);
+    } catch (error) {
+      console.error('Error deleting override:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+      showNotification(`Fehler beim Löschen: ${errorMessage}`, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -794,6 +823,7 @@ export default function Planung() {
           isOpen={showOverrideModal}
           onClose={() => setShowOverrideModal(false)}
           onSave={handleOverrideSaved}
+          onDelete={handleDeleteOverride}
         />
       )}
     </div>
