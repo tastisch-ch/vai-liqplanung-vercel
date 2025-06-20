@@ -111,7 +111,7 @@ export default function Planung() {
         }
         
         // Enhance transactions with running balance
-        const enhancedTx = await enhanceTransactions(allTransactions, user.id);
+        const enhancedTx = await enhanceTransactions(allTransactions);
         setTransactions(enhancedTx);
         
         // Apply filters
@@ -351,7 +351,7 @@ export default function Planung() {
       }
       
       // Enhance transactions with running balance
-      const enhancedTx = await enhanceTransactions(allTransactions, user.id);
+      const enhancedTx = await enhanceTransactions(allTransactions);
       
       // Update state
       setTransactions(enhancedTx);

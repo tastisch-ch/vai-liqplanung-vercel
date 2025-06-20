@@ -148,14 +148,14 @@ async function calculateFinancialSummary(
   fixkosten: Fixkosten[],
   simulationen: Simulation[],
   lohnkostenData: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
-  userId: string
+  userId: string // Still needed for user-specific transactions, but balance is global
 ): Promise<FinancialSummary> {
-  // Get enhanced transactions with running balance
-  const enhancedTransactions = await enhanceTransactions(buchungen, userId);
+  // Get enhanced transactions with running balance (now uses global balance)
+  const enhancedTransactions = await enhanceTransactions(buchungen);
   
-  // Current balance is the current user's balance from daily balance system
+  // Current balance is the global balance from daily balance system
   const { getCurrentBalance } = await import('./daily-balance');
-  const currentBalanceData = await getCurrentBalance(userId);
+  const currentBalanceData = await getCurrentBalance();
   const currentBalance = currentBalanceData.balance;
   
   // Calculate monthly income and expenses from last 30 days

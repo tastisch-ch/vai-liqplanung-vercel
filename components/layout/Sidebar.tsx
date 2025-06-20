@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
 import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
-import { getCurrentBalance, setCurrentBalance } from '@/lib/services/daily-balance-client';
+import { getCurrentBalance, setCurrentBalance } from '@/lib/services/daily-balance';
 import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -80,41 +80,36 @@ export default function Sidebar() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Load user settings including kontostand
+  // Load global balance (no longer user-specific)
   useEffect(() => {
     async function loadSettings() {
-      if (!user?.id) return;
-      
       try {
         setIsLoadingBalance(true);
-        const settings = await getUserSettings(user.id);
-        setStartBalance(settings.start_balance);
-        setKontostandInput(formatCHF(settings.start_balance));
         
-        // Get the current balance to retrieve the last updated time
-        const currentBalance = await getCurrentBalance(user.id);
+        // Get the current global balance
+        const currentBalance = await getCurrentBalance();
+        setStartBalance(currentBalance.balance);
+        setKontostandInput(formatCHF(currentBalance.balance));
         setLastUpdated(currentBalance.updated_at);
       } catch (error) {
-        logError(error, 'Error loading user settings');
+        logError(error, 'Error loading global balance');
       } finally {
         setIsLoadingBalance(false);
       }
     }
     
-    if (isAuthenticated && user?.id) {
+    if (isAuthenticated) {
       loadSettings();
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated]);
 
   const updateKontostand = async () => {
-    if (!user?.id) return;
-    
     try {
       const parsedValue = parseCHF(kontostandInput);
       if (parsedValue !== null) {
         setIsLoadingBalance(true);
-        // Save to database - using the new daily balance system
-        const result = await setCurrentBalance(user.id, parsedValue);
+        // Save to database - using the global balance system
+        const result = await setCurrentBalance(parsedValue);
         
         setStartBalance(result.balance);
         setKontostandInput(formatCHF(result.balance));
@@ -122,7 +117,7 @@ export default function Sidebar() {
         setKontostandError(false);
         setIsBalanceEditing(false);
         
-        logger.info('Kontostand updated', { 
+        logger.info('Global Kontostand updated', { 
           value: result.balance, 
           component: 'Sidebar'
         });
@@ -132,7 +127,7 @@ export default function Sidebar() {
     } catch (error) {
       setKontostandError(true);
       setKontostandInput(formatCHF(startBalance));
-      logError(error, 'Error updating kontostand');
+      logError(error, 'Error updating global kontostand');
     } finally {
       setIsLoadingBalance(false);
     }

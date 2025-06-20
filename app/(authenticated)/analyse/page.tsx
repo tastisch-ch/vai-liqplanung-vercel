@@ -101,7 +101,7 @@ export default function AnalysePage() {
         );
         
         // Enhance transactions with running balance
-        const enhancedTx = await enhanceTransactions(allTransactions, user.id);
+        const enhancedTx = await enhanceTransactions(allTransactions);
         setTransactions(enhancedTx);
       } catch (err) {
         setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');

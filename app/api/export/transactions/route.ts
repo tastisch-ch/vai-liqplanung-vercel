@@ -265,12 +265,11 @@ export async function GET(request: NextRequest) {
       ...lohnkostenData
     ].sort((a, b) => a.date.getTime() - b.date.getTime());
     
-    // Enhance transactions with running balance and sort by date
-    const enhancedTx = (await enhanceTransactions(allTransactions, userId))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Enhance transactions with balances
+    const enhancedTransactions = await enhanceTransactions(allTransactions);
     
     // Generate CSV content
-    const content = transactionsToCSV(enhancedTx, { dateRange: exportDateRange });
+    const content = transactionsToCSV(enhancedTransactions, { dateRange: exportDateRange });
     
     // Generate filename
     const filename = generateExportFilename('transactions', 'csv', dateRangeForFilename);
@@ -362,9 +361,8 @@ export async function POST(request: NextRequest) {
       allTransactions = [...allTransactions, ...lohnBuchungen];
     }
     
-    // Enhance transactions with running balance and sort by date
-    const enhancedTx = (await enhanceTransactions(allTransactions, user.id))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Enhance transactions with balances
+    const enhancedTransactions = await enhanceTransactions(allTransactions);
     
     // Create export options
     const exportOptions = {
@@ -384,19 +382,19 @@ export async function POST(request: NextRequest) {
     
     switch (format) {
       case 'csv':
-        content = transactionsToCSV(enhancedTx, exportOptions);
+        content = transactionsToCSV(enhancedTransactions, exportOptions);
         filename = 'transactions-export.csv';
         contentType = 'text/csv';
         break;
         
       case 'pdf':
-        content = generatePDFContent(enhancedTx, exportOptions);
+        content = generatePDFContent(enhancedTransactions, exportOptions);
         filename = 'transactions-export.html'; // Client will convert to PDF
         contentType = 'text/html';
         break;
         
       case 'management-summary':
-        content = generateManagementSummary(enhancedTx, exportOptions);
+        content = generateManagementSummary(enhancedTransactions, exportOptions);
         filename = 'management-summary.html'; // Client will convert to PDF
         contentType = 'text/html';
         break;

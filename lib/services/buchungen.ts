@@ -243,17 +243,17 @@ export async function deleteBuchungById(id: string): Promise<void> {
 
 /**
  * Enhance transactions with additional data like running balance
- * Now uses daily balance system for accurate current balance
+ * Now uses global daily balance system for accurate current balance
  */
 export async function enhanceTransactions(
   transactions: Buchung[], 
-  userId: string,
+  userId?: string, // Optional for backward compatibility, but not used
   currentBalance?: number
 ): Promise<EnhancedTransaction[]> {
-  // Get today's balance if not provided
-  if (!currentBalance && userId) {
+  // Get today's global balance if not provided
+  if (!currentBalance) {
     try {
-      const balanceData = await getCurrentBalance(userId);
+      const balanceData = await getCurrentBalance();
       currentBalance = balanceData.balance;
     } catch (error) {
       console.warn('Could not get current balance, using 0:', error);
