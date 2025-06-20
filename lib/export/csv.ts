@@ -2,7 +2,7 @@
  * CSV Export functionality for the VAI-Liq-Planung application
  */
 
-import { Buchung, Fixkosten, Mitarbeiter, Simulation } from '@/models/types';
+import { Buchung, Fixkosten, Mitarbeiter, Simulation, MitarbeiterWithLohn } from '@/models/types';
 import { objectsToCsv, generateExportFilename } from './utils';
 
 interface ExportOptions {
@@ -76,7 +76,7 @@ export function fixkostenToCsv(fixkosten: Fixkosten[], options: ExportOptions = 
 /**
  * Export employees to CSV
  */
-export function mitarbeiterToCsv(mitarbeiter: Mitarbeiter[], options: ExportOptions = {}): { content: string; filename: string } {
+export function mitarbeiterToCsv(mitarbeiter: MitarbeiterWithLohn[], options: ExportOptions = {}): { content: string; filename: string } {
   // Because Mitarbeiter has nested Lohn array, we need to flatten it
   const flattenedMitarbeiter = mitarbeiter.flatMap(m => {
     // If no salary data, return employee with empty salary

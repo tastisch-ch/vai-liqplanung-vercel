@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
-import { getUserSettings, updateStartBalance, updateGlobalKontostand, getGlobalKontostand } from '@/lib/services/user-settings';
+import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
+import { getCurrentBalance, setCurrentBalance } from '@/lib/services/daily-balance-client';
 import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -90,9 +91,9 @@ export default function Sidebar() {
         setStartBalance(settings.start_balance);
         setKontostandInput(formatCHF(settings.start_balance));
         
-        // Get the global kontostand to retrieve the last updated time
-        const globalKontostand = await getGlobalKontostand();
-        setLastUpdated(globalKontostand.lastUpdated);
+        // Get the current balance to retrieve the last updated time
+        const currentBalance = await getCurrentBalance(user.id);
+        setLastUpdated(currentBalance.updated_at);
       } catch (error) {
         logError(error, 'Error loading user settings');
       } finally {
@@ -106,16 +107,18 @@ export default function Sidebar() {
   }, [isAuthenticated, user?.id]);
 
   const updateKontostand = async () => {
+    if (!user?.id) return;
+    
     try {
       const parsedValue = parseCHF(kontostandInput);
       if (parsedValue !== null) {
         setIsLoadingBalance(true);
-        // Save to database - using the global kontostand function
-        const result = await updateGlobalKontostand(parsedValue);
+        // Save to database - using the new daily balance system
+        const result = await setCurrentBalance(user.id, parsedValue);
         
         setStartBalance(result.balance);
         setKontostandInput(formatCHF(result.balance));
-        setLastUpdated(result.lastUpdated);
+        setLastUpdated(result.updated_at);
         setKontostandError(false);
         setIsBalanceEditing(false);
         

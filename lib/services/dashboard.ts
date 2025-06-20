@@ -8,7 +8,7 @@ import { loadFixkosten, generateFixkostenProjections, calculateMonthlyCosts } fr
 import { loadSimulationen, generateSimulationProjections, convertSimulationenToBuchungen } from './simulationen';
 import { loadLohnkosten, generateLohnkostenProjections, calculateMonthlyLohnkosten } from './lohnkosten';
 import { getUserSettings } from './user-settings';
-import { Buchung, Fixkosten, Simulation, Mitarbeiter, LohnDaten } from '@/models/types';
+import { Buchung, Fixkosten, Simulation, Mitarbeiter, MitarbeiterWithLohn, LohnDaten } from '@/models/types';
 import { addMonths, format, eachMonthOfInterval, isWithinInterval, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -147,7 +147,7 @@ function calculateFinancialSummary(
   buchungen: Buchung[],
   fixkosten: Fixkosten[],
   simulationen: Simulation[],
-  lohnkostenData: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
+  lohnkostenData: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
   startBalance: number
 ): FinancialSummary {
   // Get enhanced transactions with running balance
@@ -219,7 +219,7 @@ function getRecentTransactions(buchungen: Buchung[], limit: number = 5): Transac
 function getUpcomingPaymentsWithAlerts(
   fixkosten: Fixkosten[], 
   simulationen: Simulation[], 
-  lohnkostenData: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
+  lohnkostenData: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
   daysAhead: number = 30
 ): PaymentAlert[] {
   const today = new Date();

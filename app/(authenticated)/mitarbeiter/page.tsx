@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
-import { Mitarbeiter, LohnDaten } from "@/models/types";
+import { Mitarbeiter, LohnDaten, MitarbeiterWithLohn } from "@/models/types";
 import { 
   loadMitarbeiter, 
   addMitarbeiter, 
@@ -24,7 +24,7 @@ export default function MitarbeiterPage() {
   const { showNotification } = useNotification();
   
   // State for employee list and UI
-  const [mitarbeiter, setMitarbeiter] = useState<Mitarbeiter[]>([]);
+  const [mitarbeiter, setMitarbeiter] = useState<MitarbeiterWithLohn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

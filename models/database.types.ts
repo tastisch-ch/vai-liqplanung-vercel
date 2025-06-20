@@ -233,6 +233,52 @@ export interface Database {
           updated_at?: string | null
         }
       }
+      daily_balance_snapshots: {
+        Row: {
+          id: string
+          date: string
+          balance: number
+          user_id: string
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          date: string
+          balance: number
+          user_id: string
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          date?: string
+          balance?: number
+          user_id?: string
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      current_balance: {
+        Row: {
+          user_id: string
+          balance: number
+          effective_date: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          balance: number
+          effective_date: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          balance?: number
+          effective_date?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -241,6 +287,9 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }

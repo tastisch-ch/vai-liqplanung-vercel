@@ -5,14 +5,14 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
-import { Mitarbeiter, LohnDaten, Buchung } from '@/models/types';
+import { Mitarbeiter, LohnDaten, Buchung, MitarbeiterWithLohn } from '@/models/types';
 import { dateToIsoString, adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all employees from the database
  * @param userId Optional user ID to filter employees (not used anymore as all authenticated users can see all employees)
  */
-export async function loadMitarbeiter(userId?: string): Promise<Mitarbeiter[]> {
+export async function loadMitarbeiter(userId?: string): Promise<MitarbeiterWithLohn[]> {
   try {
     // Load all employees without filtering by user_id
     const { data: mitarbeiterData, error: mitarbeiterError } = await supabase
@@ -45,7 +45,7 @@ export async function loadMitarbeiter(userId?: string): Promise<Mitarbeiter[]> {
       user_id: mitarbeiter.user_id,
       created_at: mitarbeiter.created_at,
       updated_at: mitarbeiter.updated_at
-    })) as Mitarbeiter[];
+    })) as MitarbeiterWithLohn[];
       }
   }
   
@@ -58,9 +58,12 @@ export async function loadMitarbeiter(userId?: string): Promise<Mitarbeiter[]> {
     
     acc[mitarbeiterId].push({
       id: lohn.id,
+      mitarbeiter_id: lohn.mitarbeiter_id,
       Start: new Date(lohn.Start),
       Ende: lohn.Ende ? new Date(lohn.Ende) : null,
-      Betrag: lohn.Betrag
+      Betrag: lohn.Betrag,
+      created_at: lohn.created_at,
+      updated_at: lohn.updated_at
     });
     
     return acc;
@@ -74,7 +77,7 @@ export async function loadMitarbeiter(userId?: string): Promise<Mitarbeiter[]> {
     user_id: mitarbeiter.user_id,
     created_at: mitarbeiter.created_at,
     updated_at: mitarbeiter.updated_at
-  })) as Mitarbeiter[];
+  })) as MitarbeiterWithLohn[];
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to load employees')) {
       throw error;
@@ -91,7 +94,7 @@ export async function addMitarbeiter(
   name: string,
   lohnDaten: Omit<LohnDaten, 'id'>[],
   userId: string
-): Promise<Mitarbeiter> {
+): Promise<MitarbeiterWithLohn> {
   try {
   const now = new Date().toISOString();
   
@@ -151,13 +154,13 @@ export async function addMitarbeiter(
           return {
             ...mitarbeiterData,
             Lohn: []
-          } as Mitarbeiter;
+          } as MitarbeiterWithLohn;
         }
         // For other errors, we still created the employee but will return without salary data
       return {
         ...mitarbeiterData,
         Lohn: []
-      } as Mitarbeiter;
+      } as MitarbeiterWithLohn;
     }
   }
   
@@ -170,7 +173,7 @@ export async function addMitarbeiter(
       Ende: lohn.Ende,
       Betrag: lohn.Betrag
     }))
-  } as Mitarbeiter;
+  } as MitarbeiterWithLohn;
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add employee')) {
       throw error;
@@ -187,7 +190,7 @@ export async function updateMitarbeiter(
   id: string,
   updates: Partial<Mitarbeiter>,
   userId: string
-): Promise<Mitarbeiter> {
+): Promise<MitarbeiterWithLohn> {
   try {
   const mitarbeiterUpdates = {
     Name: updates.Name,
@@ -220,8 +223,8 @@ export async function updateMitarbeiter(
   
   return {
     ...data,
-    Lohn: updates.Lohn || []
-  } as Mitarbeiter;
+    Lohn: [] // We don't update salary data here, that's handled by separate functions
+  } as MitarbeiterWithLohn;
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update employee') || error.message.includes('not found'))) {
       throw error;
@@ -321,9 +324,12 @@ export async function addLohnToMitarbeiter(
   
   return {
     id: data.id,
+    mitarbeiter_id: data.mitarbeiter_id,
     Start: new Date(data.Start),
     Ende: data.Ende ? new Date(data.Ende) : null,
-    Betrag: data.Betrag
+    Betrag: data.Betrag,
+    created_at: data.created_at,
+    updated_at: data.updated_at
   };
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to add salary data')) {
@@ -372,9 +378,12 @@ export async function updateLohn(
   
   return {
     id: data.id,
+    mitarbeiter_id: data.mitarbeiter_id,
     Start: new Date(data.Start),
     Ende: data.Ende ? new Date(data.Ende) : null,
-    Betrag: data.Betrag
+    Betrag: data.Betrag,
+    created_at: data.created_at,
+    updated_at: data.updated_at
   };
   } catch (error: any) {
     if (error.message && (error.message.includes('Failed to update salary data') || error.message.includes('not found'))) {
@@ -416,9 +425,9 @@ export async function deleteLohn(id: string): Promise<void> {
 /**
  * Get current/active salary data for all employees
  */
-export function getAktuelleLohne(mitarbeiter: Mitarbeiter[]): { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[] {
+export function getAktuelleLohne(mitarbeiter: MitarbeiterWithLohn[]): { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[] {
   const today = new Date();
-  const result: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[] = [];
+  const result: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[] = [];
   
   mitarbeiter.forEach(ma => {
     // Find the currently valid salary by filtering and sorting
@@ -445,7 +454,7 @@ export function getAktuelleLohne(mitarbeiter: Mitarbeiter[]): { mitarbeiter: Mit
 export function convertLohneToBuchungen(
   startDate: Date,
   endDate: Date,
-  mitarbeiter: Mitarbeiter[]
+  mitarbeiter: MitarbeiterWithLohn[]
 ): Buchung[] {
   const result: Buchung[] = [];
   

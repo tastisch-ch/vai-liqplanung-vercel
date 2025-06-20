@@ -44,7 +44,7 @@ export default function OverrideModal({
   // Load existing override data if available
   useEffect(() => {
     if (override) {
-      setIsSkipped(override.is_skipped);
+      setIsSkipped(override.is_skipped || false);
       setNewDate(override.new_date);
       setNewAmount(override.new_amount);
       setNotes(override.notes || '');
@@ -80,7 +80,7 @@ export default function OverrideModal({
             is_skipped: isSkipped,
             new_date: newDate,
             new_amount: newAmount,
-            notes: notes || null
+            notes: notes || undefined
           },
           userId
         );

@@ -4,14 +4,14 @@
  */
 
 import { convertLohneToBuchungen, getAktuelleLohne, loadMitarbeiter } from './mitarbeiter';
-import { Buchung, LohnDaten, Mitarbeiter } from '@/models/types';
+import { Buchung, LohnDaten, Mitarbeiter, MitarbeiterWithLohn } from '@/models/types';
 import { addMonths } from 'date-fns';
 import { adjustPaymentDate } from '@/lib/date-utils/format';
 
 /**
  * Load all salary costs data from the mitarbeiter service
  */
-export async function loadLohnkosten(userId?: string): Promise<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten }[]> {
+export async function loadLohnkosten(userId?: string): Promise<{ mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[]> {
   try {
     // Load all employees with their salary data
     const mitarbeiter = await loadMitarbeiter(userId);
@@ -27,7 +27,7 @@ export async function loadLohnkosten(userId?: string): Promise<{ mitarbeiter: Mi
 /**
  * Calculate total monthly salary costs
  */
-export function calculateMonthlyLohnkosten(lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[]): number {
+export function calculateMonthlyLohnkosten(lohnkosten: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[]): number {
   return lohnkosten.reduce((total, { lohn }) => total + lohn.Betrag, 0);
 }
 
@@ -38,7 +38,7 @@ export function calculateMonthlyLohnkosten(lohnkosten: { mitarbeiter: Mitarbeite
 export function convertLohnkostenToBuchungen(
   startDate: Date,
   endDate: Date,
-  mitarbeiter: Mitarbeiter[]
+  mitarbeiter: MitarbeiterWithLohn[]
 ): Buchung[] {
   return convertLohneToBuchungen(startDate, endDate, mitarbeiter);
 }
@@ -48,11 +48,11 @@ export function convertLohnkostenToBuchungen(
  * Similar to the generateFixkostenProjections function
  */
 export function generateLohnkostenProjections(
-  lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
+  lohnkosten: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
   startDate: Date,
   endDate: Date
-): Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date; shifted: boolean }> {
-  const result: Array<{ mitarbeiter: Mitarbeiter; lohn: LohnDaten; date: Date; shifted: boolean }> = [];
+): Array<{ mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten; date: Date; shifted: boolean }> {
+  const result: Array<{ mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten; date: Date; shifted: boolean }> = [];
   
   // For each month in the date range, create salary projections
   let currentMonthDate = new Date(startDate);
@@ -95,9 +95,9 @@ export function generateLohnkostenProjections(
  * Filter active lohnkosten (those that don't have an end date or the end date is in the future)
  */
 export function filterActiveLohnkosten(
-  lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
+  lohnkosten: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
   onlyActive: boolean = true
-): { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[] {
+): { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[] {
   if (!onlyActive) return lohnkosten;
   
   const today = new Date();
@@ -109,7 +109,7 @@ export function filterActiveLohnkosten(
 /**
  * Get a list of all employee names for display purposes
  */
-export function getLohnkostenNames(lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[]): string[] {
+export function getLohnkostenNames(lohnkosten: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[]): string[] {
   return lohnkosten.map(({ mitarbeiter }) => mitarbeiter.Name);
 }
 
@@ -117,9 +117,9 @@ export function getLohnkostenNames(lohnkosten: { mitarbeiter: Mitarbeiter; lohn:
  * Filter lohnkosten by employee name
  */
 export function filterLohnkostenByName(
-  lohnkosten: { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[],
+  lohnkosten: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
   name?: string
-): { mitarbeiter: Mitarbeiter; lohn: LohnDaten }[] {
+): { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[] {
   if (!name) return lohnkosten;
   
   return lohnkosten.filter(({ mitarbeiter }) => 

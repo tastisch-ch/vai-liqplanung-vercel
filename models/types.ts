@@ -29,18 +29,25 @@ export interface Fixkosten {
 
 export interface LohnDaten {
   id: string;
+  mitarbeiter_id: string;
   Start: Date;
-  Ende?: Date | null;
+  Ende: Date | null;
   Betrag: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Mitarbeiter {
   id: string;
   Name: string;
-  Lohn: LohnDaten[];
   user_id: string;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
+}
+
+// Extended Mitarbeiter type with Lohn data
+export interface MitarbeiterWithLohn extends Mitarbeiter {
+  Lohn: LohnDaten[];
 }
 
 export interface User {
@@ -59,12 +66,12 @@ export interface Simulation {
   date: Date;
   amount: number;
   direction: 'Incoming' | 'Outgoing';
-  recurring?: boolean;
-  interval?: 'monthly' | 'quarterly' | 'yearly';
-  end_date?: Date | null;
+  recurring: boolean;
+  interval: 'monthly' | 'quarterly' | 'yearly' | null;
+  end_date: Date | null;
   user_id: string;
   created_at: string;
-  updated_at?: string;
+  updated_at: string;
 }
 
 export interface AuthState {
@@ -81,7 +88,7 @@ export interface DesignSettings {
 }
 
 // Transaction types for visual styling
-export type TransactionCategory = 'Standard' | 'Fixkosten' | 'Simulation' | 'Lohn';
+export type TransactionCategory = 'Standard' | 'Fixkosten' | 'Lohn' | 'Simulation';
 
 // Transaction marker types
 export interface TransactionMarker {
@@ -102,23 +109,51 @@ export interface SavedScenario {
   updated_at?: string;
 }
 
-// Combined transaction type with calculated fields
-export interface EnhancedTransaction extends Buchung {
-  kontostand?: number;
-  hinweis?: string;
-  kategorie: TransactionCategory;
-}
-
 // New type for fixkosten overrides (exceptions)
 export interface FixkostenOverride {
   id: string;
   fixkosten_id: string;
   original_date: Date;
   new_date: Date | null;
+  original_amount: number;
   new_amount: number | null;
-  is_skipped: boolean;
-  notes: string | null;
+  is_skipped?: boolean;
+  notes?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface UserSettings {
+  user_id: string;
+  start_balance: number;
+  primary_color: string;
+  secondary_color: string;
+  background_color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Daily balance snapshot types
+export interface DailyBalanceSnapshot {
+  id: string;
+  date: Date;
+  balance: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CurrentBalance {
+  user_id: string;
+  balance: number;
+  effective_date: Date;
+  updated_at: string;
+}
+
+// Combined transaction type with calculated fields
+export interface EnhancedTransaction extends Buchung {
+  kontostand?: number;
+  hinweis?: string;
+  kategorie: TransactionCategory;
 } 

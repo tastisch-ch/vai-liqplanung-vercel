@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 import { mitarbeiterToCsv } from '@/lib/export/csv';
 import { getMimeType } from '@/lib/export/utils';
-import { Mitarbeiter, LohnDaten } from '@/models/types';
+import { Mitarbeiter, LohnDaten, MitarbeiterWithLohn } from '@/models/types';
 
 /**
  * Export employees to CSV
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
           Ende: lohn.Ende ? new Date(lohn.Ende) : null
         })) || []
       };
-    }) as Mitarbeiter[];
+    }) as MitarbeiterWithLohn[];
     
     // Generate CSV data
     const { content, filename } = mitarbeiterToCsv(parsedEmployees);
