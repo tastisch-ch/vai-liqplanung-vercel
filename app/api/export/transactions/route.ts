@@ -265,11 +265,12 @@ export async function GET(request: NextRequest) {
       ...lohnkostenData
     ].sort((a, b) => a.date.getTime() - b.date.getTime());
     
-    // Enhance transactions with balances
-    const enhancedTransactions = enhanceTransactions(allTransactions, 0);
+    // Enhance transactions with running balance and sort by date
+    const enhancedTx = (await enhanceTransactions(allTransactions, userId))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
     
     // Generate CSV content
-    const content = transactionsToCSV(enhancedTransactions, { dateRange: exportDateRange });
+    const content = transactionsToCSV(enhancedTx, { dateRange: exportDateRange });
     
     // Generate filename
     const filename = generateExportFilename('transactions', 'csv', dateRangeForFilename);
@@ -362,7 +363,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Enhance transactions with running balance and sort by date
-    const enhancedTx = enhanceTransactions(allTransactions, startBalance)
+    const enhancedTx = (await enhanceTransactions(allTransactions, user.id))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
     
     // Create export options

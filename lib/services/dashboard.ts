@@ -95,12 +95,12 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
     const startBalance = userSettings?.start_balance || 0;
     
     // Calculate financial summary
-    const summary = calculateFinancialSummary(
+    const summary = await calculateFinancialSummary(
       buchungen, 
       fixkosten, 
       simulationen,
       lohnkostenData,
-      startBalance
+      userId
     );
     
     // Get recent transactions
@@ -143,20 +143,20 @@ export async function getDashboardData(userId: string | undefined): Promise<Dash
 /**
  * Calculate financial summary data
  */
-function calculateFinancialSummary(
+async function calculateFinancialSummary(
   buchungen: Buchung[],
   fixkosten: Fixkosten[],
   simulationen: Simulation[],
   lohnkostenData: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[],
-  startBalance: number
-): FinancialSummary {
+  userId: string
+): Promise<FinancialSummary> {
   // Get enhanced transactions with running balance
-  const enhancedTransactions = enhanceTransactions(buchungen, startBalance);
+  const enhancedTransactions = await enhanceTransactions(buchungen, userId);
   
-  // Current balance is the last running balance
-  const currentBalance = enhancedTransactions.length > 0 
-    ? enhancedTransactions[enhancedTransactions.length - 1].kontostand || startBalance
-    : startBalance;
+  // Current balance is the current user's balance from daily balance system
+  const { getCurrentBalance } = await import('./daily-balance');
+  const currentBalanceData = await getCurrentBalance(userId);
+  const currentBalance = currentBalanceData.balance;
   
   // Calculate monthly income and expenses from last 30 days
   const lastMonthDate = new Date();

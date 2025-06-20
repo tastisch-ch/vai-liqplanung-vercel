@@ -131,7 +131,7 @@ export default function TransaktionenPage() {
         }
         
         // Enhance transactions with running balance
-        const enhancedTx = enhanceTransactions(allTransactions, startBalance);
+        const enhancedTx = await enhanceTransactions(allTransactions, user.id);
         
         if (isMounted) {
           setTransactions(enhancedTx);
@@ -306,7 +306,7 @@ export default function TransaktionenPage() {
         const updatedTransactions = transactions.map(tx => 
           tx.id === transactionId ? { ...result } as EnhancedTransaction : tx
         );
-        const enhancedTx = enhanceTransactions(updatedTransactions as Buchung[]);
+        const enhancedTx = await enhanceTransactions(updatedTransactions as Buchung[], user.id);
         setTransactions(enhancedTx);
         applyFilters(enhancedTx);
         
@@ -325,7 +325,7 @@ export default function TransaktionenPage() {
         
         // Update state
         const newTransactions = [...transactions, result] as Buchung[];
-        const enhancedTx = enhanceTransactions(newTransactions);
+        const enhancedTx = await enhanceTransactions(newTransactions, user.id);
         setTransactions(enhancedTx);
         applyFilters(enhancedTx);
         
@@ -462,7 +462,7 @@ export default function TransaktionenPage() {
       }
       
       // Enhance transactions with running balance
-      const enhancedTx = enhanceTransactions(allTransactions, startBalance);
+              const enhancedTx = await enhanceTransactions(allTransactions, user.id);
       
       // Update state
       setTransactions(enhancedTx);

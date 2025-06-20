@@ -12,6 +12,7 @@ import { convertFixkostenToBuchungen, loadFixkosten } from './fixkosten';
 import { convertSimulationenToBuchungen, loadSimulationen } from './simulationen';
 import { convertLohnkostenToBuchungen } from './lohnkosten';
 import { loadMitarbeiter } from './mitarbeiter';
+import { getCurrentBalance } from './daily-balance';
 
 /**
  * Load all transactions/buchungen from the database
@@ -242,8 +243,133 @@ export async function deleteBuchungById(id: string): Promise<void> {
 
 /**
  * Enhance transactions with additional data like running balance
+ * Now uses daily balance system for accurate current balance
  */
-export function enhanceTransactions(transactions: Buchung[], startBalance: number = 0): EnhancedTransaction[] {
+export async function enhanceTransactions(
+  transactions: Buchung[], 
+  userId: string,
+  currentBalance?: number
+): Promise<EnhancedTransaction[]> {
+  // Get today's balance if not provided
+  if (!currentBalance && userId) {
+    try {
+      const balanceData = await getCurrentBalance(userId);
+      currentBalance = balanceData.balance;
+    } catch (error) {
+      console.warn('Could not get current balance, using 0:', error);
+      currentBalance = 0;
+    }
+  }
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+  
+  // Sort by date (oldest first)
+  const sortedTransactions = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+  // Apply weekend and month-end date adjustments to all transactions
+  const adjustedTransactions = sortedTransactions.map(tx => {
+    // First apply date shifting for past due incoming transactions
+    let transaction = tx;
+    if (tx.direction === 'Incoming') {
+      transaction = shiftPastDueDateIfNeeded(tx);
+    }
+    
+    // Then apply weekend/month-end adjustments to all transactions
+    // Only apply if not already adjusted (check if it has a shifted flag)
+    if (!transaction.shifted) {
+      // Check if this is an end-of-month date (day 30+ or last day of month)
+      const originalDate = new Date(transaction.date);
+      const originalDay = originalDate.getDate();
+      const lastDayOfMonth = new Date(
+        originalDate.getFullYear(), 
+        originalDate.getMonth() + 1, 
+        0
+      ).getDate();
+      
+      // Detect if this is an end-of-month date
+      const isMonthEnd = originalDay === lastDayOfMonth || originalDay >= 30;
+      
+      // Use adjustPaymentDate with proper isMonthEnd parameter
+      const adjustedDate = adjustPaymentDate(new Date(transaction.date), isMonthEnd);
+      
+      // Only create a new object if the date actually changed
+      if (adjustedDate.getTime() !== transaction.date.getTime()) {
+        return {
+          ...transaction,
+          date: adjustedDate,
+          // Don't set 'shifted' flag here as that's only for past-due shifting
+        };
+      }
+    }
+    
+    return transaction;
+  });
+  
+  // Separate transactions into historical (past) and future/today
+  const pastTransactions = adjustedTransactions.filter(tx => tx.date < today);
+  const futureTransactions = adjustedTransactions.filter(tx => tx.date >= today);
+  
+  // For historical transactions, we don't calculate running balance
+  // They keep their historical context
+  const enhancedPastTransactions = pastTransactions.map(tx => {
+    const kategorie = tx.kategorie as TransactionCategory || 'Standard';
+    
+    // Generate hints icons
+    let hinweis = '';
+    if (tx.modified) hinweis += '✏️ ';
+    if (kategorie === 'Fixkosten') hinweis += '📌 ';
+    if (kategorie === 'Simulation') hinweis += '🔮 ';
+    if (kategorie === 'Lohn') hinweis += '💰 ';
+    
+    return {
+      ...tx,
+      kontostand: undefined, // No balance calculation for historical transactions
+      signedAmount: getSignedAmount(tx.amount, tx.direction),
+      kategorie,
+      hinweis: hinweis.trim()
+    };
+  });
+  
+  // For future transactions (including today), calculate running balance starting from current balance
+  let runningBalance = currentBalance || 0;
+  const enhancedFutureTransactions = futureTransactions.map(tx => {
+    // Update running balance based on transaction direction
+    if (tx.direction === 'Incoming') {
+      runningBalance += tx.amount;
+    } else {
+      runningBalance -= tx.amount;
+    }
+    
+    const kategorie = tx.kategorie as TransactionCategory || 'Standard';
+    
+    // Generate hints icons
+    let hinweis = '';
+    if (tx.modified) hinweis += '✏️ ';
+    if (kategorie === 'Fixkosten') hinweis += '📌 ';
+    if (kategorie === 'Simulation') hinweis += '🔮 ';
+    if (kategorie === 'Lohn') hinweis += '💰 ';
+    
+    return {
+      ...tx,
+      kontostand: runningBalance,
+      signedAmount: getSignedAmount(tx.amount, tx.direction),
+      kategorie,
+      hinweis: hinweis.trim()
+    };
+  });
+  
+  // Combine historical and future transactions
+  return [...enhancedPastTransactions, ...enhancedFutureTransactions];
+}
+
+/**
+ * Legacy version of enhanceTransactions for backward compatibility
+ * @deprecated Use the new async version with userId parameter
+ */
+export function enhanceTransactionsSync(transactions: Buchung[], startBalance: number = 0): EnhancedTransaction[] {
+  console.warn('enhanceTransactionsSync is deprecated, use enhanceTransactions with userId');
+  
   // Sort by date (oldest first)
   const sortedTransactions = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
   

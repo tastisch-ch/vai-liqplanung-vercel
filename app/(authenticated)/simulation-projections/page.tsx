@@ -70,7 +70,7 @@ export default function SimulationProjectionsPage() {
         
         // Load transactions for baseline data
         const transactionData = await loadBuchungen(user.id);
-        const enhancedTx = enhanceTransactions(transactionData);
+        const enhancedTx = await enhanceTransactions(transactionData, user.id);
         setTransactions(enhancedTx);
         
         // Load saved scenarios
