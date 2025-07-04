@@ -72,6 +72,19 @@ export default function OverrideModal({
     }
     
     try {
+      // Check for existing override with same date (if changing date)
+      if (newDate) {
+        const existingOverrideWithDate = existingOverrides.find(o => 
+          o.fixkosten_id === fixkostenId && 
+          o.original_date.getTime() === newDate.getTime() &&
+          (!override || o.id !== override.id)
+        );
+        
+        if (existingOverrideWithDate) {
+          throw new Error('Es existiert bereits eine Ausnahme für dieses Datum.');
+        }
+      }
+      
       if (override) {
         // Update existing override
         await updateFixkostenOverrideById(
@@ -79,7 +92,7 @@ export default function OverrideModal({
           {
             is_skipped: isSkipped,
             new_date: newDate,
-            new_amount: newAmount,
+            new_amount: newAmount !== null ? newAmount : undefined,
             notes: notes || undefined
           },
           userId
@@ -91,7 +104,7 @@ export default function OverrideModal({
           fixkostenId,
           transaction.date,
           newDate,
-          newAmount,
+          newAmount !== null ? newAmount : null,
           isSkipped,
           notes || null,
           userId
@@ -99,7 +112,7 @@ export default function OverrideModal({
         showNotification('Ausnahme wurde erstellt', 'success');
       }
       
-      // Refresh data and close modal - ensure onSave completes before closing
+      // Refresh data and close modal
       await onSave();
       onClose();
     } catch (err) {

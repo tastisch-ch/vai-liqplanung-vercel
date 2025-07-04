@@ -83,11 +83,21 @@ export async function addFixkostenOverride(
       throw new Error('At least one override (new date, new amount, or skip) must be specified');
     }
     
+    // Normalize dates to start of day for comparison
+    const normalizedOriginalDate = new Date(originalDate);
+    normalizedOriginalDate.setHours(0, 0, 0, 0);
+    
+    let normalizedNewDate = null;
+    if (newDate) {
+      normalizedNewDate = new Date(newDate);
+      normalizedNewDate.setHours(0, 0, 0, 0);
+    }
+    
     const newOverride = {
       id: uuidv4(),
       fixkosten_id: fixkostenId,
-      original_date: dateToIsoString(originalDate) as string,
-      new_date: newDate ? dateToIsoString(newDate) : null,
+      original_date: dateToIsoString(normalizedOriginalDate) as string,
+      new_date: normalizedNewDate ? dateToIsoString(normalizedNewDate) : null,
       new_amount: newAmount,
       is_skipped: isSkipped,
       notes,
@@ -95,6 +105,22 @@ export async function addFixkostenOverride(
       created_at: now,
       updated_at: now
     };
+    
+    // Check for existing override first
+    const { data: existingOverride, error: checkError } = await supabase
+      .from('fixkosten_overrides')
+      .select()
+      .eq('fixkosten_id', fixkostenId)
+      .eq('original_date', newOverride.original_date)
+      .maybeSingle();
+      
+    if (checkError) {
+      throw new Error(`Failed to check for existing override: ${checkError.message}`);
+    }
+    
+    if (existingOverride) {
+      throw new Error('An override for this fixed cost on this date already exists');
+    }
     
     const { data, error } = await supabase
       .from('fixkosten_overrides')
@@ -143,11 +169,28 @@ export async function updateFixkostenOverrideById(
   userId: string
 ): Promise<FixkostenOverride> {
   try {
+    // Normalize dates to start of day for comparison
+    let normalizedOriginalDate = undefined;
+    if (updates.original_date) {
+      normalizedOriginalDate = new Date(updates.original_date);
+      normalizedOriginalDate.setHours(0, 0, 0, 0);
+    }
+    
+    let normalizedNewDate = undefined;
+    if (updates.new_date !== undefined) {
+      if (updates.new_date) {
+        normalizedNewDate = new Date(updates.new_date);
+        normalizedNewDate.setHours(0, 0, 0, 0);
+      } else {
+        normalizedNewDate = null;
+      }
+    }
+    
     // Ensure dates are formatted correctly
     const formattedUpdates = {
       ...updates,
-      original_date: updates.original_date ? dateToIsoString(updates.original_date) : undefined,
-      new_date: updates.new_date !== undefined ? (updates.new_date ? dateToIsoString(updates.new_date) : null) : undefined,
+      original_date: normalizedOriginalDate ? dateToIsoString(normalizedOriginalDate) : undefined,
+      new_date: normalizedNewDate !== undefined ? (normalizedNewDate ? dateToIsoString(normalizedNewDate) : null) : undefined,
       updated_at: new Date().toISOString(),
     };
     
@@ -159,6 +202,40 @@ export async function updateFixkostenOverrideById(
     // Cannot update the fixkosten_id (would break the override relationship)
     if ('fixkosten_id' in formattedUpdates) {
       delete formattedUpdates.fixkosten_id;
+    }
+    
+    // Get the current override to check for date conflicts
+    const { data: currentOverride, error: getError } = await supabase
+      .from('fixkosten_overrides')
+      .select()
+      .eq('id', id)
+      .single();
+      
+    if (getError) {
+      throw new Error(`Failed to get current override: ${getError.message}`);
+    }
+    
+    if (!currentOverride) {
+      throw new Error(`Fixkosten override with ID ${id} not found`);
+    }
+    
+    // If changing the date, check for conflicts
+    if (normalizedNewDate) {
+      const { data: existingOverride, error: checkError } = await supabase
+        .from('fixkosten_overrides')
+        .select()
+        .eq('fixkosten_id', currentOverride.fixkosten_id)
+        .eq('original_date', normalizedNewDate.toISOString())
+        .neq('id', id)
+        .maybeSingle();
+        
+      if (checkError) {
+        throw new Error(`Failed to check for existing override: ${checkError.message}`);
+      }
+      
+      if (existingOverride) {
+        throw new Error('An override for this fixed cost on this date already exists');
+      }
     }
     
     const { data, error } = await supabase
