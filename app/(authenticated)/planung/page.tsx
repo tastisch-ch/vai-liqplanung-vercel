@@ -720,42 +720,89 @@ export default function Planung() {
                         <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Kontostand
                         </th>
+                        <th scope="col" className="relative px-6 py-3">
+                          <span className="sr-only">Aktionen</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {transactions.map((transaction) => (
-                        <tr 
-                          key={transaction.id}
-                          className={`hover:bg-gray-50 ${transaction.isOverridden ? 'bg-blue-50' : ''}`}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {format(transaction.date, 'dd.MM.yyyy')}
-                            {transaction.shifted && <span title="Datum angepasst" className="ml-1">📅</span>}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {transaction.details}
-                            {transaction.overrideNotes && (
-                              <span title={transaction.overrideNotes} className="ml-1">📝</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {transaction.kategorie || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <span className={transaction.direction === 'Incoming' ? 'text-green-600' : 'text-red-600'}>
-                              {formatCHF(transaction.amount)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => handleTransactionEdit(transaction)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Bearbeiten
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {transactions.map((transaction) => {
+                        const isIncome = transaction.direction === 'Incoming';
+                        const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
+                        
+                        return (
+                          <tr 
+                            key={transaction.id}
+                            className={`
+                              hover:bg-gray-50
+                              ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
+                              ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
+                              ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
+                              ${transaction.isOverridden ? 'border-l-4 border-orange-400' : ''}
+                            `}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                              {transaction.shifted && (
+                                <span 
+                                  className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20"
+                                  title="Ursprünglicher Termin ist Wochenende - auf Freitag verschoben"
+                                >
+                                  verschoben
+                                </span>
+                              )}
+                              {transaction.isOverridden && (
+                                <span 
+                                  className="ml-1 inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800 ring-1 ring-inset ring-orange-600/20"
+                                  title={transaction.overrideNotes || 'Manuell angepasst'}
+                                >
+                                  angepasst
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
+                              {transaction.details}
+                              <button 
+                                className="ml-2 text-xs text-gray-400 hover:text-blue-600"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTransactionEdit(transaction);
+                                }}
+                                title={transaction.id.startsWith('fixkosten_') ? 'Fixkosten anpassen' : 'Transaktion bearbeiten'}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {transaction.kategorie === 'Lohn' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                  💰 Lohn
+                                </span>
+                              ) : transaction.kategorie === 'Fixkosten' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  📌 Fixkosten
+                                </span>
+                              ) : transaction.kategorie === 'Simulation' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  🔮 Simulation
+                                </span>
+                              ) : transaction.kategorie}
+                            </td>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
+                              {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
+                              {formatCHF(transaction.kontostand || 0)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              {/* Empty cell for consistent layout */}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -848,7 +895,7 @@ export default function Planung() {
       )}
 
       {/* Regular transaction edit modal */}
-      {editingTransaction && (
+      {editingTransaction && !editingTransaction.id.startsWith('fixkosten_') && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
             <h2 className="text-xl font-semibold mb-4">Transaktion bearbeiten</h2>
@@ -864,7 +911,7 @@ export default function Planung() {
                     id="date"
                     value={editForm.date}
                     onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -879,7 +926,7 @@ export default function Planung() {
                     step="0.01"
                     value={editForm.amount}
                     onChange={(e) => setEditForm({...editForm, amount: parseFloat(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -893,7 +940,7 @@ export default function Planung() {
                     id="details"
                     value={editForm.details}
                     onChange={(e) => setEditForm({...editForm, details: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
@@ -906,10 +953,10 @@ export default function Planung() {
                     id="direction"
                     value={editForm.direction}
                     onChange={(e) => setEditForm({...editForm, direction: e.target.value as 'Incoming' | 'Outgoing'})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Incoming">Einnahme</option>
-                    <option value="Outgoing">Ausgabe</option>
+                    <option value="Incoming">Eingehend</option>
+                    <option value="Outgoing">Ausgehend</option>
                   </select>
                 </div>
                 
@@ -922,7 +969,7 @@ export default function Planung() {
                     id="kategorie"
                     value={editForm.kategorie}
                     onChange={(e) => setEditForm({...editForm, kategorie: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -931,7 +978,7 @@ export default function Planung() {
                 <button
                   type="button"
                   onClick={() => setEditingTransaction(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Abbrechen
                 </button>
@@ -955,7 +1002,11 @@ export default function Planung() {
           existingOverrides={overrides}
           userId={user?.id || ''}
           isOpen={showOverrideModal}
-          onClose={() => setShowOverrideModal(false)}
+          onClose={() => {
+            setShowOverrideModal(false);
+            setSelectedTransaction(null);
+            setSelectedOverride(null);
+          }}
           onSave={handleOverrideSaved}
           onDelete={handleDeleteOverride}
         />
