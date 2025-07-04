@@ -113,7 +113,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
             </button>
           )}
           
-          <Link href="/dashboard" className="flex items-center">
+          <Link href="/planung" className="flex items-center">
             <Image
               src="/assets/vaios-logo.svg"
               alt="vaios Logo"

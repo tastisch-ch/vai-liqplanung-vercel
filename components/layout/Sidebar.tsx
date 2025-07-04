@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
-import { getUserSettings, updateStartBalance } from '@/lib/services/user-settings';
 import { getCurrentBalance, setCurrentBalance } from '@/lib/services/daily-balance';
 import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -41,23 +40,10 @@ export default function Sidebar() {
 
   // Core navigation links
   const navLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: '📊', description: 'Übersicht' },
     { name: 'Planung', path: '/planung', icon: '📆', description: 'Finanzplanung' },
-    { name: 'Analyse', path: '/analyse', icon: '📈', description: 'Datenanalyse' },
-  ];
-  
-  // Financial tools
-  const financialTools = [
-    { name: 'Transaktionen', path: '/transaktionen', icon: '✏️', description: 'Buchungen bearbeiten' },
     { name: 'Fixkosten', path: '/fixkosten', icon: '💸', description: 'Fixkosten verwalten' },
-    { name: 'Simulationen', path: '/simulationen', icon: '🔮', description: 'Szenarien erstellen' },
-  ];
-  
-  // Additional tools
-  const additionalTools = [
-    { name: 'Datenimport', path: '/datenimport', icon: '📥', description: 'CSV/Excel importieren' },
     { name: 'Mitarbeiter', path: '/mitarbeiter', icon: '👥', description: 'Team verwalten' },
-    { name: 'Projektionen', path: '/simulation-projections', icon: '🧮', description: 'Prognosen' },
+    { name: 'Datenimport', path: '/datenimport', icon: '📥', description: 'CSV/Excel importieren' },
   ];
   
   // Admin links
@@ -80,7 +66,7 @@ export default function Sidebar() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  // Load global balance (no longer user-specific)
+  // Load global balance
   useEffect(() => {
     async function loadSettings() {
       try {
@@ -255,36 +241,26 @@ export default function Sidebar() {
       )}
       
       {/* Navigation Links */}
-      <div className="flex-grow p-4 overflow-y-auto">
-        <div className="space-y-6">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-8">
+          {/* Main Navigation */}
           <div>
-            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Hauptnavigation</h3>
+            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Navigation
+            </h3>
             {renderLinks(navLinks)}
           </div>
           
-          <div>
-            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Finanzverwaltung</h3>
-            {renderLinks(financialTools)}
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Werkzeuge</h3>
-            {renderLinks(additionalTools)}
-          </div>
-          
+          {/* Admin Section */}
           {isAdmin && (
             <div>
-              <h3 className="font-semibold text-gray-600 mb-2 text-xs uppercase tracking-wider">Administration</h3>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Administration
+              </h3>
               {renderLinks(adminLinks)}
             </div>
           )}
         </div>
-      </div>
-      
-      {/* Footer */}
-      <div className="p-4 text-xs text-gray-500 border-t border-gray-200">
-        <p>© {new Date().getFullYear()} vaios</p>
-        <p>Version 1.0.0</p>
       </div>
     </div>
   );

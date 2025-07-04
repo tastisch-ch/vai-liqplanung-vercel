@@ -21,10 +21,10 @@ export async function middleware(request: NextRequest) {
       const hasSession = request.cookies.has('sb-auth-token') || 
                          request.cookies.has('supabase-auth-token');
       
-      // If a session cookie exists, redirect to dashboard
+      // If a session cookie exists, redirect to planning
       if (hasSession) {
-        const dashboardUrl = new URL('/dashboard', request.url);
-        return NextResponse.redirect(dashboardUrl);
+        const planningUrl = new URL('/planung', request.url);
+        return NextResponse.redirect(planningUrl);
       }
       
       // Otherwise, redirect to login
