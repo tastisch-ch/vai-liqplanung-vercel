@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
-import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
+import { loadBuchungen, enhanceTransactions, filterTransactions, updateBuchungById } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
@@ -66,6 +66,14 @@ export default function Planung() {
   const [selectedTransaction, setSelectedTransaction] = useState<EnhancedTransaction | null>(null);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [selectedOverride, setSelectedOverride] = useState<FixkostenOverride | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: '',
+    amount: 0,
+    details: '',
+    direction: 'Outgoing' as 'Incoming' | 'Outgoing',
+    kategorie: ''
+  });
   
   // Fetch all data
   useEffect(() => {
@@ -388,6 +396,60 @@ export default function Planung() {
       setIsLoading(false);
     }
   };
+
+  // Function to handle transaction edit
+  const handleTransactionEdit = async (transaction: EnhancedTransaction) => {
+    // Don't allow editing of fixed costs, simulations, or salary entries
+    if (transaction.id.startsWith('fixkosten_') || 
+        transaction.id.startsWith('simulation_') || 
+        transaction.kategorie === 'Lohn') {
+      showNotification('Diese Art von Transaktion kann nicht direkt bearbeitet werden.', 'info');
+      return;
+    }
+
+    setEditingTransaction(transaction);
+    setEditForm({
+      date: format(transaction.date, 'yyyy-MM-dd'),
+      amount: transaction.amount,
+      details: transaction.details,
+      direction: transaction.direction,
+      kategorie: transaction.kategorie || ''
+    });
+  };
+
+  // Function to save transaction edits
+  const handleSaveEdit = async () => {
+    if (!editingTransaction || !user?.id) return;
+
+    try {
+      const updates = {
+        date: new Date(editForm.date),
+        amount: editForm.amount,
+        details: editForm.details,
+        direction: editForm.direction,
+        kategorie: editForm.kategorie || undefined
+      };
+
+      await updateBuchungById(editingTransaction.id, updates, user.id);
+      
+      // Refresh data
+      const updatedTransactions = transactions.map(tx =>
+        tx.id === editingTransaction.id
+          ? { ...tx, ...updates }
+          : tx
+      );
+      
+      const enhancedTx = await enhanceTransactions(updatedTransactions);
+      setTransactions(enhancedTx);
+      applyFilters(enhancedTx);
+      
+      setEditingTransaction(null);
+      showNotification('Transaktion erfolgreich aktualisiert', 'success');
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      showNotification('Fehler beim Aktualisieren der Transaktion', 'error');
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -683,14 +745,27 @@ export default function Planung() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
                               {transaction.details}
-                              {transaction.id.startsWith('fixkosten_') && (
+                              {transaction.id.startsWith('fixkosten_') ? (
                                 <button 
                                   className="ml-2 text-xs text-gray-400 hover:text-blue-600"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleTransactionContextMenu(e, transaction);
                                   }}
-                                  title="Transaktion anpassen"
+                                  title="Fixkosten anpassen"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                              ) : !transaction.id.startsWith('simulation_') && transaction.kategorie !== 'Lohn' && (
+                                <button 
+                                  className="ml-2 text-xs text-gray-400 hover:text-blue-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTransactionEdit(transaction);
+                                  }}
+                                  title="Transaktion bearbeiten"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -825,6 +900,78 @@ export default function Planung() {
           onSave={handleOverrideSaved}
           onDelete={handleDeleteOverride}
         />
+      )}
+
+      {/* Add edit modal */}
+      {editingTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+            <h3 className="text-lg font-medium mb-4">Transaktion bearbeiten</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
+                <input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                  className="w-full border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Betrag</label>
+                <input
+                  type="number"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })}
+                  className="w-full border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                <input
+                  type="text"
+                  value={editForm.details}
+                  onChange={(e) => setEditForm({ ...editForm, details: e.target.value })}
+                  className="w-full border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Richtung</label>
+                <select
+                  value={editForm.direction}
+                  onChange={(e) => setEditForm({ ...editForm, direction: e.target.value as 'Incoming' | 'Outgoing' })}
+                  className="w-full border-gray-300 rounded-md shadow-sm"
+                >
+                  <option value="Incoming">Eingehend</option>
+                  <option value="Outgoing">Ausgehend</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie</label>
+                <input
+                  type="text"
+                  value={editForm.kategorie}
+                  onChange={(e) => setEditForm({ ...editForm, kategorie: e.target.value })}
+                  className="w-full border-gray-300 rounded-md shadow-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setEditingTransaction(null)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
