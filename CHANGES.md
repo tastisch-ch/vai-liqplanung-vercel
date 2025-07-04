@@ -1,6 +1,6 @@
 # VAI-Liq-Planung Improvements
 
-## 1. Persistent Kontostand for All Users
+## 1. Persistent Kontostand for All vaios Users
 - Updated `user-settings.ts` to persist kontostand in Supabase database
 - Created database migration for `user_settings` table 
 - Modified the Sidebar component to load/save kontostand to the database
