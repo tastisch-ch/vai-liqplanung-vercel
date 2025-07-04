@@ -292,7 +292,7 @@ export function convertFixkostenToBuchungen(
         amount: transactionAmount,
         direction: 'Outgoing',
         user_id: fixkosten.user_id,
-        kategorie: fixkosten.kategorie || 'Fixkosten',
+        kategorie: 'Fixkosten',
         created_at: fixkosten.created_at,
         // Flag for shifted date (either by weekend adjustment or override)
         shifted: transactionDate.getTime() !== currentDate.getTime(),

@@ -313,7 +313,8 @@ export async function enhanceTransactions(
   // For historical transactions, we don't calculate running balance
   // They keep their historical context
   const enhancedPastTransactions = pastTransactions.map(tx => {
-    const kategorie = tx.kategorie as TransactionCategory || 'Standard';
+    // Keep the original kategorie if it exists, ensuring it's a valid TransactionCategory
+    const kategorie = (tx.kategorie || 'Standard') as TransactionCategory;
     
     // Generate hints icons
     let hinweis = '';
@@ -341,7 +342,8 @@ export async function enhanceTransactions(
       runningBalance -= tx.amount;
     }
     
-    const kategorie = tx.kategorie as TransactionCategory || 'Standard';
+    // Keep the original kategorie if it exists, ensuring it's a valid TransactionCategory
+    const kategorie = (tx.kategorie || 'Standard') as TransactionCategory;
     
     // Generate hints icons
     let hinweis = '';
