@@ -103,9 +103,18 @@ export default function Planung() {
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
-    // Apply text search
-    let filtered = filterTransactions(
-      allTransactions,
+    // First filter by transaction type
+    let filtered = allTransactions.filter(tx => {
+      if (showFixkosten) {
+        return tx.kategorie === 'Fixkosten';
+      } else {
+        return tx.kategorie !== 'Fixkosten';
+      }
+    });
+
+    // Then apply other filters
+    filtered = filterTransactions(
+      filtered,
       startDate,
       endDate,
       {
