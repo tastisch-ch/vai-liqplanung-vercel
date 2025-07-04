@@ -2,29 +2,23 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
-import { loadBuchungen, enhanceTransactions, filterTransactions, updateBuchungById } from "@/lib/services/buchungen";
+import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
-import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
 import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
 import { getUserSettings } from "@/lib/services/user-settings";
-import { EnhancedTransaction, TransactionCategory, FixkostenOverride } from "@/models/types";
+import { EnhancedTransaction } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
-import { format, addMonths, addQuarters, addYears } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
-import LiquidityChart from "@/app/components/chart/LiquidityChart";
-import PlanungSummary from "@/app/components/summary/PlanungSummary";
-import { loadFixkostenOverrides, deleteFixkostenOverrideById } from "@/lib/services/fixkosten-overrides";
-import OverrideModal from "@/app/components/fixkosten/OverrideModal";
+import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 
 export default function Planung() {
   const { authState } = useAuth();
   const { user } = authState;
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
-  const [viewMode, setViewMode] = useState<'table' | 'chart' | 'summary'>('summary');
-  const [chartPeriod, setChartPeriod] = useState<'day' | 'week' | 'month'>('month');
   
   // State for transactions and filters
   const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
@@ -35,45 +29,20 @@ export default function Planung() {
   // Filter states
   const [startDate, setStartDate] = useState<Date>(() => {
     const now = new Date();
-    // Start from today rather than first day of month
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
   
   const [endDate, setEndDate] = useState<Date>(() => {
     const now = new Date();
     const futureDate = new Date(now);
-    futureDate.setMonth(now.getMonth() + 3); // 3 months ahead
+    futureDate.setMonth(now.getMonth() + 3);
     return futureDate;
   });
   
   const [showFixkosten, setShowFixkosten] = useState(true);
-  const [showSimulationen, setShowSimulationen] = useState(true);
   const [showLoehne, setShowLoehne] = useState(true);
-  const [showPastTransactions, setShowPastTransactions] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [minAmount, setMinAmount] = useState(0);
-  const [maxAmount, setMaxAmount] = useState(25000);
   const [sortOption, setSortOption] = useState('date-asc');
-  
-  // State for export dialog
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportFormat, setExportFormat] = useState('management-summary');
-  const [exportTitle, setExportTitle] = useState('Liquiditätsplanung');
-  const [isExporting, setIsExporting] = useState(false);
-  
-  // Add new state variables
-  const [overrides, setOverrides] = useState<FixkostenOverride[]>([]);
-  const [selectedTransaction, setSelectedTransaction] = useState<EnhancedTransaction | null>(null);
-  const [showOverrideModal, setShowOverrideModal] = useState(false);
-  const [selectedOverride, setSelectedOverride] = useState<FixkostenOverride | null>(null);
-  const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
-  const [editForm, setEditForm] = useState({
-    date: '',
-    amount: 0,
-    details: '',
-    direction: 'Outgoing' as 'Incoming' | 'Outgoing',
-    kategorie: ''
-  });
   
   // Fetch all data
   useEffect(() => {
@@ -88,29 +57,20 @@ export default function Planung() {
         const settings = await getUserSettings(user.id);
         const startBalance = settings.start_balance;
         
-        // Load transactions, fixed costs, simulations, employees, and now overrides
-        const [buchungen, fixkosten, simulationen, lohnkostenData, overridesData] = await Promise.all([
+        // Load transactions, fixed costs, employees, and overrides
+        const [buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
           loadBuchungen(user.id),
           loadFixkosten(user.id),
-          loadSimulationen(user.id),
           loadLohnkosten(user.id),
           loadFixkostenOverrides(user.id)
         ]);
         
-        // Set overrides state
-        setOverrides(overridesData);
-        
-        // Convert fixed costs, simulations, and salaries to transactions
+        // Convert fixed costs and salaries to transactions
         let allTransactions = [...buchungen];
         
         if (showFixkosten) {
           const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
           allTransactions = [...allTransactions, ...fixkostenBuchungen];
-        }
-        
-        if (showSimulationen) {
-          const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
-          allTransactions = [...allTransactions, ...simulationBuchungen];
         }
         
         if (showLoehne) {
@@ -134,33 +94,26 @@ export default function Planung() {
     }
     
     fetchData();
-  }, [user?.id, startDate, endDate, showFixkosten, showSimulationen, showLoehne]);
+  }, [user?.id, showFixkosten, showLoehne, startDate, endDate]);
   
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, minAmount, maxAmount, sortOption, showPastTransactions]);
+  }, [searchText, sortOption]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
-    // Apply text search, amount filters
+    // Apply text search
     let filtered = filterTransactions(
       allTransactions,
       startDate,
       endDate,
       {
         searchText,
-        minAmount,
-        maxAmount
+        minAmount: 0,
+        maxAmount: Number.MAX_VALUE
       }
     );
-    
-    // Hide past transactions if needed
-    if (!showPastTransactions) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      filtered = filtered.filter(tx => tx.date >= today);
-    }
     
     // Apply sorting
     switch (sortOption) {
@@ -199,14 +152,12 @@ export default function Planung() {
         // Current quarter + 3 quarters (9 months)
         const currentQuarter = Math.floor(now.getMonth() / 3);
         start = new Date(now.getFullYear(), currentQuarter * 3, 1);
-        end = addQuarters(start, 3);
+        end = addMonths(start, 9);
         break;
       case 'yearly':
         // Current year + next year
         start = new Date(now.getFullYear(), 0, 1);
-        end = addYears(start, 1);
-        end.setMonth(11);
-        end.setDate(31);
+        end = new Date(now.getFullYear() + 1, 11, 31);
         break;
     }
     
@@ -214,274 +165,8 @@ export default function Planung() {
     setEndDate(end);
   };
   
-  // View mode selection
-  const handleViewModeChange = (mode: 'table' | 'chart' | 'summary') => {
-    setViewMode(mode);
-  };
-  
-  // Handle chart period change
-  const handleChartPeriodChange = (period: 'day' | 'week' | 'month') => {
-    setChartPeriod(period);
-  };
-  
-  // Handle export action
-  const handleExport = async () => {
-    if (isExporting) return;
-    
-    try {
-      setIsExporting(true);
-      
-      const response = await fetch('/api/export/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-          includeFixkosten: showFixkosten,
-          includeSimulationen: showSimulationen,
-          includeLoehne: showLoehne,
-          format: exportFormat,
-          title: exportTitle,
-          subtitle: `Transaktionen ${format(startDate, 'dd.MM.yyyy', { locale: de })} - ${format(endDate, 'dd.MM.yyyy', { locale: de })}`
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
-      
-      // Get the response data
-      const contentType = response.headers.get('Content-Type');
-      const blob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      
-      // Set filename based on format
-      let filename;
-      switch (exportFormat) {
-        case 'csv':
-          filename = `vai-liquiditätsplanung-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-          break;
-        case 'pdf':
-          filename = `vai-liquiditätsplanung-${format(new Date(), 'yyyy-MM-dd')}.html`;
-          break;
-        case 'management-summary':
-          filename = `vai-management-summary-${format(new Date(), 'yyyy-MM-dd')}.html`;
-          break;
-        default:
-          filename = `vai-export-${format(new Date(), 'yyyy-MM-dd')}`;
-      }
-      
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Clean up
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      setShowExportModal(false);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Fehler beim Export. Bitte versuchen Sie es später erneut.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-  
-  // Function to handle transaction context menu (right-click)
-  const handleTransactionContextMenu = (e: React.MouseEvent, transaction: EnhancedTransaction) => {
-    // Only show for Fixkosten
-    if (!transaction.id.startsWith('fixkosten_')) return;
-    
-    e.preventDefault();
-    setSelectedTransaction(transaction);
-    
-    // Find any existing override for this transaction
-    if (transaction.id.startsWith('fixkosten_')) {
-      const fixkostenId = transaction.id.split('_')[1];
-      const override = overrides.find(o => 
-        o.fixkosten_id === fixkostenId && 
-        o.original_date.getTime() === new Date(transaction.date.getFullYear(), transaction.date.getMonth(), transaction.date.getDate()).getTime()
-      );
-      setSelectedOverride(override || null);
-    } else {
-      setSelectedOverride(null);
-    }
-    
-    setShowOverrideModal(true);
-  };
-
-  // Function to refresh data after saving an override
-  const handleOverrideSaved = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Reload overrides data
-      const overridesData = await loadFixkostenOverrides(user.id);
-      setOverrides(overridesData);
-      
-      // Get settings for starting balance
-      const settings = await getUserSettings(user.id);
-      const startBalance = settings.start_balance;
-      
-      // Load all necessary data
-      const [buchungen, fixkosten, simulationen, lohnkostenData] = await Promise.all([
-        loadBuchungen(user.id),
-        loadFixkosten(user.id),
-        loadSimulationen(user.id),
-        loadLohnkosten(user.id)
-      ]);
-      
-      // Create a fresh transactions array
-      let allTransactions = [...buchungen];
-      
-      if (showFixkosten) {
-        const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
-        allTransactions = [...allTransactions, ...fixkostenBuchungen];
-      }
-      
-      if (showSimulationen) {
-        const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
-        allTransactions = [...allTransactions, ...simulationBuchungen];
-      }
-      
-      if (showLoehne) {
-        const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
-        allTransactions = [...allTransactions, ...lohnBuchungen];
-      }
-      
-      // Enhance transactions with running balance
-      const enhancedTx = await enhanceTransactions(allTransactions);
-      
-      // Update state
-      setTransactions(enhancedTx);
-      applyFilters(enhancedTx);
-      
-      showNotification('Daten wurden aktualisiert', 'success');
-    } catch (error) {
-      console.error('Error refreshing data after override:', error);
-      showNotification('Fehler beim Aktualisieren der Daten', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Function to handle deleting an override
-  const handleDeleteOverride = async (id: string) => {
-    try {
-      setIsLoading(true);
-      showNotification('Lösche Ausnahme...', 'loading');
-      
-      await deleteFixkostenOverrideById(id);
-      showNotification('Ausnahme wurde gelöscht', 'success');
-      
-      // Refresh data
-      await handleOverrideSaved();
-      
-      // Close modal
-      setShowOverrideModal(false);
-    } catch (error) {
-      console.error('Error deleting override:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
-      showNotification(`Fehler beim Löschen: ${errorMessage}`, 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to handle transaction edit
-  const handleTransactionEdit = async (transaction: EnhancedTransaction) => {
-    if (transaction.id.startsWith('fixkosten_')) {
-      // For Fixkosten, extract the ID and create/update an override
-      const [_, fixkostenId, dateStr] = transaction.id.split('_');
-      const originalDate = new Date(dateStr);
-      
-      // Find existing override
-      const override = overrides.find(o => 
-        o.fixkosten_id === fixkostenId && 
-        o.original_date.getTime() === originalDate.getTime()
-      );
-      
-      setSelectedTransaction(transaction);
-      setSelectedOverride(override || null);
-      setShowOverrideModal(true);
-    } else if (transaction.id.startsWith('simulation_') || transaction.kategorie === 'Lohn') {
-      showNotification('Diese Art von Transaktion kann nicht bearbeitet werden.', 'info');
-      return;
-    } else {
-      // For regular transactions, use the standard edit form
-      setEditingTransaction(transaction);
-      setEditForm({
-        date: format(transaction.date, 'yyyy-MM-dd'),
-        amount: transaction.amount,
-        details: transaction.details,
-        direction: transaction.direction,
-        kategorie: transaction.kategorie || ''
-      });
-    }
-  };
-
-  // Function to save transaction edits
-  const handleSaveEdit = async () => {
-    if (!editingTransaction || !user?.id) return;
-
-    try {
-      const updates = {
-        date: new Date(editForm.date),
-        amount: editForm.amount,
-        details: editForm.details,
-        direction: editForm.direction,
-        kategorie: editForm.kategorie || undefined
-      };
-
-      await updateBuchungById(editingTransaction.id, updates, user.id);
-      
-      // Refresh data
-      const updatedTransactions = transactions.map(tx =>
-        tx.id === editingTransaction.id
-          ? { ...tx, ...updates }
-          : tx
-      );
-      
-      const enhancedTx = await enhanceTransactions(updatedTransactions);
-      setTransactions(enhancedTx);
-      applyFilters(enhancedTx);
-      
-      setEditingTransaction(null);
-      showNotification('Transaktion erfolgreich aktualisiert', 'success');
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      showNotification('Fehler beim Aktualisieren der Transaktion', 'error');
-    }
-  };
-  
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-vaios-primary">Liquiditätsplanung</h1>
-        
-        {/* Export button */}
-        <button
-          onClick={() => setShowExportModal(true)}
-          className="btn-vaios-primary flex items-center"
-          disabled={isLoading || filteredTransactions.length === 0}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Management-Bericht
-        </button>
-      </div>
-      
-      {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex justify-between border-b">
           <div className="flex">
@@ -504,42 +189,11 @@ export default function Planung() {
               1 Jahr
             </button>
           </div>
-          
-          {/* View mode toggle */}
-          <div className="flex pr-2">
-            <button
-              className={`px-4 py-3 flex items-center ${viewMode === 'summary' ? 'text-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleViewModeChange('summary')}
-              title="Übersicht"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </button>
-            <button
-              className={`px-4 py-3 flex items-center ${viewMode === 'chart' ? 'text-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleViewModeChange('chart')}
-              title="Grafik"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-              </svg>
-            </button>
-            <button
-              className={`px-4 py-3 flex items-center ${viewMode === 'table' ? 'text-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleViewModeChange('table')}
-              title="Tabelle"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
         </div>
         
         {/* Filters */}
         <div className="p-4 border-b bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Von</label>
               <input 
@@ -568,19 +222,6 @@ export default function Planung() {
                 className="w-full p-2 border rounded"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sortieren</label>
-              <select 
-                value={sortOption} 
-                onChange={(e) => setSortOption(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="date-asc">Datum (aufsteigend)</option>
-                <option value="date-desc">Datum (absteigend)</option>
-                <option value="amount-asc">Betrag (aufsteigend)</option>
-                <option value="amount-desc">Betrag (absteigend)</option>
-              </select>
-            </div>
           </div>
           
           <div className="mt-3 flex flex-wrap gap-3">
@@ -596,421 +237,108 @@ export default function Planung() {
             <label className="inline-flex items-center">
               <input 
                 type="checkbox" 
-                checked={showSimulationen} 
-                onChange={(e) => setShowSimulationen(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-vaios-primary"
-              />
-              <span className="ml-2 text-sm text-gray-700">Simulationen 🔮</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input 
-                type="checkbox" 
                 checked={showLoehne} 
                 onChange={(e) => setShowLoehne(e.target.checked)}
                 className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Lohnauszahlungen 💰</span>
             </label>
-            <label className="inline-flex items-center">
-              <input 
-                type="checkbox" 
-                checked={showPastTransactions} 
-                onChange={(e) => setShowPastTransactions(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-vaios-primary"
-              />
-              <span className="ml-2 text-sm text-gray-700">Vergangene Buchungen anzeigen 📆</span>
-            </label>
           </div>
         </div>
         
         {/* Content area */}
-        <div className="p-4">
+        <div className="bg-white">
           {isLoading ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p className="mt-2 text-gray-500">Daten werden geladen...</p>
             </div>
           ) : error ? (
-            <div className="p-8 text-center">
-              <div className="text-red-500 mb-2">⚠️</div>
-              <p className="text-gray-700">{error}</p>
-            </div>
-          ) : filteredTransactions.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-gray-500">Keine Transaktionen im ausgewählten Zeitraum gefunden.</p>
+            <div className="p-8">
+              <div className="bg-red-50 p-4 rounded-md border border-red-200">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-red-800">
+                      {error}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
-            <>
-              {/* Summary View */}
-              {viewMode === 'summary' && (
-                <PlanungSummary 
-                  transactions={filteredTransactions} 
-                  startDate={startDate} 
-                  endDate={endDate} 
-                />
-              )}
-              
-              {/* Chart View */}
-              {viewMode === 'chart' && (
-                <div>
-                  <div className="flex justify-end mb-2">
-                    <div className="inline-flex rounded-md shadow-sm" role="group">
-                      <button
-                        type="button"
-                        onClick={() => handleChartPeriodChange('day')}
-                        className={`px-4 py-2 text-sm font-medium border rounded-l-lg ${
-                          chartPeriod === 'day'
-                            ? 'bg-vaios-primary text-white border-vaios-primary'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Datum
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Beschreibung
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kategorie
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Betrag
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Kontostand
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTransactions.map((transaction) => {
+                    const isIncome = transaction.direction === 'Incoming';
+                    const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
+                    
+                    return (
+                      <tr 
+                        key={transaction.id}
+                        className={`
+                          hover:bg-gray-50
+                          ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
+                          ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
+                        `}
                       >
-                        Tag
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChartPeriodChange('week')}
-                        className={`px-4 py-2 text-sm font-medium border-t border-b ${
-                          chartPeriod === 'week'
-                            ? 'bg-vaios-primary text-white border-vaios-primary'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        Woche
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleChartPeriodChange('month')}
-                        className={`px-4 py-2 text-sm font-medium border rounded-r-lg ${
-                          chartPeriod === 'month'
-                            ? 'bg-vaios-primary text-white border-vaios-primary'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        Monat
-                      </button>
-                    </div>
-                  </div>
-                  <LiquidityChart 
-                    transactions={filteredTransactions}
-                    startDate={startDate}
-                    endDate={endDate}
-                    aggregationPeriod={chartPeriod}
-                  />
-                </div>
-              )}
-              
-              {/* Table View */}
-              {viewMode === 'table' && (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Datum
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Beschreibung
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Kategorie
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Betrag
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Kontostand
-                        </th>
-                        <th scope="col" className="relative px-6 py-3">
-                          <span className="sr-only">Aktionen</span>
-                        </th>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
+                          {transaction.details}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {transaction.kategorie === 'Lohn' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              💰 Lohn
+                            </span>
+                          ) : transaction.kategorie === 'Fixkosten' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              📌 Fixkosten
+                            </span>
+                          ) : transaction.kategorie}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
+                          {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
+                          {formatCHF(transaction.kontostand || 0)}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {transactions.map((transaction) => {
-                        const isIncome = transaction.direction === 'Incoming';
-                        const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
-                        
-                        return (
-                          <tr 
-                            key={transaction.id}
-                            className={`
-                              hover:bg-gray-50
-                              ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
-                              ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
-                              ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
-                              ${transaction.isOverridden ? 'border-l-4 border-orange-400' : ''}
-                            `}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
-                              {transaction.shifted && (
-                                <span 
-                                  className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20"
-                                  title="Ursprünglicher Termin ist Wochenende - auf Freitag verschoben"
-                                >
-                                  verschoben
-                                </span>
-                              )}
-                              {transaction.isOverridden && (
-                                <span 
-                                  className="ml-1 inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800 ring-1 ring-inset ring-orange-600/20"
-                                  title={transaction.overrideNotes || 'Manuell angepasst'}
-                                >
-                                  angepasst
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
-                              {transaction.details}
-                              <button 
-                                className="ml-2 text-xs text-gray-400 hover:text-blue-600"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTransactionEdit(transaction);
-                                }}
-                                title={transaction.id.startsWith('fixkosten_') ? 'Fixkosten anpassen' : 'Transaktion bearbeiten'}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {transaction.kategorie === 'Lohn' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                  💰 Lohn
-                                </span>
-                              ) : transaction.kategorie === 'Fixkosten' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  📌 Fixkosten
-                                </span>
-                              ) : transaction.kategorie === 'Simulation' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                  🔮 Simulation
-                                </span>
-                              ) : transaction.kategorie}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
-                              {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
-                              {formatCHF(transaction.kontostand || 0)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              {/* Empty cell for consistent layout */}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-        
-        {/* Summary Footer */}
-        {!isLoading && !error && filteredTransactions.length > 0 && viewMode === 'table' && (
-          <div className="p-4 border-t bg-gray-50">
-            <div className="flex justify-between">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Gesamt: </span>
-                <span className="text-sm font-medium">{filteredTransactions.length} Transaktionen</span>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Endsaldo: </span>
-                <span className="text-sm font-medium">
-                  {formatCHF(filteredTransactions[filteredTransactions.length - 1]?.kontostand || 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-vaios-primary">Management-Bericht exportieren</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
-              <select
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="management-summary">Management-Summary (HTML)</option>
-                <option value="pdf">Detaillierter Bericht (PDF)</option>
-                <option value="csv">Excel-Tabelle (CSV)</option>
-              </select>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Titel</label>
-              <input
-                type="text"
-                value={exportTitle}
-                onChange={(e) => setExportTitle(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Liquiditätsplanung"
-              />
-            </div>
-            
-            <div className="border-t pt-4 mt-4 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded text-gray-700"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="px-4 py-2 bg-vaios-primary text-white rounded flex items-center"
-              >
-                {isExporting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Exportieren...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Exportieren
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Regular transaction edit modal */}
-      {editingTransaction && !editingTransaction.id.startsWith('fixkosten_') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">Transaktion bearbeiten</h2>
-            
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Datum
-                  </label>
-                  <input
-                    type="date"
-                    id="date"
-                    value={editForm.date}
-                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                    Betrag
-                  </label>
-                  <input
-                    type="number"
-                    id="amount"
-                    step="0.01"
-                    value={editForm.amount}
-                    onChange={(e) => setEditForm({...editForm, amount: parseFloat(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-                    Beschreibung
-                  </label>
-                  <input
-                    type="text"
-                    id="details"
-                    value={editForm.details}
-                    onChange={(e) => setEditForm({...editForm, details: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="direction" className="block text-sm font-medium text-gray-700 mb-1">
-                    Richtung
-                  </label>
-                  <select
-                    id="direction"
-                    value={editForm.direction}
-                    onChange={(e) => setEditForm({...editForm, direction: e.target.value as 'Incoming' | 'Outgoing'})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Incoming">Eingehend</option>
-                    <option value="Outgoing">Ausgehend</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1">
-                    Kategorie
-                  </label>
-                  <input
-                    type="text"
-                    id="kategorie"
-                    value={editForm.kategorie}
-                    onChange={(e) => setEditForm({...editForm, kategorie: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditingTransaction(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Speichern
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Fixkosten override modal */}
-      {showOverrideModal && selectedTransaction && (
-        <OverrideModal
-          transaction={selectedTransaction}
-          override={selectedOverride}
-          existingOverrides={overrides}
-          userId={user?.id || ''}
-          isOpen={showOverrideModal}
-          onClose={() => {
-            setShowOverrideModal(false);
-            setSelectedTransaction(null);
-            setSelectedOverride(null);
-          }}
-          onSave={handleOverrideSaved}
-          onDelete={handleDeleteOverride}
-        />
-      )}
     </div>
   );
 } 
