@@ -41,6 +41,7 @@ export default function Planung() {
   
   const [showFixkosten, setShowFixkosten] = useState(true);
   const [showLoehne, setShowLoehne] = useState(true);
+  const [showStandard, setShowStandard] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [sortOption, setSortOption] = useState('date-asc');
   
@@ -68,15 +69,15 @@ export default function Planung() {
         // Convert fixed costs and salaries to transactions
         let allTransactions = [...buchungen];
         
-        if (showFixkosten) {
-          const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
-          allTransactions = [...allTransactions, ...fixkostenBuchungen];
-        }
+        // Always load all transactions, filtering happens in applyFilters
+        const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
+        const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
         
-        if (showLoehne) {
-          const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
-          allTransactions = [...allTransactions, ...lohnBuchungen];
-        }
+        allTransactions = [
+          ...allTransactions,
+          ...fixkostenBuchungen,
+          ...lohnBuchungen
+        ];
         
         // Enhance transactions with running balance
         const enhancedTx = await enhanceTransactions(allTransactions);
@@ -94,22 +95,20 @@ export default function Planung() {
     }
     
     fetchData();
-  }, [user?.id, showFixkosten, showLoehne, startDate, endDate]);
+  }, [user?.id, startDate, endDate]);
   
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, sortOption]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
     // First filter by transaction type
     let filtered = allTransactions.filter(tx => {
-      if (showFixkosten) {
-        return tx.kategorie === 'Fixkosten';
-      } else {
-        return tx.kategorie !== 'Fixkosten';
-      }
+      if (tx.kategorie === 'Fixkosten') return showFixkosten;
+      if (tx.kategorie === 'Lohn') return showLoehne;
+      return showStandard; // All other categories are considered Standard
     });
 
     // Then apply other filters
@@ -251,6 +250,15 @@ export default function Planung() {
                 className="form-checkbox h-5 w-5 text-vaios-primary"
               />
               <span className="ml-2 text-sm text-gray-700">Lohnauszahlungen 💰</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input 
+                type="checkbox" 
+                checked={showStandard} 
+                onChange={(e) => setShowStandard(e.target.checked)}
+                className="form-checkbox h-5 w-5 text-vaios-primary"
+              />
+              <span className="ml-2 text-sm text-gray-700">Standard</span>
             </label>
           </div>
         </div>
