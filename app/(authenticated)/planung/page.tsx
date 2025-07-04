@@ -399,22 +399,34 @@ export default function Planung() {
 
   // Function to handle transaction edit
   const handleTransactionEdit = async (transaction: EnhancedTransaction) => {
-    // Don't allow editing of fixed costs, simulations, or salary entries
-    if (transaction.id.startsWith('fixkosten_') || 
-        transaction.id.startsWith('simulation_') || 
-        transaction.kategorie === 'Lohn') {
-      showNotification('Diese Art von Transaktion kann nicht direkt bearbeitet werden.', 'info');
+    if (transaction.id.startsWith('fixkosten_')) {
+      // For Fixkosten, extract the ID and create/update an override
+      const [_, fixkostenId, dateStr] = transaction.id.split('_');
+      const originalDate = new Date(dateStr);
+      
+      // Find existing override
+      const override = overrides.find(o => 
+        o.fixkosten_id === fixkostenId && 
+        o.original_date.getTime() === originalDate.getTime()
+      );
+      
+      setSelectedTransaction(transaction);
+      setSelectedOverride(override || null);
+      setShowOverrideModal(true);
+    } else if (transaction.id.startsWith('simulation_') || transaction.kategorie === 'Lohn') {
+      showNotification('Diese Art von Transaktion kann nicht bearbeitet werden.', 'info');
       return;
+    } else {
+      // For regular transactions, use the standard edit form
+      setEditingTransaction(transaction);
+      setEditForm({
+        date: format(transaction.date, 'yyyy-MM-dd'),
+        amount: transaction.amount,
+        details: transaction.details,
+        direction: transaction.direction,
+        kategorie: transaction.kategorie || ''
+      });
     }
-
-    setEditingTransaction(transaction);
-    setEditForm({
-      date: format(transaction.date, 'yyyy-MM-dd'),
-      amount: transaction.amount,
-      details: transaction.details,
-      direction: transaction.direction,
-      kategorie: transaction.kategorie || ''
-    });
   };
 
   // Function to save transaction edits
@@ -711,92 +723,39 @@ export default function Planung() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredTransactions.map((transaction) => {
-                        const isIncome = transaction.direction === 'Incoming';
-                        const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
-                        
-                        return (
-                          <tr 
-                            key={transaction.id} 
-                            className={`
-                              hover:bg-gray-50
-                              ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
-                              ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
-                              ${transaction.kategorie === 'Simulation' ? 'bg-purple-50' : ''}
-                              ${transaction.isOverridden ? 'border-l-4 border-orange-400' : ''}
-                            `}
-                            onContextMenu={(e) => handleTransactionContextMenu(e, transaction)}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
-                              {transaction.shifted && (
-                                <span className="ml-1 inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20" 
-                                      title="Ursprünglicher Termin ist Wochenende - auf Freitag verschoben">
-                                  verschoben
-                                </span>
-                              )}
-                              {transaction.isOverridden && (
-                                <span className="ml-1 inline-flex items-center rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800 ring-1 ring-inset ring-orange-600/20" 
-                                      title={transaction.overrideNotes || 'Manuell angepasst'}>
-                                  angepasst
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
-                              {transaction.details}
-                              {transaction.id.startsWith('fixkosten_') ? (
-                                <button 
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTransactionContextMenu(e, transaction);
-                                  }}
-                                  title="Fixkosten anpassen"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                              ) : !transaction.id.startsWith('simulation_') && transaction.kategorie !== 'Lohn' && (
-                                <button 
-                                  className="ml-2 text-xs text-gray-400 hover:text-blue-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTransactionEdit(transaction);
-                                  }}
-                                  title="Transaktion bearbeiten"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {transaction.kategorie === 'Lohn' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                  💰 Lohn
-                                </span>
-                              ) : transaction.kategorie === 'Fixkosten' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  📌 Fixkosten
-                                </span>
-                              ) : transaction.kategorie === 'Simulation' ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                  🔮 Simulation
-                                </span>
-                              ) : transaction.kategorie}
-                            </td>
-                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
-                              {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
-                              {formatCHF(transaction.kontostand || 0)}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {transactions.map((transaction) => (
+                        <tr 
+                          key={transaction.id}
+                          className={`hover:bg-gray-50 ${transaction.isOverridden ? 'bg-blue-50' : ''}`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {format(transaction.date, 'dd.MM.yyyy')}
+                            {transaction.shifted && <span title="Datum angepasst" className="ml-1">📅</span>}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {transaction.details}
+                            {transaction.overrideNotes && (
+                              <span title={transaction.overrideNotes} className="ml-1">📝</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {transaction.kategorie || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <span className={transaction.direction === 'Incoming' ? 'text-green-600' : 'text-red-600'}>
+                              {formatCHF(transaction.amount)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => handleTransactionEdit(transaction)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Bearbeiten
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -888,8 +847,108 @@ export default function Planung() {
         </div>
       )}
 
-      {/* Override Modal */}
-      {selectedTransaction && showOverrideModal && (
+      {/* Regular transaction edit modal */}
+      {editingTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Transaktion bearbeiten</h2>
+            
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                    Datum
+                  </label>
+                  <input
+                    type="date"
+                    id="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Betrag
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    step="0.01"
+                    value={editForm.amount}
+                    onChange={(e) => setEditForm({...editForm, amount: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
+                    Beschreibung
+                  </label>
+                  <input
+                    type="text"
+                    id="details"
+                    value={editForm.details}
+                    onChange={(e) => setEditForm({...editForm, details: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="direction" className="block text-sm font-medium text-gray-700 mb-1">
+                    Richtung
+                  </label>
+                  <select
+                    id="direction"
+                    value={editForm.direction}
+                    onChange={(e) => setEditForm({...editForm, direction: e.target.value as 'Incoming' | 'Outgoing'})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="Incoming">Einnahme</option>
+                    <option value="Outgoing">Ausgabe</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie
+                  </label>
+                  <input
+                    type="text"
+                    id="kategorie"
+                    value={editForm.kategorie}
+                    onChange={(e) => setEditForm({...editForm, kategorie: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingTransaction(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Speichern
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Fixkosten override modal */}
+      {showOverrideModal && selectedTransaction && (
         <OverrideModal
           transaction={selectedTransaction}
           override={selectedOverride}
@@ -900,78 +959,6 @@ export default function Planung() {
           onSave={handleOverrideSaved}
           onDelete={handleDeleteOverride}
         />
-      )}
-
-      {/* Add edit modal */}
-      {editingTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h3 className="text-lg font-medium mb-4">Transaktion bearbeiten</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
-                <input
-                  type="date"
-                  value={editForm.date}
-                  onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Betrag</label>
-                <input
-                  type="number"
-                  value={editForm.amount}
-                  onChange={(e) => setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })}
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
-                <input
-                  type="text"
-                  value={editForm.details}
-                  onChange={(e) => setEditForm({ ...editForm, details: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Richtung</label>
-                <select
-                  value={editForm.direction}
-                  onChange={(e) => setEditForm({ ...editForm, direction: e.target.value as 'Incoming' | 'Outgoing' })}
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                >
-                  <option value="Incoming">Eingehend</option>
-                  <option value="Outgoing">Ausgehend</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie</label>
-                <input
-                  type="text"
-                  value={editForm.kategorie}
-                  onChange={(e) => setEditForm({ ...editForm, kategorie: e.target.value })}
-                  className="w-full border-gray-300 rounded-md shadow-sm"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setEditingTransaction(null)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Speichern
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
