@@ -15,6 +15,8 @@ import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
+import { supabase } from '@/lib/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Planung() {
   const { authState } = useAuth();
@@ -183,23 +185,36 @@ export default function Planung() {
     details: string;
     is_simulation: boolean;
   }) => {
-    try {
-      const response = await fetch('/api/transactions/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+    if (!user?.id) {
+      showNotification(
+        'Bitte melden Sie sich an, um Transaktionen zu erstellen',
+        'error'
+      );
+      return;
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to create transaction');
+    try {
+      const { error } = await supabase
+        .from('buchungen')
+        .insert([
+          {
+            id: uuidv4(),
+            date: data.date,
+            amount: data.amount,
+            direction: data.direction,
+            details: data.details,
+            is_simulation: data.is_simulation,
+            user_id: user.id,
+            modified: true,
+          },
+        ]);
+
+      if (error) {
+        throw error;
       }
 
       // Refresh the data
-      if (user?.id) {
-        fetchData();
-      }
+      fetchData();
       setIsFormOpen(false);
       showNotification(
         'Transaktion wurde erfolgreich erstellt',

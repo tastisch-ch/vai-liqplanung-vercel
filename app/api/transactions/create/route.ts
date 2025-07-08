@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createServerComponentClient({ cookies });
-    const { data: { user } } = await supabase.auth.getUser();
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Get the session instead of just the user
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
 
-    if (!user) {
+    if (authError || !session?.user) {
+      console.error('Auth error:', authError);
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
           direction,
           details,
           is_simulation,
-          user_id: user.id,
+          user_id: session.user.id,
           modified: true,
         },
       ])
