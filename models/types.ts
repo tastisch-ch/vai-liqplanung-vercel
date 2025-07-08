@@ -12,6 +12,7 @@ export interface Buchung {
   updated_at?: string;
   isOverridden?: boolean;
   overrideNotes?: string;
+  is_simulation?: boolean;
 }
 
 export interface Fixkosten {
@@ -156,4 +157,5 @@ export interface EnhancedTransaction extends Buchung {
   kontostand?: number;
   hinweis?: string;
   kategorie: TransactionCategory;
+  signedAmount?: number;
 } 

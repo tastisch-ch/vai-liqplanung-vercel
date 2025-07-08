@@ -21,6 +21,7 @@ export interface Database {
           user_id: string | null
           created_at: string | null
           updated_at: string | null
+          is_simulation: boolean | null
         }
         Insert: {
           id: string
@@ -33,6 +34,7 @@ export interface Database {
           user_id?: string | null
           created_at?: string | null
           updated_at?: string | null
+          is_simulation?: boolean | null
         }
         Update: {
           id?: string
@@ -45,6 +47,7 @@ export interface Database {
           user_id?: string | null
           created_at?: string | null
           updated_at?: string | null
+          is_simulation?: boolean | null
         }
       }
       fixkosten: {
