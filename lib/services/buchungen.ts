@@ -13,6 +13,8 @@ import { convertSimulationenToBuchungen, loadSimulationen } from './simulationen
 import { convertLohnkostenToBuchungen } from './lohnkosten';
 import { loadMitarbeiter } from './mitarbeiter';
 import { getCurrentBalance } from './daily-balance';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/models/database.types';
 
 /**
  * Load all transactions/buchungen from the database
@@ -545,4 +547,51 @@ export async function getAllTransactionsForPlanning(
     console.error('Error getting all transactions:', error);
     throw new Error(`Failed to get all transactions: ${error.message || 'Unknown error'}`);
   }
+}
+
+export async function fetchTransactions(filters: {
+  showFixkosten: boolean;
+  showLohn: boolean;
+  showStandard: boolean;
+  showSimulations: boolean;
+}) {
+  const supabase = createClientComponentClient<Database>();
+
+  let query = supabase
+    .from('buchungen')
+    .select('*')
+    .order('date', { ascending: false });
+
+  // Build filter conditions
+  const conditions = [];
+  
+  if (!filters.showFixkosten) {
+    conditions.push("kategorie != 'Fixkosten'");
+  }
+  
+  if (!filters.showLohn) {
+    conditions.push("kategorie != 'Lohn'");
+  }
+  
+  if (!filters.showStandard) {
+    conditions.push("(kategorie = 'Fixkosten' OR kategorie = 'Lohn')");
+  }
+
+  if (!filters.showSimulations) {
+    conditions.push('is_simulation = false');
+  }
+
+  // Apply filters if any conditions exist
+  if (conditions.length > 0) {
+    query = query.or(conditions.join(','));
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
+  }
+
+  return data;
 } 

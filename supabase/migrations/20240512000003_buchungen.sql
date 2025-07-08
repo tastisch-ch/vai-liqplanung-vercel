@@ -16,6 +16,7 @@ BEGIN
       direction TEXT NOT NULL CHECK (direction IN ('Incoming', 'Outgoing')),
       modified BOOLEAN DEFAULT FALSE,
       kategorie TEXT,
+      is_simulation BOOLEAN DEFAULT FALSE,
       user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE
@@ -23,6 +24,20 @@ BEGIN
     
     -- Add comment
     COMMENT ON TABLE public.buchungen IS 'Financial transactions for users';
+  END IF;
+END
+$$;
+
+-- Add is_simulation column if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'buchungen' 
+    AND column_name = 'is_simulation'
+  ) THEN
+    ALTER TABLE public.buchungen ADD COLUMN is_simulation BOOLEAN DEFAULT FALSE;
   END IF;
 END
 $$;
