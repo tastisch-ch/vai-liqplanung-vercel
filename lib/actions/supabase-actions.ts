@@ -23,7 +23,7 @@ async function getCurrentUserId() {
 
 // Buchungen (Transactions) Actions
 export async function createBuchung(
-  formData: Omit<Buchung, 'id' | 'created_at' | 'updated_at' | 'user_id'>
+  formData: Omit<Buchung, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { is_simulation?: boolean }
 ) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -35,7 +35,8 @@ export async function createBuchung(
         ...formData,
         id: uuidv4(),
         user_id: userId,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        is_simulation: formData.is_simulation ?? false
       })
       .select()
       .single();
