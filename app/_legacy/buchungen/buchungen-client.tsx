@@ -26,7 +26,8 @@ export default function BuchungenClient({ initialTransactions }: Props) {
     details: '',
     amount: '',
     direction: 'Outgoing' as 'Incoming' | 'Outgoing',
-    kategorie: ''
+    kategorie: '',
+    is_simulation: false
   });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -43,7 +44,8 @@ export default function BuchungenClient({ initialTransactions }: Props) {
       amount: parseFloat(formData.amount),
       direction: formData.direction,
       modified: false,
-      kategorie: formData.kategorie || null
+      kategorie: formData.kategorie || null,
+      is_simulation: formData.is_simulation
     };
     
     try {
@@ -55,7 +57,8 @@ export default function BuchungenClient({ initialTransactions }: Props) {
           details: '',
           amount: '',
           direction: 'Outgoing',
-          kategorie: ''
+          kategorie: '',
+          is_simulation: false
         });
         refreshData();
       } else {

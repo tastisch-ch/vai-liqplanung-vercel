@@ -21,7 +21,7 @@ export interface Database {
           user_id: string
           created_at: string
           updated_at: string | null
-          is_simulation: boolean | null
+          is_simulation?: boolean | null
         }
         Insert: {
           id?: string
