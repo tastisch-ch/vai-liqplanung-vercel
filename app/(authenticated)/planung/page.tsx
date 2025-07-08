@@ -106,8 +106,8 @@ export default function Planung() {
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
     // First filter by transaction type
     let filtered = allTransactions.filter(tx => {
-      if (tx.kategorie === 'Fixkosten') return showFixkosten;
-      if (tx.kategorie === 'Lohn') return showLoehne;
+      if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;
+      if (tx.kategorie?.toLowerCase() === 'lohn') return showLoehne;
       return showStandard; // All other categories are considered Standard
     });
 
@@ -326,9 +326,9 @@ export default function Planung() {
                       <tr 
                         key={transaction.id}
                         className={`
-                          hover:bg-gray-50
-                          ${transaction.kategorie === 'Lohn' ? 'bg-amber-50' : ''}
-                          ${transaction.kategorie === 'Fixkosten' ? 'bg-blue-50' : ''}
+                          hover:bg-gray-50/80
+                          ${transaction.kategorie?.toLowerCase() === 'lohn' ? 'bg-amber-50/70' : ''}
+                          ${transaction.kategorie?.toLowerCase() === 'fixkosten' ? 'bg-blue-50/70' : ''}
                         `}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
