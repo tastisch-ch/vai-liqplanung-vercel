@@ -13,12 +13,15 @@ import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
+import { TransactionForm } from "@/components/forms/TransactionForm";
+import { Button } from "@/components/ui/button";
 
 export default function Planung() {
   const { authState } = useAuth();
   const { user } = authState;
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
+  const [isFormOpen, setIsFormOpen] = useState(false);
   
   // State for transactions and filters
   const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
@@ -46,54 +49,54 @@ export default function Planung() {
   const [sortOption, setSortOption] = useState('date-asc');
   
   // Fetch all data
-  useEffect(() => {
-    async function fetchData() {
-      if (!user?.id) return;
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        // Load user settings for starting balance
-        const settings = await getUserSettings(user.id);
-        const startBalance = settings.start_balance;
-        
-        // Load transactions, fixed costs, employees, and overrides
-        const [buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
-          loadBuchungen(user.id),
-          loadFixkosten(user.id),
-          loadLohnkosten(user.id),
-          loadFixkostenOverrides(user.id)
-        ]);
-        
-        // Convert fixed costs and salaries to transactions
-        let allTransactions = [...buchungen];
-        
-        // Always load all transactions, filtering happens in applyFilters
-        const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
-        const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
-        
-        allTransactions = [
-          ...allTransactions,
-          ...fixkostenBuchungen,
-          ...lohnBuchungen
-        ];
-        
-        // Enhance transactions with running balance
-        const enhancedTx = await enhanceTransactions(allTransactions);
-        setTransactions(enhancedTx);
-        
-        // Apply filters
-        applyFilters(enhancedTx);
-      } catch (err) {
-        setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');
-        setTransactions([]);
-        setFilteredTransactions([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const fetchData = async () => {
+    if (!user?.id) return;
     
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Load user settings for starting balance
+      const settings = await getUserSettings(user.id);
+      const startBalance = settings.start_balance;
+      
+      // Load transactions, fixed costs, employees, and overrides
+      const [buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
+        loadBuchungen(user.id),
+        loadFixkosten(user.id),
+        loadLohnkosten(user.id),
+        loadFixkostenOverrides(user.id)
+      ]);
+      
+      // Convert fixed costs and salaries to transactions
+      let allTransactions = [...buchungen];
+      
+      // Always load all transactions, filtering happens in applyFilters
+      const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
+      const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
+      
+      allTransactions = [
+        ...allTransactions,
+        ...fixkostenBuchungen,
+        ...lohnBuchungen
+      ];
+      
+      // Enhance transactions with running balance
+      const enhancedTx = await enhanceTransactions(allTransactions);
+      setTransactions(enhancedTx);
+      
+      // Apply filters
+      applyFilters(enhancedTx);
+    } catch (err) {
+      setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');
+      setTransactions([]);
+      setFilteredTransactions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user?.id, startDate, endDate]);
   
@@ -173,6 +176,44 @@ export default function Planung() {
     setEndDate(end);
   };
   
+  const handleAddTransaction = async (data: {
+    date: string;
+    amount: number;
+    direction: 'Incoming' | 'Outgoing';
+    details: string;
+    is_simulation: boolean;
+  }) => {
+    try {
+      const response = await fetch('/api/transactions/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create transaction');
+      }
+
+      // Refresh the data
+      if (user?.id) {
+        fetchData();
+      }
+      setIsFormOpen(false);
+      showNotification(
+        'Transaktion wurde erfolgreich erstellt',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      showNotification(
+        'Transaktion konnte nicht erstellt werden',
+        'error'
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -198,12 +239,12 @@ export default function Planung() {
             </button>
           </div>
           <div className="flex items-center pr-4">
-            <button
-              onClick={() => window.location.href = '/transaktionen'}
+            <Button
+              onClick={() => setIsFormOpen(true)}
               className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors"
             >
               Neue Transaktion
-            </button>
+            </Button>
           </div>
         </div>
         
@@ -373,6 +414,11 @@ export default function Planung() {
           )}
         </div>
       </div>
+      <TransactionForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleAddTransaction}
+      />
     </div>
   );
 } 
