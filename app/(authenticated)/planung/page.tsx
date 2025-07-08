@@ -240,34 +240,43 @@ export default function Planung() {
             </div>
           </div>
           
-          <div className="mt-3 flex flex-wrap gap-3">
-            <label className="inline-flex items-center">
+          <div className="mt-3 flex flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
               <input 
                 type="checkbox" 
+                id="fixkosten"
                 checked={showFixkosten} 
                 onChange={(e) => setShowFixkosten(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-vaios-primary"
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
               />
-              <span className="ml-2 text-sm text-gray-700">Fixkosten 📌</span>
-            </label>
-            <label className="inline-flex items-center">
+              <label htmlFor="fixkosten" className="text-sm text-gray-700">
+                Fixkosten 📌
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
               <input 
                 type="checkbox" 
+                id="lohn"
                 checked={showLoehne} 
                 onChange={(e) => setShowLoehne(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-vaios-primary"
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
               />
-              <span className="ml-2 text-sm text-gray-700">Lohnauszahlungen 💰</span>
-            </label>
-            <label className="inline-flex items-center">
+              <label htmlFor="lohn" className="text-sm text-gray-700">
+                Lohnauszahlungen 💰
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
               <input 
                 type="checkbox" 
+                id="standard"
                 checked={showStandard} 
                 onChange={(e) => setShowStandard(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-vaios-primary"
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
               />
-              <span className="ml-2 text-sm text-gray-700">Standard</span>
-            </label>
+              <label htmlFor="standard" className="text-sm text-gray-700">
+                Standard
+              </label>
+            </div>
           </div>
         </div>
         
@@ -325,29 +334,29 @@ export default function Planung() {
                     return (
                       <tr 
                         key={transaction.id}
-                        className={`
-                          hover:bg-gray-50/80
-                          ${transaction.kategorie?.toLowerCase() === 'lohn' ? 'bg-amber-50/70' : ''}
-                          ${transaction.kategorie?.toLowerCase() === 'fixkosten' ? 'bg-blue-50/70' : ''}
-                        `}
+                        className="border-b hover:bg-gray-50"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
                           {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
                           {transaction.details}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {transaction.kategorie === 'Lohn' ? (
+                          {transaction.kategorie?.toLowerCase() === 'lohn' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                               💰 Lohn
                             </span>
-                          ) : transaction.kategorie === 'Fixkosten' ? (
+                          ) : transaction.kategorie?.toLowerCase() === 'fixkosten' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               📌 Fixkosten
                             </span>
-                          ) : transaction.kategorie}
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Standard
+                            </span>
+                          )}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
                           {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
