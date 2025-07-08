@@ -74,7 +74,8 @@ export function useBuchungen(): DataState<Buchung> {
             modified: item.modified || false,
             kategorie: item.kategorie || undefined,
             created_at: item.created_at || new Date().toISOString(),
-            user_id: item.user_id || ''
+            user_id: item.user_id || '',
+            is_simulation: item.is_simulation || false
           };
           
           // Apply date shifting for Incoming transactions

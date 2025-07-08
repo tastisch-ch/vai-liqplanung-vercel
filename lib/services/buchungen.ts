@@ -117,7 +117,8 @@ export async function addBuchung(
       // Still store the creator's user_id for reference, but won't filter by it
       user_id: userId,
       created_at: now,
-      updated_at: now
+      updated_at: now,
+      is_simulation: false
     };
     
     const { data, error } = await supabase

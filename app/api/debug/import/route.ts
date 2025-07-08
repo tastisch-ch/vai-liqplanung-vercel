@@ -152,7 +152,8 @@ function processHTMLImport(htmlData: string) {
             user_id: 'debug-user',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            modified: false
+            modified: false,
+            is_simulation: false
           });
         }
       }

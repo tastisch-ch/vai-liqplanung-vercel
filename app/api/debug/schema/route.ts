@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
       direction: 'Incoming',
       modified: false,
       kategorie: 'Test',
-      user_id: request.cookies.get('sb-user-id')?.value || 'unknown'
+      user_id: request.cookies.get('sb-user-id')?.value || 'unknown',
+      is_simulation: false
     };
     
     const { error: insertError } = await supabase
