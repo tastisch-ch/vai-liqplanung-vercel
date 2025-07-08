@@ -24,6 +24,7 @@ export default function Planung() {
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
   
   // State for transactions and filters
   const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
@@ -47,6 +48,7 @@ export default function Planung() {
   const [showFixkosten, setShowFixkosten] = useState(true);
   const [showLoehne, setShowLoehne] = useState(true);
   const [showStandard, setShowStandard] = useState(true);
+  const [showManual, setShowManual] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [sortOption, setSortOption] = useState('date-asc');
   
@@ -105,7 +107,7 @@ export default function Planung() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
@@ -113,6 +115,7 @@ export default function Planung() {
     let filtered = allTransactions.filter(tx => {
       if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;
       if (tx.kategorie?.toLowerCase() === 'lohn') return showLoehne;
+      if (tx.modified) return showManual; // Filter manual transactions
       return showStandard; // All other categories are considered Standard
     });
 
@@ -178,7 +181,41 @@ export default function Planung() {
     setEndDate(end);
   };
   
-  const handleAddTransaction = async (data: {
+  const handleEditTransaction = (transaction: EnhancedTransaction) => {
+    setEditingTransaction(transaction);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteTransaction = async (transaction: EnhancedTransaction) => {
+    if (!user?.id || !transaction.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('buchungen')
+        .delete()
+        .eq('id', transaction.id)
+        .eq('user_id', user.id)
+        .eq('modified', true); // Only delete manual transactions
+
+      if (error) {
+        throw error;
+      }
+
+      showNotification(
+        'Transaktion wurde erfolgreich gelöscht',
+        'success'
+      );
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      showNotification(
+        'Transaktion konnte nicht gelöscht werden',
+        'error'
+      );
+    }
+  };
+
+  const handleSubmitTransaction = async (data: {
     date: string;
     amount: number;
     direction: 'Incoming' | 'Outgoing';
@@ -194,36 +231,60 @@ export default function Planung() {
     }
 
     try {
-      const { error } = await supabase
-        .from('buchungen')
-        .insert([
-          {
-            id: uuidv4(),
+      if (editingTransaction) {
+        // Update existing transaction
+        const { error } = await supabase
+          .from('buchungen')
+          .update({
             date: data.date,
             amount: data.amount,
             direction: data.direction,
             details: data.details,
             is_simulation: data.is_simulation,
-            user_id: user.id,
-            modified: true,
-          },
-        ]);
+          })
+          .eq('id', editingTransaction.id)
+          .eq('user_id', user.id)
+          .eq('modified', true); // Only update manual transactions
 
-      if (error) {
-        throw error;
+        if (error) throw error;
+
+        showNotification(
+          'Transaktion wurde erfolgreich aktualisiert',
+          'success'
+        );
+      } else {
+        // Create new transaction
+        const { error } = await supabase
+          .from('buchungen')
+          .insert([
+            {
+              id: uuidv4(),
+              date: data.date,
+              amount: data.amount,
+              direction: data.direction,
+              details: data.details,
+              is_simulation: data.is_simulation,
+              user_id: user.id,
+              modified: true,
+            },
+          ]);
+
+        if (error) throw error;
+
+        showNotification(
+          'Transaktion wurde erfolgreich erstellt',
+          'success'
+        );
       }
 
-      // Refresh the data
-      fetchData();
+      // Reset editing state
+      setEditingTransaction(null);
       setIsFormOpen(false);
-      showNotification(
-        'Transaktion wurde erfolgreich erstellt',
-        'success'
-      );
+      fetchData();
     } catch (error) {
-      console.error('Error creating transaction:', error);
+      console.error('Error saving transaction:', error);
       showNotification(
-        'Transaktion konnte nicht erstellt werden',
+        'Transaktion konnte nicht gespeichert werden',
         'error'
       );
     }
@@ -333,6 +394,18 @@ export default function Planung() {
                 Standard
               </label>
             </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="manual"
+                checked={showManual} 
+                onChange={(e) => setShowManual(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="manual" className="text-sm text-gray-700">
+                Manuelle Transaktionen ✏️
+              </label>
+            </div>
           </div>
         </div>
         
@@ -380,6 +453,11 @@ export default function Planung() {
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Kontostand
                     </th>
+                    {filteredTransactions.some(tx => tx.modified) && (
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Aktionen
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -420,6 +498,24 @@ export default function Planung() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
                           {formatCHF(transaction.kontostand || 0)}
                         </td>
+                        {transaction.modified && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleEditTransaction(transaction)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTransaction(transaction)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -431,8 +527,18 @@ export default function Planung() {
       </div>
       <TransactionForm
         isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSubmit={handleAddTransaction}
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingTransaction(null);
+        }}
+        onSubmit={handleSubmitTransaction}
+        initialData={editingTransaction ? {
+          date: editingTransaction.date.toISOString().split('T')[0],
+          amount: editingTransaction.amount,
+          direction: editingTransaction.direction,
+          details: editingTransaction.details || '',
+          is_simulation: editingTransaction.is_simulation || false,
+        } : undefined}
       />
     </div>
   );

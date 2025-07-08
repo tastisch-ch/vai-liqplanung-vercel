@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface TransactionFormData {
+  date: string;
+  amount: string | number;
+  direction: 'Incoming' | 'Outgoing';
+  details: string;
+  is_simulation: boolean;
+}
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -18,18 +26,27 @@ interface TransactionFormProps {
     details: string;
     is_simulation: boolean;
   }) => void;
+  initialData?: TransactionFormData;
 }
 
-const defaultFormData = {
+const defaultFormData: TransactionFormData = {
   date: new Date().toISOString().split('T')[0],
   amount: '',
-  direction: 'Outgoing' as 'Incoming' | 'Outgoing',
+  direction: 'Outgoing',
   details: '',
   is_simulation: false,
 };
 
-export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormProps) {
-  const [formData, setFormData] = useState(defaultFormData);
+export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: TransactionFormProps) {
+  const [formData, setFormData] = useState<TransactionFormData>(defaultFormData);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    } else {
+      setFormData(defaultFormData);
+    }
+  }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +55,8 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
       amount: Number(formData.amount),
       date: new Date(formData.date).toISOString(),
     });
-    // Reset form after submission
-    setFormData(defaultFormData);
   };
 
-  // Reset form when modal is closed
   const handleClose = () => {
     setFormData(defaultFormData);
     onClose();
@@ -52,9 +66,9 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Neue Transaktion</DialogTitle>
+          <DialogTitle>{initialData ? 'Transaktion bearbeiten' : 'Neue Transaktion'}</DialogTitle>
           <DialogDescription>
-            Geben Sie die Details für die neue Transaktion ein. Alle Felder sind erforderlich, außer der Simulationsstatus.
+            Geben Sie die Details für die {initialData ? 'zu bearbeitende' : 'neue'} Transaktion ein. Alle Felder sind erforderlich, außer der Simulationsstatus.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,7 +138,9 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
             <Button type="button" variant="outline" onClick={handleClose}>
               Abbrechen
             </Button>
-            <Button type="submit">Transaktion hinzufügen</Button>
+            <Button type="submit" className="bg-vaios-primary text-white hover:bg-vaios-primary/90">
+              {initialData ? 'Speichern' : 'Transaktion hinzufügen'}
+            </Button>
           </div>
         </form>
       </DialogContent>
