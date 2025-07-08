@@ -197,6 +197,14 @@ export default function Planung() {
               1 Jahr
             </button>
           </div>
+          <div className="flex items-center pr-4">
+            <button
+              onClick={() => window.location.href = '/transaktionen'}
+              className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors"
+            >
+              Neue Transaktion
+            </button>
+          </div>
         </div>
         
         {/* Filters */}

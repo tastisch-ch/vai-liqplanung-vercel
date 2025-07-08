@@ -51,7 +51,7 @@ export default function LoginPage() {
       });
       
       // Use window.location for a full redirect which is more forceful than router.push
-      window.location.href = '/dashboard';
+      window.location.href = '/planung';
     }
   }, [authState.isAuthenticated, authState.user]);
   
@@ -98,11 +98,11 @@ export default function LoginPage() {
       setRedirecting(true);
       
       // Use both methods for redirection to ensure it works
-      router.push('/dashboard');
+      router.push('/planung');
       
       // Add a small timeout and then use a more forceful redirect if router.push doesn't work
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/planung';
       }, 500);
     } catch (err) {
       logger.error('Login failed', { email, component: 'LoginPage' });
@@ -137,10 +137,10 @@ export default function LoginPage() {
       setRedirecting(true);
       
       // Use both redirection methods for redundancy
-      router.push('/dashboard');
+      router.push('/planung');
       
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/planung';
       }, 500);
     } catch (error) {
       logger.logError(error, 'Test login failed', { component: 'LoginPage' });
