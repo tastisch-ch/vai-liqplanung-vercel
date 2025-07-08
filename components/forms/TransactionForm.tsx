@@ -20,14 +20,16 @@ interface TransactionFormProps {
   }) => void;
 }
 
+const defaultFormData = {
+  date: new Date().toISOString().split('T')[0],
+  amount: '',
+  direction: 'Outgoing' as 'Incoming' | 'Outgoing',
+  details: '',
+  is_simulation: false,
+};
+
 export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormProps) {
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    amount: '',
-    direction: 'Outgoing' as 'Incoming' | 'Outgoing',
-    details: '',
-    is_simulation: false,
-  });
+  const [formData, setFormData] = useState(defaultFormData);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,21 +38,28 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
       amount: Number(formData.amount),
       date: new Date(formData.date).toISOString(),
     });
+    // Reset form after submission
+    setFormData(defaultFormData);
+  };
+
+  // Reset form when modal is closed
+  const handleClose = () => {
+    setFormData(defaultFormData);
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogTitle>Neue Transaktion</DialogTitle>
           <DialogDescription>
-            Enter the details for the new transaction. All fields are required except simulation status.
+            Geben Sie die Details für die neue Transaktion ein. Alle Felder sind erforderlich, außer der Simulationsstatus.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">Datum</Label>
             <Input
               id="date"
               type="date"
@@ -61,7 +70,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">Betrag</Label>
             <Input
               id="amount"
               type="number"
@@ -73,19 +82,19 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="direction">Direction</Label>
+            <Label htmlFor="direction">Richtung</Label>
             <Select
               value={formData.direction}
               onValueChange={(value: 'Incoming' | 'Outgoing') => 
                 setFormData({ ...formData, direction: value })
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select direction" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Richtung auswählen" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Incoming">Incoming</SelectItem>
-                <SelectItem value="Outgoing">Outgoing</SelectItem>
+                <SelectItem value="Incoming">Eingehend</SelectItem>
+                <SelectItem value="Outgoing">Ausgehend</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -108,14 +117,14 @@ export function TransactionForm({ isOpen, onClose, onSubmit }: TransactionFormPr
                 setFormData({ ...formData, is_simulation: checked })
               }
             />
-            <Label htmlFor="simulation">Mark as Simulation</Label>
+            <Label htmlFor="simulation">Als Simulation markieren</Label>
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Abbrechen
             </Button>
-            <Button type="submit">Add Transaction</Button>
+            <Button type="submit">Transaktion hinzufügen</Button>
           </div>
         </form>
       </DialogContent>
