@@ -563,29 +563,41 @@ export async function fetchTransactions(filters: {
     .select('*')
     .order('date', { ascending: false });
 
-  // Build filter conditions
+  // Build category filter conditions
   const conditions = [];
   
-  if (!filters.showFixkosten) {
-    conditions.push("kategorie != 'Fixkosten'");
+  if (filters.showFixkosten) {
+    conditions.push("kategorie.eq.Fixkosten");
   }
   
-  if (!filters.showLohn) {
-    conditions.push("kategorie != 'Lohn'");
+  if (filters.showLohn) {
+    conditions.push("kategorie.eq.Lohn");
   }
   
-  if (!filters.showStandard) {
-    conditions.push("(kategorie = 'Fixkosten' OR kategorie = 'Lohn')");
+  if (filters.showStandard) {
+    conditions.push("kategorie.eq.Standard");
+    conditions.push("kategorie.is.null");
   }
 
-  if (!filters.showSimulations) {
-    conditions.push('is_simulation = false');
+  if (filters.showSimulations) {
+    conditions.push("kategorie.eq.Simulation");
   }
 
-  // Apply filters if any conditions exist
+  // If any conditions exist, apply them
   if (conditions.length > 0) {
     query = query.or(conditions.join(','));
+  } else {
+    // If no categories are selected, return nothing
+    query = query.eq('id', '00000000-0000-0000-0000-000000000000');
   }
+
+  console.log('Executing query with filters:', {
+    showFixkosten: filters.showFixkosten,
+    showLohn: filters.showLohn,
+    showStandard: filters.showStandard,
+    showSimulations: filters.showSimulations,
+    conditions
+  });
 
   const { data, error } = await query;
 
@@ -594,5 +606,22 @@ export async function fetchTransactions(filters: {
     throw error;
   }
 
-  return data;
+  if (!data) {
+    console.warn('No data returned from query');
+    return [];
+  }
+
+  console.log(`Found ${data.length} transactions with categories:`, 
+    data.reduce((acc, tx) => {
+      const cat = tx.kategorie || 'null';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  );
+
+  // Convert date strings to Date objects
+  return data.map(transaction => ({
+    ...transaction,
+    date: new Date(transaction.date)
+  }));
 } 

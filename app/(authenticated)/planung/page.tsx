@@ -52,6 +52,9 @@ export default function Planung() {
   const [searchText, setSearchText] = useState('');
   const [sortOption, setSortOption] = useState('date-asc');
   
+  // Add simulation state
+  const [showSimulations, setShowSimulations] = useState(true);
+
   // Fetch all data
   const fetchData = async () => {
     if (!user?.id) return;
@@ -107,7 +110,7 @@ export default function Planung() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
@@ -115,6 +118,7 @@ export default function Planung() {
     let filtered = allTransactions.filter(tx => {
       if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;
       if (tx.kategorie?.toLowerCase() === 'lohn') return showLoehne;
+      if (tx.kategorie?.toLowerCase() === 'simulation') return showSimulations;
       if (tx.modified) return showManual; // Filter manual transactions
       return showStandard; // All other categories are considered Standard
     });
@@ -215,6 +219,7 @@ export default function Planung() {
     }
   };
 
+  // Update handleSubmitTransaction
   const handleSubmitTransaction = async (data: {
     date: string;
     amount: number;
@@ -241,6 +246,7 @@ export default function Planung() {
             direction: data.direction,
             details: data.details,
             is_simulation: data.is_simulation,
+            kategorie: data.is_simulation ? 'Simulation' : 'Manual',
           })
           .eq('id', editingTransaction.id)
           .eq('user_id', user.id)
@@ -264,6 +270,7 @@ export default function Planung() {
               direction: data.direction,
               details: data.details,
               is_simulation: data.is_simulation,
+              kategorie: data.is_simulation ? 'Simulation' : 'Manual',
               user_id: user.id,
               modified: true,
             },
@@ -404,6 +411,18 @@ export default function Planung() {
               />
               <label htmlFor="manual" className="text-sm text-gray-700">
                 Manuelle Transaktionen ✏️
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="simulations"
+                checked={showSimulations} 
+                onChange={(e) => setShowSimulations(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="simulations" className="text-sm text-gray-700">
+                Simulationen 🔮
               </label>
             </div>
           </div>
