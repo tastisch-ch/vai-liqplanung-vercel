@@ -328,7 +328,7 @@ export async function enhanceTransactions(
     
     return {
       ...tx,
-      kontostand: undefined, // No balance calculation for historical transactions
+      kontostand: undefined, // No balance calculation for historical transaction
       signedAmount: getSignedAmount(tx.amount, tx.direction),
       kategorie,
       hinweis: hinweis.trim()
