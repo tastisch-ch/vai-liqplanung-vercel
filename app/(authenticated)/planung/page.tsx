@@ -308,7 +308,7 @@ export default function Planung() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex justify-between border-b">
           <div className="flex">
@@ -439,78 +439,114 @@ export default function Planung() {
         </div>
         
         {/* Content area */}
-        <div className="bg-white">
-          {isLoading ? (
-            <div className="p-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-500">Daten werden geladen...</p>
-            </div>
-          ) : error ? (
-            <div className="p-8">
-              <div className="bg-red-50 p-4 rounded-md border border-red-200">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-red-800">
-                      {error}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {filteredTransactions.map((transaction) => (
-                <div 
-                  key={transaction.id} 
-                  className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow flex justify-between items-center"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
-                      </span>
-                      {transaction.kategorie === 'Simulation' && <span>🔮</span>}
-                    </div>
-                    <div className="text-gray-600">{transaction.details}</div>
-                    <div className={`font-semibold ${transaction.direction === 'Incoming' ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.direction === 'Incoming' ? '+' : '-'} {formatCHF(transaction.amount)}
-                    </div>
-                    {transaction.kategorie && (
-                      <div className="text-sm text-gray-500 mt-1">
-                        Kategorie: {transaction.kategorie}
-                      </div>
-                    )}
-                  </div>
+        {isLoading ? (
+          <div className="p-4 text-center text-gray-500">
+            Lade Daten...
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-red-500">
+            {error}
+          </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            Keine Transaktionen gefunden.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Datum
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Beschreibung
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kategorie
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Betrag
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kontostand
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aktionen
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((transaction) => {
+                  const isIncome = transaction.direction === 'Incoming';
+                  const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
                   
-                  {/* Show edit/delete for all transactions except Fixkosten and Lohn */}
-                  {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditTransaction(transaction)}
-                      >
-                        Bearbeiten
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(transaction)}
-                      >
-                        Löschen
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                  return (
+                    <tr 
+                      key={transaction.id}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {transaction.details}
+                        {transaction.kategorie === 'Simulation' && <span className="ml-2">🔮</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {transaction.kategorie === 'Lohn' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            💰 Lohn
+                          </span>
+                        ) : transaction.kategorie === 'Fixkosten' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            📌 Fixkosten
+                          </span>
+                        ) : transaction.kategorie === 'Simulation' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            🔮 Simulation
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Standard
+                          </span>
+                        )}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
+                        {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
+                        {formatCHF(transaction.kontostand || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              ✏️
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(transaction)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Delete confirmation dialog */}
