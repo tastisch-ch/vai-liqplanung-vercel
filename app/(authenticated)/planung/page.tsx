@@ -17,6 +17,7 @@ import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Planung() {
   const { authState } = useAuth();
@@ -54,6 +55,10 @@ export default function Planung() {
   
   // Add simulation state
   const [showSimulations, setShowSimulations] = useState(true);
+
+  // Add confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<EnhancedTransaction | null>(null);
 
   // Fetch all data
   const fetchData = async () => {
@@ -190,32 +195,37 @@ export default function Planung() {
     setIsFormOpen(true);
   };
 
-  const handleDeleteTransaction = async (transaction: EnhancedTransaction) => {
-    if (!user?.id || !transaction.id) return;
+  const handleDeleteClick = (transaction: EnhancedTransaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!transactionToDelete?.id) return;
 
     try {
       const { error } = await supabase
         .from('buchungen')
         .delete()
-        .eq('id', transaction.id)
-        .eq('user_id', user.id)
-        .eq('modified', true); // Only delete manual transactions
+        .eq('id', transactionToDelete.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       showNotification(
-        'Transaktion wurde erfolgreich gelöscht',
+        'Transaktion wurde gelöscht',
         'success'
       );
+
+      // Refresh data
       fetchData();
     } catch (error) {
-      console.error('Error deleting transaction:', error);
       showNotification(
         'Transaktion konnte nicht gelöscht werden',
         'error'
       );
+    } finally {
+      setDeleteConfirmOpen(false);
+      setTransactionToDelete(null);
     }
   };
 
@@ -298,7 +308,7 @@ export default function Planung() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex justify-between border-b">
           <div className="flex">
@@ -453,97 +463,77 @@ export default function Planung() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Datum
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Beschreibung
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kategorie
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Betrag
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Kontostand
-                    </th>
-                    {filteredTransactions.some(tx => tx.modified) && (
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Aktionen
-                      </th>
+            <div className="mt-4 space-y-4">
+              {filteredTransactions.map((transaction) => (
+                <div 
+                  key={transaction.id} 
+                  className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow flex justify-between items-center"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                      </span>
+                      {transaction.kategorie === 'Simulation' && <span>🔮</span>}
+                    </div>
+                    <div className="text-gray-600">{transaction.details}</div>
+                    <div className={`font-semibold ${transaction.direction === 'Incoming' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaction.direction === 'Incoming' ? '+' : '-'} {formatCHF(transaction.amount)}
+                    </div>
+                    {transaction.kategorie && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        Kategorie: {transaction.kategorie}
+                      </div>
                     )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTransactions.map((transaction) => {
-                    const isIncome = transaction.direction === 'Incoming';
-                    const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
-                    
-                    return (
-                      <tr 
-                        key={transaction.id}
-                        className="border-b hover:bg-gray-50"
+                  </div>
+                  
+                  {/* Show edit/delete for all transactions except Fixkosten and Lohn */}
+                  {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {transaction.hinweis && <span className="mr-1">{transaction.hinweis}</span>}
-                          {transaction.details}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {transaction.kategorie?.toLowerCase() === 'lohn' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                              💰 Lohn
-                            </span>
-                          ) : transaction.kategorie?.toLowerCase() === 'fixkosten' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              📌 Fixkosten
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              Standard
-                            </span>
-                          )}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
-                          {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
-                          {formatCHF(transaction.kontostand || 0)}
-                        </td>
-                        {transaction.modified && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleEditTransaction(transaction)}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTransaction(transaction)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                🗑️
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        Bearbeiten
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteClick(transaction)}
+                      >
+                        Löschen
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transaktion löschen</DialogTitle>
+            <DialogDescription>
+              Sind Sie sicher, dass Sie diese Transaktion löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Löschen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction form dialog */}
       <TransactionForm
         isOpen={isFormOpen}
         onClose={() => {
@@ -555,8 +545,8 @@ export default function Planung() {
           date: editingTransaction.date.toISOString().split('T')[0],
           amount: editingTransaction.amount,
           direction: editingTransaction.direction,
-          details: editingTransaction.details || '',
-          is_simulation: editingTransaction.is_simulation || false,
+          details: editingTransaction.details,
+          is_simulation: editingTransaction.kategorie === 'Simulation'
         } : undefined}
       />
     </div>
