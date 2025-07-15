@@ -22,6 +22,12 @@ export default function Navigation() {
             </div>
             <div className="ml-6 flex space-x-1">
               <Link
+                href="/dashboard"
+                className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard')}`}
+              >
+                Dashboard
+              </Link>
+              <Link
                 href="/buchungen"
                 className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/buchungen')}`}
               >
