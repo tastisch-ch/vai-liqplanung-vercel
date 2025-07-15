@@ -1,10 +1,10 @@
 'use client';
 
 import { KontostandChart } from '@/app/components/chart/KontostandChart';
-import { getBalanceHistory } from '@/lib/services/daily-balance';
+import { getBalanceHistory, getCurrentBalance } from '@/lib/services/daily-balance';
 import { DailyBalanceSnapshot, Simulation } from '@/models/types';
 import { useState, useEffect } from 'react';
-import { addMonths, startOfDay } from 'date-fns';
+import { addMonths, subMonths, startOfDay } from 'date-fns';
 import { loadSimulationen } from '@/lib/services/simulationen';
 import { getSignedAmount } from '@/lib/currency/format';
 
@@ -17,14 +17,24 @@ export default function DashboardPage() {
     async function loadData() {
       try {
         setIsLoading(true);
-        const startDate = startOfDay(new Date());
-        const endDate = addMonths(startDate, timeRange);
+        const today = startOfDay(new Date());
+        // Start from 1 month ago
+        const startDate = subMonths(today, 1);
+        const endDate = addMonths(today, timeRange);
         
-        // Get current balance history
+        console.log('Date range:', { startDate, endDate });
+        
+        // Get current balance first
+        const currentBalance = await getCurrentBalance();
+        console.log('Current balance:', currentBalance);
+        
+        // Get balance history
         const balances = await getBalanceHistory(startDate, endDate);
+        console.log('Loaded balances:', balances);
         
         // Get all simulations
         const simulations = await loadSimulationen();
+        console.log('Loaded simulations:', simulations);
         
         // Create a map of dates to balances
         const balanceMap = new Map<string, number>();
@@ -35,18 +45,26 @@ export default function DashboardPage() {
           balanceMap.set(dateStr, balance.balance);
         });
         
+        // If we have no historical data, at least add the current balance
+        if (balanceMap.size === 0) {
+          const todayStr = today.toISOString().split('T')[0];
+          balanceMap.set(todayStr, currentBalance.balance);
+        }
+        
         // Add simulation impacts
         simulations.forEach((simulation: Simulation) => {
           const simulationDate = new Date(simulation.date);
           if (simulationDate >= startDate && simulationDate <= endDate) {
             const dateStr = simulationDate.toISOString().split('T')[0];
-            const currentBalance = balanceMap.get(dateStr) || 0;
+            const currentBalanceValue = balanceMap.get(dateStr) || currentBalance.balance;
             const signedAmount = getSignedAmount(simulation.amount, simulation.direction);
-            balanceMap.set(dateStr, currentBalance + signedAmount);
+            balanceMap.set(dateStr, currentBalanceValue + signedAmount);
             
             // If recurring, add future occurrences
             if (simulation.recurring && simulation.interval) {
               let nextDate = simulationDate;
+              let lastBalance = currentBalanceValue + signedAmount;
+              
               while (nextDate <= endDate) {
                 if (simulation.interval === 'monthly') {
                   nextDate = addMonths(nextDate, 1);
@@ -58,8 +76,10 @@ export default function DashboardPage() {
                 
                 if (nextDate <= endDate && (!simulation.end_date || nextDate <= new Date(simulation.end_date))) {
                   const nextDateStr = nextDate.toISOString().split('T')[0];
-                  const nextBalance = balanceMap.get(nextDateStr) || 0;
-                  balanceMap.set(nextDateStr, nextBalance + signedAmount);
+                  const nextBalance = balanceMap.get(nextDateStr) || lastBalance;
+                  const newBalance = nextBalance + signedAmount;
+                  balanceMap.set(nextDateStr, newBalance);
+                  lastBalance = newBalance;
                 }
               }
             }
@@ -70,6 +90,8 @@ export default function DashboardPage() {
         const sortedData = Array.from(balanceMap.entries())
           .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
           .map(([date, balance]) => ({ date, balance }));
+        
+        console.log('Final chart data:', sortedData);
         
         setChartData(sortedData);
       } catch (error) {
@@ -100,8 +122,13 @@ export default function DashboardPage() {
       
       {isLoading ? (
         <div className="animate-pulse bg-gray-100 rounded-lg h-[400px]"></div>
-      ) : (
+      ) : chartData.length > 0 ? (
         <KontostandChart data={chartData} />
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">Keine Daten verfügbar</p>
+          <p className="text-sm text-gray-400 mt-2">Bitte aktualisieren Sie den Kontostand in der Seitenleiste</p>
+        </div>
       )}
     </div>
   );
