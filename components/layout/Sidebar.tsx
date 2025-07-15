@@ -40,6 +40,7 @@ export default function Sidebar() {
 
   // Core navigation links
   const navLinks = [
+    { name: 'Dashboard', path: '/dashboard', icon: '📊', description: 'Übersicht' },
     { name: 'Planung', path: '/planung', icon: '📆', description: 'Finanzplanung' },
     { name: 'Fixkosten', path: '/fixkosten', icon: '💸', description: 'Fixkosten verwalten' },
     { name: 'Mitarbeiter', path: '/mitarbeiter', icon: '👥', description: 'Team verwalten' },
