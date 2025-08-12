@@ -58,7 +58,10 @@ export function ForecastChart({ isLoading, points }: Props) {
 
   return (
     <div className="w-full h-[420px] bg-white rounded-lg shadow p-4">
-      <div className="mb-2 text-sm text-gray-600">Kontostand-Prognose</div>
+      <div className="mb-2 text-sm text-gray-600 flex items-center justify-between">
+        <span>Kontostand-Prognose</span>
+        <span title="Basierend auf geplantem Zahlungsplan (Fixkosten, Löhne, Simulationen) und aktuellem Kontostand.">ℹ️</span>
+      </div>
       <Line data={data} options={options} />
     </div>
   );

@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState(3);
   const [includeSimulations, setIncludeSimulations] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
+  const [enhanced, setEnhanced] = useState<EnhancedTransaction[]>([]);
   const [currentBalance, setCurrentBalance] = useState(0);
 
   useEffect(() => {
@@ -39,9 +39,11 @@ export default function DashboardPage() {
           includeSimulationen: true,
           includeLohnkosten: true,
         });
+        // Apply simulation toggle BEFORE computing running balance to keep balances correct
         const sorted = all.sort((a, b) => a.date.getTime() - b.date.getTime());
-        const enhanced = enhanceTransactionsSync(sorted, balance.balance);
-        setTransactions(enhanced);
+        const base = includeSimulations ? sorted : sorted.filter(t => t.kategorie !== 'Simulation');
+        const calc = enhanceTransactionsSync(base, balance.balance);
+        setEnhanced(calc);
       } catch (e) {
         console.error('Dashboard load error', e);
       } finally {
@@ -49,29 +51,27 @@ export default function DashboardPage() {
       }
     }
     load();
-  }, [timeRange, auth.authState.user?.id]);
-
-  const filtered = useMemo(() => (includeSimulations ? transactions : transactions.filter(t => t.kategorie !== 'Simulation')), [transactions, includeSimulations]);
+  }, [timeRange, includeSimulations, auth.authState.user?.id]);
 
   function signed(amount: number, direction: 'Incoming' | 'Outgoing') { return direction === 'Incoming' ? amount : -amount; }
 
   const kpi = useMemo(() => {
     const today = startOfDay(new Date());
     const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000);
-    const next30 = filtered.filter(t => t.date >= today && t.date <= horizon);
+    const next30 = enhanced.filter(t => t.date >= today && t.date <= horizon);
     const net30 = next30.reduce((s, t) => s + signed(t.amount, t.direction), 0);
     const last3Start = subMonths(startOfMonth(today), 3);
-    const last3 = filtered.filter(t => t.date >= last3Start && t.date < startOfMonth(today));
+    const last3 = enhanced.filter(t => t.date >= last3Start && t.date < startOfMonth(today));
     const byMonth = new Map<string, number>();
     last3.forEach(t => { const key = `${t.date.getFullYear()}-${t.date.getMonth() + 1}`; byMonth.set(key, (byMonth.get(key) || 0) + signed(t.amount, t.direction)); });
     const months = Array.from(byMonth.values());
     const burn = Math.max(0, -months.reduce((a, b) => a + Math.min(0, b), 0) / Math.max(1, months.length));
     const runwayMonths = burn > 0 ? currentBalance / burn : Infinity;
     const eom = endOfMonth(today);
-    const eomForecast = filtered.filter(t => t.date >= today && t.date <= eom).reduce((s, t) => s + signed(t.amount, t.direction), currentBalance);
-    const firstNegative = filtered.filter(t => t.date >= today).sort((a, b) => a.date.getTime() - b.date.getTime()).find(t => (t.kontostand ?? 0) < 0)?.date || null;
-    const openIncoming = filtered.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
-    const openOutgoing = filtered.filter(t => (t as any).is_invoice && t.direction === 'Outgoing');
+    const eomForecast = enhanced.filter(t => t.date >= today && t.date <= eom).reduce((s, t) => s + signed(t.amount, t.direction), currentBalance);
+    const firstNegative = enhanced.filter(t => t.date >= today).sort((a, b) => a.date.getTime() - b.date.getTime()).find(t => (t.kontostand ?? 0) < 0)?.date || null;
+    const openIncoming = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
+    const openOutgoing = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Outgoing');
     return {
       net30,
       runwayMonths,
@@ -82,34 +82,34 @@ export default function DashboardPage() {
       openOutgoingCount: openOutgoing.length,
       openOutgoingSum: openOutgoing.reduce((s, t) => s + t.amount, 0),
     };
-  }, [filtered, currentBalance]);
+  }, [enhanced, currentBalance]);
 
-  const forecastPoints = useMemo(() => filtered.map(t => ({ date: t.date.toISOString().split('T')[0], balance: t.kontostand || 0 })).sort((a, b) => a.date.localeCompare(b.date)), [filtered]);
+  const forecastPoints = useMemo(() => enhanced.map(t => ({ date: t.date.toISOString().split('T')[0], balance: t.kontostand || 0 })).sort((a, b) => a.date.localeCompare(b.date)), [enhanced]);
 
   const monthlyData = useMemo(() => {
     const map = new Map<string, number>();
-    filtered.forEach(t => { const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`; map.set(key, (map.get(key) || 0) + signed(t.amount, t.direction)); });
+    enhanced.forEach(t => { const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`; map.set(key, (map.get(key) || 0) + signed(t.amount, t.direction)); });
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([m, v]) => ({ month: m, value: v }));
-  }, [filtered]);
+  }, [enhanced]);
 
   const today = startOfDay(new Date());
   const lmStart = startOfMonth(subMonths(today, 1));
   const lmEnd = endOfMonth(subMonths(today, 1));
   const breakdown = useMemo(() => {
-    const lastMonthOutgoing = filtered.filter(t => t.date >= lmStart && t.date <= lmEnd && t.direction === 'Outgoing');
+    const lastMonthOutgoing = enhanced.filter(t => t.date >= lmStart && t.date <= lmEnd && t.direction === 'Outgoing');
     const map = new Map<string, number>();
     lastMonthOutgoing.forEach(t => { const cat = t.kategorie || 'Standard'; map.set(cat, (map.get(cat) || 0) + t.amount); });
     return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
-  }, [filtered]);
+  }, [enhanced]);
 
   const upcoming = useMemo(() => {
     const in14 = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
-    return filtered.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in14).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10);
-  }, [filtered]);
+    return enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in14).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10);
+  }, [enhanced]);
 
-  const overdue = useMemo(() => filtered.filter(t => (t as any).is_invoice && t.date < today).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10), [filtered]);
-  const topOutflows = useMemo(() => { const in30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000); return filtered.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in30).sort((a, b) => b.amount - a.amount).slice(0, 5); }, [filtered]);
-  const simulationImpact = useMemo(() => { const eom = endOfMonth(today); const sims = filtered.filter(t => t.kategorie === 'Simulation' && t.date >= today && t.date <= eom); const delta = sims.reduce((s, t) => s + signed(t.amount, t.direction), 0); return { delta, items: sims.slice(0, 10) }; }, [filtered]);
+  const overdue = useMemo(() => enhanced.filter(t => (t as any).is_invoice && t.date < today).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10), [enhanced]);
+  const topOutflows = useMemo(() => { const in30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000); return enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in30).sort((a, b) => b.amount - a.amount).slice(0, 5); }, [enhanced]);
+  const simulationImpact = useMemo(() => { const eom = endOfMonth(today); const sims = enhanced.filter(t => t.kategorie === 'Simulation' && t.date >= today && t.date <= eom); const delta = sims.reduce((s, t) => s + signed(t.amount, t.direction), 0); return { delta, items: sims.slice(0, 10) }; }, [enhanced]);
 
   return (
     <div className="container mx-auto p-4 space-y-6">
