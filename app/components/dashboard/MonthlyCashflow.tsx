@@ -30,7 +30,14 @@ export function MonthlyCashflow({ data }: Props) {
             legend: { display: false },
           },
           scales: {
-            y: { ticks: { callback: (v: number) => formatCurrency(v) } },
+            y: {
+              ticks: {
+                callback: (tickValue: unknown) => {
+                  const n = typeof tickValue === 'number' ? tickValue : Number(tickValue);
+                  return formatCurrency(Number.isFinite(n) ? n : 0);
+                },
+              },
+            },
           },
         }}
       />
