@@ -257,10 +257,10 @@ export default function Planung() {
             details: data.details,
             is_simulation: data.is_simulation,
             kategorie: data.is_simulation ? 'Simulation' : 'Manual',
+            updated_at: new Date().toISOString(),
           })
           .eq('id', editingTransaction.id)
-          .eq('user_id', user.id)
-          .eq('modified', true); // Only update manual transactions
+          .eq('user_id', user.id);
 
         if (error) throw error;
 
