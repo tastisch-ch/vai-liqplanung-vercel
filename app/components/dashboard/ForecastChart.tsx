@@ -31,9 +31,11 @@ export function ForecastChart({ isLoading, points }: Props) {
         label: 'Kontostand-Prognose',
         data: points.map(p => p.balance),
         borderColor: '#2563EB',
-        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+        backgroundColor: 'rgba(37, 99, 235, 0.10)',
         fill: true,
-        tension: 0.3,
+        tension: 0.2,
+        pointRadius: 2,
+        pointHitRadius: 10,
       },
     ],
   };

@@ -94,7 +94,18 @@ export default function DashboardPage() {
     };
   }, [enhanced, currentBalance]);
 
-  const forecastPoints = useMemo(() => enhanced.map(t => ({ date: t.date.toISOString().split('T')[0], balance: t.kontostand || 0 })).sort((a, b) => a.date.localeCompare(b.date)), [enhanced]);
+  const forecastPoints = useMemo(() => {
+    // One point per Tag: "Tages-Schlusskontostand" (letzte Transaktion des Tages)
+    const byDay = new Map<string, number>();
+    const sorted = [...enhanced].sort((a, b) => a.date.getTime() - b.date.getTime());
+    for (const t of sorted) {
+      const d = t.date.toISOString().split('T')[0];
+      byDay.set(d, t.kontostand ?? 0);
+    }
+    return Array.from(byDay.entries())
+      .map(([date, balance]) => ({ date, balance }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [enhanced]);
 
   const monthlyData = useMemo(() => {
     const map = new Map<string, number>();
