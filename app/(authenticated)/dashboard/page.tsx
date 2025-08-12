@@ -4,8 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { addMonths, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getCurrentBalance } from '@/lib/services/daily-balance';
-import { getAllTransactionsForPlanning, enhanceTransactions, enhanceTransactionsSync } from '@/lib/services/buchungen';
+import { enhanceTransactions } from '@/lib/services/buchungen';
 import { EnhancedTransaction } from '@/models/types';
+import { loadBuchungen } from '@/lib/services/buchungen';
+import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
+import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
+import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
 import { Kpis } from '@/app/components/dashboard/Kpis';
 import { ForecastChart } from '@/app/components/dashboard/ForecastChart';
 import { MonthlyCashflow } from '@/app/components/dashboard/MonthlyCashflow';
@@ -34,15 +38,20 @@ export default function DashboardPage() {
         const balance = await getCurrentBalance();
         setCurrentBalance(balance.balance);
         if (!auth.authState.user?.id) return;
-        const all = await getAllTransactionsForPlanning(auth.authState.user.id, s, e, {
-          includeFixkosten: true,
-          includeSimulationen: true,
-          includeLohnkosten: true,
-        });
-        // Apply simulation toggle BEFORE computing running balance to keep balances correct
+        // Use the exact same data pipeline as Planung
+        const [buchungen, fixkosten, lohnkostenData, overrides] = await Promise.all([
+          loadBuchungen(auth.authState.user.id),
+          loadFixkosten(auth.authState.user.id),
+          loadLohnkosten(auth.authState.user.id),
+          loadFixkostenOverrides(auth.authState.user.id)
+        ]);
+
+        const fixBuchungen = convertFixkostenToBuchungen(s, e, fixkosten, overrides);
+        const lohnBuchungen = convertLohnkostenToBuchungen(s, e, lohnkostenData.map(l => l.mitarbeiter));
+        const all = [...buchungen, ...fixBuchungen, ...lohnBuchungen];
         const sorted = all.sort((a, b) => a.date.getTime() - b.date.getTime());
         const base = includeSimulations ? sorted : sorted.filter(t => t.kategorie !== 'Simulation');
-        // Use the same enhancement as Planung for identical "Verlaufslinie"
+        // Use the same enhancement as Planung for identical Verlaufslinie
         const calc = await enhanceTransactions(base, undefined, balance.balance);
         setEnhanced(calc);
       } catch (e) {
