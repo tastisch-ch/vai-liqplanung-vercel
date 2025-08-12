@@ -50,6 +50,8 @@ export default function Planung() {
   const [showLoehne, setShowLoehne] = useState(true);
   const [showStandard, setShowStandard] = useState(true);
   const [showManual, setShowManual] = useState(true);
+  const [showIncoming, setShowIncoming] = useState(true);
+  const [showOutgoing, setShowOutgoing] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [sortOption, setSortOption] = useState('date-asc');
   
@@ -115,7 +117,7 @@ export default function Planung() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing]);
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
@@ -126,6 +128,13 @@ export default function Planung() {
       if (tx.kategorie?.toLowerCase() === 'simulation') return showSimulations;
       if (tx.modified) return showManual; // Filter manual transactions
       return showStandard; // All other categories are considered Standard
+    });
+
+    // Filter by direction (Incoming/Outgoing)
+    filtered = filtered.filter(tx => {
+      if (tx.direction === 'Incoming') return showIncoming;
+      if (tx.direction === 'Outgoing') return showOutgoing;
+      return true;
     });
 
     // Then apply other filters
@@ -434,6 +443,32 @@ export default function Planung() {
               />
               <label htmlFor="simulations" className="text-sm text-gray-700">
                 Simulationen 🔮
+              </label>
+            </div>
+
+            {/* Direction filters */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="incoming"
+                checked={showIncoming}
+                onChange={(e) => setShowIncoming(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="incoming" className="text-sm text-gray-700">
+                Eingehend
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="outgoing"
+                checked={showOutgoing}
+                onChange={(e) => setShowOutgoing(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="outgoing" className="text-sm text-gray-700">
+                Ausgehend
               </label>
             </div>
           </div>
