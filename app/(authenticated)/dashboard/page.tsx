@@ -95,12 +95,17 @@ export default function DashboardPage() {
   }, [enhanced, currentBalance]);
 
   const forecastPoints = useMemo(() => {
-    // One point per Tag: "Tages-Schlusskontostand" (letzte Transaktion des Tages)
+    // One point per day (local time): end-of-day balance (last tx of the day)
     const byDay = new Map<string, number>();
     const sorted = [...enhanced].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const keyOf = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`; // local calendar day
+    };
     for (const t of sorted) {
-      const d = t.date.toISOString().split('T')[0];
-      byDay.set(d, t.kontostand ?? 0);
+      byDay.set(keyOf(t.date), t.kontostand ?? 0);
     }
     return Array.from(byDay.entries())
       .map(([date, balance]) => ({ date, balance }))
