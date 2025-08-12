@@ -95,22 +95,33 @@ export default function DashboardPage() {
   }, [enhanced, currentBalance]);
 
   const forecastPoints = useMemo(() => {
-    // One point per day (local time): end-of-day balance (last tx of the day)
-    const byDay = new Map<string, number>();
-    const sorted = [...enhanced].sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Robust daily projection: cumulative day sums from today's balance
+    const today = startOfDay(new Date());
     const keyOf = (d: Date) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`; // local calendar day
+      return `${y}-${m}-${day}`;
     };
-    for (const t of sorted) {
-      byDay.set(keyOf(t.date), t.kontostand ?? 0);
+    // Sum of signed amounts per day for dates >= today
+    const daySum = new Map<string, number>();
+    for (const t of enhanced) {
+      if (t.date < today) continue;
+      const k = keyOf(t.date);
+      const s = t.direction === 'Incoming' ? t.amount : -t.amount;
+      daySum.set(k, (daySum.get(k) || 0) + s);
     }
-    return Array.from(byDay.entries())
-      .map(([date, balance]) => ({ date, balance }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [enhanced]);
+    // Build ordered list of days
+    const days = Array.from(daySum.keys()).sort();
+    // Start from currentBalance and accumulate per day
+    let bal = currentBalance;
+    const points: { date: string; balance: number }[] = [];
+    for (const d of days) {
+      bal += daySum.get(d) || 0;
+      points.push({ date: d, balance: bal });
+    }
+    return points;
+  }, [enhanced, currentBalance]);
 
   const monthlyData = useMemo(() => {
     const map = new Map<string, number>();
