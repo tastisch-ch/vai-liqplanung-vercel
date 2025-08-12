@@ -26,6 +26,7 @@ export default function DatenImport() {
   const [viewFilter, setViewFilter] = useState<'all' | 'incoming' | 'outgoing' | 'modified'>('all');
   const [isLoadingExisting, setIsLoadingExisting] = useState<boolean>(false);
   const [authDebug, setAuthDebug] = useState<string>('Checking auth status...');
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   // Check authentication status on page load
   useEffect(() => {
@@ -184,13 +185,20 @@ export default function DatenImport() {
     }
   };
 
-  // Function to handle Excel file import
-  const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  // Shared Excel import logic for file input and drag&drop
+  const importExcelFile = async (file: File | undefined | null) => {
     if (!file) return;
-
     if (!user?.id) {
-      setImportError("Sie müssen angemeldet sein, um Daten zu importieren.");
+      setImportError('Sie müssen angemeldet sein, um Daten zu importieren.');
+      return;
+    }
+
+    // Basic validation
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.xlsx') && !lower.endsWith('.xls')) {
+      const msg = 'Bitte eine Excel-Datei (.xlsx oder .xls) verwenden.';
+      setImportError(msg);
+      showNotification(msg, 'error');
       return;
     }
 
@@ -206,70 +214,80 @@ export default function DatenImport() {
         await refreshAuth();
         setAuthDebug('Auth session refreshed before import');
       } catch (authError) {
-        console.error("Auth refresh error:", authError);
+        console.error('Auth refresh error:', authError);
         setAuthDebug(`Auth refresh error: ${authError instanceof Error ? authError.message : 'Unknown error'}`);
       }
 
-      // Create FormData to send file
       const formData = new FormData();
       formData.append('type', 'excel');
       formData.append('file', file);
 
-      // Send to API directly with credentials without client-side processing
       const response = await fetch('/api/buchungen/import', {
         method: 'POST',
         body: formData,
-        credentials: 'include', // Important for auth cookies
-        headers: {
-          // No Content-Type header, let the browser set it properly for FormData
-        }
+        credentials: 'include',
       });
-      
-      // Handle authentication error specifically
+
       if (response.status === 401) {
         showNotification('Authentifizierungsfehler: Bitte melden Sie sich erneut an', 'error');
         setImportError('Authentifizierungsfehler: Bitte melden Sie sich erneut an');
-        
-        // Add debug info
         const errorText = await response.text();
         setAuthDebug(`Auth error (401): ${errorText}`);
         return;
       }
-      
+
       const result = await response.json();
-      
       if (!response.ok) {
         throw new Error(result.error || 'Import fehlgeschlagen');
       }
-      
+
       if (result.success) {
-        setImportSuccess({
-          message: result.message || 'Import erfolgreich',
-          count: result.count || 0
-        });
-        showNotification(`${result.count} Transaktionen erfolgreich importiert`, 'success');
+        const count = result.count ?? result.stats?.newCount + result.stats?.updatedCount + result.stats?.removedCount ?? 0;
+        setImportSuccess({ message: result.message || 'Import erfolgreich', count });
+        showNotification(result.message || `Import erfolgreich (${count})`, 'success');
       } else {
         setImportError('Keine Daten importiert. ' + (result.message || ''));
         showNotification('Keine Daten importiert', 'info');
       }
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     } catch (error) {
-      console.error("Excel import error:", error);
+      console.error('Excel import error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
       setImportError(`Fehler beim Excel-Import: ${errorMessage}`);
       showNotification(`Fehler: ${errorMessage}`, 'error');
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     } finally {
       setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  // File input change handler
+  const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    await importExcelFile(file);
+  };
+
+  // Drag & Drop handlers
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    await importExcelFile(file);
+  };
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
   };
 
   // Function to load existing transactions
@@ -432,7 +450,15 @@ export default function DatenImport() {
             📄 Rechnungsdaten (Excel, Einnahmen):
           </label>
           
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div
+              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
+                isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+              }`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
               <div className="space-y-1 text-center">
                 <svg
                   className="mx-auto h-12 w-12 text-gray-400"
@@ -467,7 +493,9 @@ export default function DatenImport() {
                   </label>
                   <p className="pl-1">oder hierher ziehen</p>
               </div>
-              <p className="text-xs text-gray-500">XLSX oder XLS bis zu 10MB</p>
+              <p className="text-xs text-gray-500">
+                {isDragOver ? 'Datei fallen lassen zum Hochladen' : 'XLSX oder XLS bis zu 10MB'}
+              </p>
             </div>
           </div>
           
