@@ -1,124 +1,162 @@
 'use client';
 
-import { KontostandChart } from '@/app/components/chart/KontostandChart';
-import { getCurrentBalance } from '@/lib/services/daily-balance';
-import { getAllTransactionsForPlanning } from '@/lib/services/buchungen';
-import { enhanceTransactionsSync } from '@/lib/services/buchungen';
-import { DailyBalanceSnapshot, Simulation, Buchung } from '@/models/types';
-import { useState, useEffect } from 'react';
-import { addMonths, subMonths, startOfDay } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { addMonths, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { getCurrentBalance } from '@/lib/services/daily-balance';
+import { getAllTransactionsForPlanning, enhanceTransactionsSync } from '@/lib/services/buchungen';
+import { EnhancedTransaction } from '@/models/types';
+import { Kpis } from '@/app/components/dashboard/Kpis';
+import { ForecastChart } from '@/app/components/dashboard/ForecastChart';
+import { MonthlyCashflow } from '@/app/components/dashboard/MonthlyCashflow';
+import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
+import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
+import { OverdueInvoices } from '@/app/components/dashboard/OverdueInvoices';
+import { TopOutflows } from '@/app/components/dashboard/TopOutflows';
+import { SimulationImpact } from '@/app/components/dashboard/SimulationImpact';
+import { Alerts } from '@/app/components/dashboard/Alerts';
 
 export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState(3); // Default 3 months
-  const [chartData, setChartData] = useState<{ date: string; balance: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const auth = useAuth();
+  const [timeRange, setTimeRange] = useState(3);
+  const [includeSimulations, setIncludeSimulations] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState<EnhancedTransaction[]>([]);
+  const [currentBalance, setCurrentBalance] = useState(0);
 
   useEffect(() => {
-    async function loadData() {
+    async function load() {
       try {
         setIsLoading(true);
         const today = startOfDay(new Date());
-        // Start from 1 month ago
-        const startDate = subMonths(today, 1);
-        const endDate = addMonths(today, timeRange);
-        
-        console.log('Date range:', { startDate, endDate });
-        
-        // Get current balance first
-        const currentBalance = await getCurrentBalance();
-        console.log('Current balance:', currentBalance);
-        
-        if (!auth.authState.user?.id) {
-          console.error('No user ID available');
-          return;
-        }
-
-        // Get all transactions including fixed costs, simulations, and salary costs
-        const allTransactions = await getAllTransactionsForPlanning(
-          auth.authState.user.id,
-          startDate,
-          endDate,
-          {
-            includeFixkosten: true,
-            includeSimulationen: true,
-            includeLohnkosten: true
-          }
-        );
-        
-        console.log('Loaded transactions:', allTransactions);
-        
-        // Sort transactions by date
-        const sortedTransactions = allTransactions.sort((a, b) => 
-          a.date.getTime() - b.date.getTime()
-        );
-        
-        // Enhance transactions with running balance
-        const enhancedTransactions = enhanceTransactionsSync(
-          sortedTransactions,
-          currentBalance.balance
-        );
-        
-        console.log('Enhanced transactions:', enhancedTransactions);
-        
-        // Convert to chart data format
-        const chartData = enhancedTransactions.map(tx => ({
-          date: tx.date.toISOString().split('T')[0],
-          balance: tx.kontostand || 0
-        }));
-        
-        // Add current balance point if not in transactions
-        const todayStr = today.toISOString().split('T')[0];
-        if (!chartData.find(d => d.date === todayStr)) {
-          chartData.unshift({
-            date: todayStr,
-            balance: currentBalance.balance
-          });
-        }
-        
-        // Sort by date
-        chartData.sort((a, b) => a.date.localeCompare(b.date));
-        
-        console.log('Final chart data:', chartData);
-        
-        setChartData(chartData);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        const s = subMonths(today, 1);
+        const e = addMonths(today, timeRange);
+        const balance = await getCurrentBalance();
+        setCurrentBalance(balance.balance);
+        if (!auth.authState.user?.id) return;
+        const all = await getAllTransactionsForPlanning(auth.authState.user.id, s, e, {
+          includeFixkosten: true,
+          includeSimulationen: true,
+          includeLohnkosten: true,
+        });
+        const sorted = all.sort((a, b) => a.date.getTime() - b.date.getTime());
+        const enhanced = enhanceTransactionsSync(sorted, balance.balance);
+        setTransactions(enhanced);
+      } catch (e) {
+        console.error('Dashboard load error', e);
       } finally {
         setIsLoading(false);
       }
     }
-    
-    loadData();
+    load();
   }, [timeRange, auth.authState.user?.id]);
 
+  const filtered = useMemo(() => (includeSimulations ? transactions : transactions.filter(t => t.kategorie !== 'Simulation')), [transactions, includeSimulations]);
+
+  function signed(amount: number, direction: 'Incoming' | 'Outgoing') { return direction === 'Incoming' ? amount : -amount; }
+
+  const kpi = useMemo(() => {
+    const today = startOfDay(new Date());
+    const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000);
+    const next30 = filtered.filter(t => t.date >= today && t.date <= horizon);
+    const net30 = next30.reduce((s, t) => s + signed(t.amount, t.direction), 0);
+    const last3Start = subMonths(startOfMonth(today), 3);
+    const last3 = filtered.filter(t => t.date >= last3Start && t.date < startOfMonth(today));
+    const byMonth = new Map<string, number>();
+    last3.forEach(t => { const key = `${t.date.getFullYear()}-${t.date.getMonth() + 1}`; byMonth.set(key, (byMonth.get(key) || 0) + signed(t.amount, t.direction)); });
+    const months = Array.from(byMonth.values());
+    const burn = Math.max(0, -months.reduce((a, b) => a + Math.min(0, b), 0) / Math.max(1, months.length));
+    const runwayMonths = burn > 0 ? currentBalance / burn : Infinity;
+    const eom = endOfMonth(today);
+    const eomForecast = filtered.filter(t => t.date >= today && t.date <= eom).reduce((s, t) => s + signed(t.amount, t.direction), currentBalance);
+    const firstNegative = filtered.filter(t => t.date >= today).sort((a, b) => a.date.getTime() - b.date.getTime()).find(t => (t.kontostand ?? 0) < 0)?.date || null;
+    const openIncoming = filtered.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
+    const openOutgoing = filtered.filter(t => (t as any).is_invoice && t.direction === 'Outgoing');
+    return {
+      net30,
+      runwayMonths,
+      eomForecast,
+      firstNegative,
+      openIncomingCount: openIncoming.length,
+      openIncomingSum: openIncoming.reduce((s, t) => s + t.amount, 0),
+      openOutgoingCount: openOutgoing.length,
+      openOutgoingSum: openOutgoing.reduce((s, t) => s + t.amount, 0),
+    };
+  }, [filtered, currentBalance]);
+
+  const forecastPoints = useMemo(() => filtered.map(t => ({ date: t.date.toISOString().split('T')[0], balance: t.kontostand || 0 })).sort((a, b) => a.date.localeCompare(b.date)), [filtered]);
+
+  const monthlyData = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach(t => { const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`; map.set(key, (map.get(key) || 0) + signed(t.amount, t.direction)); });
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([m, v]) => ({ month: m, value: v }));
+  }, [filtered]);
+
+  const today = startOfDay(new Date());
+  const lmStart = startOfMonth(subMonths(today, 1));
+  const lmEnd = endOfMonth(subMonths(today, 1));
+  const breakdown = useMemo(() => {
+    const lastMonthOutgoing = filtered.filter(t => t.date >= lmStart && t.date <= lmEnd && t.direction === 'Outgoing');
+    const map = new Map<string, number>();
+    lastMonthOutgoing.forEach(t => { const cat = t.kategorie || 'Standard'; map.set(cat, (map.get(cat) || 0) + t.amount); });
+    return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
+  }, [filtered]);
+
+  const upcoming = useMemo(() => {
+    const in14 = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
+    return filtered.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in14).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10);
+  }, [filtered]);
+
+  const overdue = useMemo(() => filtered.filter(t => (t as any).is_invoice && t.date < today).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10), [filtered]);
+  const topOutflows = useMemo(() => { const in30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000); return filtered.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in30).sort((a, b) => b.amount - a.amount).slice(0, 5); }, [filtered]);
+  const simulationImpact = useMemo(() => { const eom = endOfMonth(today); const sims = filtered.filter(t => t.kategorie === 'Simulation' && t.date >= today && t.date <= eom); const delta = sims.reduce((s, t) => s + signed(t.amount, t.direction), 0); return { delta, items: sims.slice(0, 10) }; }, [filtered]);
+
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <select
-          value={timeRange}
-          onChange={(e) => setTimeRange(Number(e.target.value))}
-          className="border border-gray-300 rounded-md px-3 py-2"
-        >
-          <option value={1}>1 Monat</option>
-          <option value={3}>3 Monate</option>
-          <option value={6}>6 Monate</option>
-          <option value={12}>12 Monate</option>
-        </select>
-      </div>
-      
-      {isLoading ? (
-        <div className="animate-pulse bg-gray-100 rounded-lg h-[400px]"></div>
-      ) : chartData.length > 0 ? (
-        <KontostandChart data={chartData} />
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">Keine Daten verfügbar</p>
-          <p className="text-sm text-gray-400 mt-2">Bitte aktualisieren Sie den Kontostand in der Seitenleiste</p>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600">Zeitraum</label>
+          <select value={timeRange} onChange={e => setTimeRange(Number(e.target.value))} className="border border-gray-300 rounded-md px-3 py-2">
+            <option value={1}>1 Monat</option>
+            <option value={3}>3 Monate</option>
+            <option value={6}>6 Monate</option>
+            <option value={12}>12 Monate</option>
+          </select>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" checked={includeSimulations} onChange={e => setIncludeSimulations(e.target.checked)} />
+            Simulationen einbeziehen
+          </label>
         </div>
-      )}
+      </div>
+
+      <Alerts currentBalance={currentBalance} runwayMonths={kpi.runwayMonths} firstNegativeDate={kpi.firstNegative} />
+
+      <Kpis
+        currentBalance={currentBalance}
+        net30={kpi.net30}
+        runwayMonths={kpi.runwayMonths}
+        eomForecast={kpi.eomForecast}
+        openIncoming={{ count: kpi.openIncomingCount, sum: kpi.openIncomingSum }}
+        openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
+      />
+
+      <ForecastChart isLoading={isLoading} points={forecastPoints} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthlyCashflow data={monthlyData} />
+        <CostBreakdown data={breakdown} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UpcomingPayments items={upcoming} />
+        <OverdueInvoices items={overdue} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopOutflows items={topOutflows} />
+        <SimulationImpact delta={simulationImpact.delta} items={simulationImpact.items} />
+      </div>
     </div>
   );
-} 
+}
