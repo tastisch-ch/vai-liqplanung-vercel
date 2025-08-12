@@ -55,3 +55,13 @@ export function getSignedAmount(amount: number, direction: 'Incoming' | 'Outgoin
   const absAmount = Math.abs(amount);
   return direction === 'Outgoing' ? -absAmount : absAmount;
 } 
+
+// Simple CHF formatter used in charts/KPIs
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('de-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0);
+}
