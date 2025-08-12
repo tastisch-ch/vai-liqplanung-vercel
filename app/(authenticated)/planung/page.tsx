@@ -248,7 +248,7 @@ export default function Planung() {
     try {
       if (editingTransaction) {
         // Update existing transaction
-        const { data: updated, error } = await supabase
+        const { error } = await supabase
           .from('buchungen')
           .update({
             date: new Date(data.date).toISOString(),
@@ -261,12 +261,9 @@ export default function Planung() {
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingTransaction.id)
-          .eq('user_id', user.id)
-          .select()
-          .single();
+          ;
 
         if (error) throw error;
-        if (!updated) throw new Error('Update returned no row');
 
         showNotification(
           'Transaktion wurde erfolgreich aktualisiert',
