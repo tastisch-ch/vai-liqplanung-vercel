@@ -248,21 +248,25 @@ export default function Planung() {
     try {
       if (editingTransaction) {
         // Update existing transaction
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('buchungen')
           .update({
-            date: data.date,
+            date: new Date(data.date).toISOString(),
             amount: data.amount,
             direction: data.direction,
             details: data.details,
             is_simulation: data.is_simulation,
             kategorie: data.is_simulation ? 'Simulation' : 'Manual',
+            modified: true,
             updated_at: new Date().toISOString(),
           })
           .eq('id', editingTransaction.id)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .select()
+          .single();
 
         if (error) throw error;
+        if (!updated) throw new Error('Update returned no row');
 
         showNotification(
           'Transaktion wurde erfolgreich aktualisiert',
@@ -275,7 +279,7 @@ export default function Planung() {
           .insert([
             {
               id: uuidv4(),
-              date: data.date,
+              date: new Date(data.date).toISOString(),
               amount: data.amount,
               direction: data.direction,
               details: data.details,
