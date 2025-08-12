@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { addMonths, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getCurrentBalance } from '@/lib/services/daily-balance';
-import { getAllTransactionsForPlanning, enhanceTransactionsSync } from '@/lib/services/buchungen';
+import { getAllTransactionsForPlanning, enhanceTransactions, enhanceTransactionsSync } from '@/lib/services/buchungen';
 import { EnhancedTransaction } from '@/models/types';
 import { Kpis } from '@/app/components/dashboard/Kpis';
 import { ForecastChart } from '@/app/components/dashboard/ForecastChart';
@@ -42,7 +42,8 @@ export default function DashboardPage() {
         // Apply simulation toggle BEFORE computing running balance to keep balances correct
         const sorted = all.sort((a, b) => a.date.getTime() - b.date.getTime());
         const base = includeSimulations ? sorted : sorted.filter(t => t.kategorie !== 'Simulation');
-        const calc = enhanceTransactionsSync(base, balance.balance);
+        // Use the same enhancement as Planung for identical "Verlaufslinie"
+        const calc = await enhanceTransactions(base, undefined, balance.balance);
         setEnhanced(calc);
       } catch (e) {
         console.error('Dashboard load error', e);
