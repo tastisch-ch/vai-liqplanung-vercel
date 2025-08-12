@@ -111,6 +111,16 @@ export default function DashboardPage() {
       const s = t.direction === 'Incoming' ? t.amount : -t.amount;
       daySum.set(k, (daySum.get(k) || 0) + s);
     }
+    if (typeof window !== 'undefined') {
+      const kA = '2025-09-11';
+      const kB = '2025-09-12';
+      // Debug specific dates if present
+      const dbg = [kA, kB].filter(k => daySum.has(k)).map(k => ({ day: k, net: daySum.get(k) }));
+      if (dbg.length) {
+        // eslint-disable-next-line no-console
+        console.log('[Dashboard] Day sums debug:', dbg);
+      }
+    }
     // Build ordered list of days
     const days = Array.from(daySum.keys()).sort();
     // Start from currentBalance and accumulate per day
@@ -166,7 +176,7 @@ export default function DashboardPage() {
           </label>
         </div>
       </div>
-
+      
       <Alerts currentBalance={currentBalance} runwayMonths={kpi.runwayMonths} firstNegativeDate={kpi.firstNegative} />
 
       <Kpis
@@ -184,16 +194,16 @@ export default function DashboardPage() {
         <MonthlyCashflow data={monthlyData} />
         <CostBreakdown data={breakdown} />
       </div>
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingPayments items={upcoming} />
         <OverdueInvoices items={overdue} />
       </div>
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TopOutflows items={topOutflows} />
         <SimulationImpact delta={simulationImpact.delta} items={simulationImpact.items} />
       </div>
     </div>
   );
-}
+} 
