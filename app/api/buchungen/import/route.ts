@@ -93,10 +93,16 @@ export async function POST(request: NextRequest) {
       processedData = data;
       duplicateCount = duplicates;
     } else if (importType === 'excel' && file) {
-      // Process Excel file
-      const { data, duplicates } = await processExcelImport(file, userId, request);
-      processedData = data;
-      duplicateCount = duplicates;
+      // Excel import: idempotent upsert/delete for invoices
+      const stats = await upsertExcelInvoices(file, userId, request);
+      return NextResponse.json(
+        {
+          success: true,
+          message: `Excel verarbeitet: neu=${stats.newCount}, aktualisiert=${stats.updatedCount}, entfernt=${stats.removedCount}`,
+          stats
+        },
+        { status: 200 }
+      );
     } else {
       return NextResponse.json(
         { error: 'Invalid import type or missing data' },
@@ -441,6 +447,151 @@ async function processExcelImport(file: File, userId: string, request: NextReque
   }
   
   return { data: processedRows, duplicates: duplicateCount };
+}
+
+/**
+ * Excel upsert/delete for invoices keyed by a stable invoice_id derived from details
+ * - New: insert with is_invoice=true, invoice_id, kategorie='Standard'
+ * - Changed: update amount/date/details (keep id)
+ * - Missing: delete rows that are not present in this import (paid invoices)
+ */
+async function upsertExcelInvoices(file: File, userId: string, request: NextRequest) {
+  const supabase = createRouteHandlerSupabaseClient(request);
+
+  // Load existing tracked invoices for this user
+  const { data: existingInvoices, error: loadErr } = await supabase
+    .from('buchungen')
+    .select('id, invoice_id, amount, date, details')
+    .eq('user_id', userId)
+    .eq('is_invoice', true);
+  if (loadErr) throw loadErr;
+
+  const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string }>();
+  for (const inv of existingInvoices || []) {
+    const invId = (inv as any).invoice_id as string | null;
+    if (invId) {
+      existingByInvoiceId.set(invId, {
+        id: (inv as any).id,
+        amount: (inv as any).amount,
+        date: (inv as any).date,
+        details: (inv as any).details
+      });
+    }
+  }
+
+  // Read Excel
+  const arrayBuffer = await file.arrayBuffer();
+  const data = new Uint8Array(arrayBuffer);
+  const workbook = XLSX.read(data, { type: 'array' });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+  const toInsert: any[] = [];
+  const toUpdate: { id: string; date: string; amount: number; details: string }[] = [];
+  const seenIds = new Set<string>();
+
+  for (const row of jsonData) {
+    try {
+      const dateDue = findValueFromPossibleKeys(row, [
+        'Zahlbar bis', 'Fällig am', 'Fälligkeit', 'Datum', 'Zahlungsziel'
+      ]);
+      const customer = findValueFromPossibleKeys(row, [
+        'Kunde', 'Kundenname', 'Firma', 'Name', 'Empfänger'
+      ]);
+      const customerNumber = findValueFromPossibleKeys(row, [
+        'Kundennummer', 'KundenNr', 'Kunden-Nr', 'Nummer', 'Nr'
+      ]);
+      const amount = findValueFromPossibleKeys(row, [
+        'Brutto', 'Betrag', 'Summe', 'Total', 'Rechnungsbetrag'
+      ]);
+
+      if (!customer || amount === undefined || amount === null) continue;
+
+      // Parse date
+      let finalDate: Date = new Date();
+      if (dateDue !== null && dateDue !== undefined) {
+        if (typeof dateDue === 'number') {
+          const excelEpoch = new Date(1899, 11, 30);
+          const msPerDay = 24 * 60 * 60 * 1000;
+          finalDate = new Date(excelEpoch.getTime() + dateDue * msPerDay);
+        } else {
+          const parsed = parseDateFallback(String(dateDue));
+          finalDate = parsed || new Date();
+        }
+      }
+
+      // Parse amount
+      let parsedAmount = 0;
+      if (typeof amount === 'string') parsedAmount = parseFloat(amount.replace(/[^\d.-]/g, ''));
+      else parsedAmount = Number(amount);
+      if (isNaN(parsedAmount)) continue;
+
+      // Build details and stable invoice_id
+      const details = customerNumber ? `${customer} ${customerNumber}` : `${customer}`;
+      const invoiceId = String(details).trim().toLowerCase();
+      seenIds.add(invoiceId);
+
+      const normalized = {
+        date: finalDate.toISOString(),
+        details,
+        amount: Math.abs(parsedAmount),
+        direction: 'Incoming' as const,
+      };
+
+      const existing = existingByInvoiceId.get(invoiceId);
+      if (!existing) {
+        toInsert.push({
+          id: uuidv4(),
+          ...normalized,
+          user_id: userId,
+          is_invoice: true,
+          invoice_id: invoiceId,
+          kategorie: 'Standard',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          modified: false,
+        });
+      } else {
+        const amountChanged = Math.abs(existing.amount - normalized.amount) > 0.005;
+        const dateChanged = new Date(existing.date).getTime() !== new Date(normalized.date).getTime();
+        const detailsChanged = (existing.details || '') !== normalized.details;
+        if (amountChanged || dateChanged || detailsChanged) {
+          toUpdate.push({ id: existing.id, date: normalized.date, amount: normalized.amount, details: normalized.details });
+        }
+      }
+    } catch (err) {
+      console.error('Error parsing Excel row (upsert path):', err);
+    }
+  }
+
+  // Determine removals: existing invoices not present in current file
+  const removedIds: string[] = [];
+  for (const inv of existingInvoices || []) {
+    const invId = (inv as any).invoice_id as string | null;
+    if (invId && !seenIds.has(invId)) removedIds.push((inv as any).id);
+  }
+
+  // Execute DB operations
+  if (toInsert.length > 0) {
+    const { error: insErr } = await supabase.from('buchungen').insert(toInsert);
+    if (insErr) throw insErr;
+  }
+  for (const upd of toUpdate) {
+    const { error: updErr } = await supabase
+      .from('buchungen')
+      .update({ date: upd.date, amount: upd.amount, details: upd.details, updated_at: new Date().toISOString() })
+      .eq('id', upd.id);
+    if (updErr) throw updErr;
+  }
+  if (removedIds.length > 0) {
+    const { error: delErr } = await supabase
+      .from('buchungen')
+      .delete()
+      .in('id', removedIds);
+    if (delErr) throw delErr;
+  }
+
+  return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: removedIds.length };
 }
 
 /**
