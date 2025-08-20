@@ -458,9 +458,6 @@ export function convertLohneToBuchungen(
 ): Buchung[] {
   const result: Buchung[] = [];
   
-  // Get all active salaries
-  const aktuelleLohne = getAktuelleLohne(mitarbeiter);
-  
   // For each month in the date range, create salary transactions
   let currentMonthDate = new Date(startDate);
   currentMonthDate.setDate(1); // Start from the first day of the month
@@ -475,19 +472,26 @@ export function convertLohneToBuchungen(
     
     // Only process if the payment date is within our range
     if (adjustedPaymentDate >= startDate && adjustedPaymentDate <= endDate) {
-      // For each employee with an active salary
-      aktuelleLohne.forEach(({ mitarbeiter, lohn }) => {
-        // Check if the salary is valid for this month
-        if (lohn.Start <= adjustedPaymentDate && (!lohn.Ende || lohn.Ende >= adjustedPaymentDate)) {
+      // For each employee, find the salary valid for this specific payment date
+      mitarbeiter.forEach(ma => {
+        // Find all salary periods that are valid for this payment date
+        const validLohne = ma.Lohn.filter(lohn => 
+          lohn.Start <= adjustedPaymentDate && (!lohn.Ende || lohn.Ende >= adjustedPaymentDate)
+        ).sort((a, b) => b.Start.getTime() - a.Start.getTime()); // Sort by start date, newest first
+        
+        // Use the most recent salary period for this date
+        if (validLohne.length > 0) {
+          const activeLohn = validLohne[0];
+          
           // Create a transaction for this salary payment
           const buchung: Buchung = {
             id: uuidv4(),
             date: adjustedPaymentDate,
-            details: `Lohn: ${mitarbeiter.Name}`,
-            amount: lohn.Betrag,
+            details: `Lohn: ${ma.Name}`,
+            amount: activeLohn.Betrag,
             direction: 'Outgoing',
             kategorie: 'Lohn',
-            user_id: mitarbeiter.user_id,
+            user_id: ma.user_id,
             created_at: new Date().toISOString(),
             // Add a flag to indicate if the date was shifted due to weekend
             shifted: adjustedPaymentDate.getTime() !== paymentDate.getTime()
