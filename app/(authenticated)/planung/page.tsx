@@ -87,7 +87,8 @@ export default function Planung() {
       ]);
       
       // Store current balance for filter recalculations
-      setCurrentBalance(currentBalanceData.balance);
+      const currentBalanceValue = currentBalanceData.balance;
+      setCurrentBalance(currentBalanceValue);
       
       // Convert fixed costs and salaries to transactions
       let allTransactions = [...buchungen];
@@ -106,8 +107,8 @@ export default function Planung() {
       const enhancedTx = await enhanceTransactions(allTransactions);
       setTransactions(enhancedTx);
       
-      // Apply filters
-      applyFilters(enhancedTx);
+      // Apply filters with current balance immediately available
+      applyFiltersWithBalance(enhancedTx, currentBalanceValue);
     } catch (err) {
       setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');
       setTransactions([]);
@@ -126,8 +127,8 @@ export default function Planung() {
     applyFilters(transactions);
   }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing]);
   
-  // Filter function
-  const applyFilters = (allTransactions: EnhancedTransaction[]) => {
+  // Filter function with explicit balance parameter
+  const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
     // First exclude today's transactions (they're already reflected in current balance)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -178,7 +179,7 @@ export default function Planung() {
     }
     
     // Recalculate running balance based only on visible transactions
-    let runningBalance = currentBalance;
+    let runningBalance = balanceToUse;
     const recalculatedTransactions = filtered.map(tx => {
       // Update running balance based on transaction direction
       if (tx.direction === 'Incoming') {
@@ -195,6 +196,11 @@ export default function Planung() {
     });
     
     setFilteredTransactions(recalculatedTransactions);
+  };
+  
+  // Wrapper function that uses current balance from state
+  const applyFilters = (allTransactions: EnhancedTransaction[]) => {
+    applyFiltersWithBalance(allTransactions, currentBalance);
   };
   
   // Tab period selection
