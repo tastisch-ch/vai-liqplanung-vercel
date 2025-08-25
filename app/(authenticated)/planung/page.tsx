@@ -36,7 +36,9 @@ export default function Planung() {
   // Filter states
   const [startDate, setStartDate] = useState<Date>(() => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    return new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
   });
   
   const [endDate, setEndDate] = useState<Date>(() => {
@@ -121,8 +123,13 @@ export default function Planung() {
   
   // Filter function
   const applyFilters = (allTransactions: EnhancedTransaction[]) => {
-    // First filter by transaction type
-    let filtered = allTransactions.filter(tx => {
+    // First exclude today's transactions (they're already reflected in current balance)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let filtered = allTransactions.filter(tx => tx.date > today);
+    
+    // Then filter by transaction type
+    filtered = filtered.filter(tx => {
       if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;
       if (tx.kategorie?.toLowerCase() === 'lohn') return showLoehne;
       if (tx.kategorie?.toLowerCase() === 'simulation') return showSimulations;
@@ -178,20 +185,25 @@ export default function Planung() {
     
     switch (tab) {
       case 'monthly':
-        // Current month + 3 months
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Tomorrow + 3 months (excluding today)
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        start = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
         end = addMonths(start, 3);
         break;
       case 'quarterly':
-        // Current quarter + 3 quarters (9 months)
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        start = new Date(now.getFullYear(), currentQuarter * 3, 1);
+        // Tomorrow + 9 months (excluding today)
+        const tomorrowQ = new Date(now);
+        tomorrowQ.setDate(now.getDate() + 1);
+        start = new Date(tomorrowQ.getFullYear(), tomorrowQ.getMonth(), tomorrowQ.getDate());
         end = addMonths(start, 9);
         break;
       case 'yearly':
-        // Current year + next year
-        start = new Date(now.getFullYear(), 0, 1);
-        end = new Date(now.getFullYear() + 1, 11, 31);
+        // Tomorrow + 1 year (excluding today)
+        const tomorrowY = new Date(now);
+        tomorrowY.setDate(now.getDate() + 1);
+        start = new Date(tomorrowY.getFullYear(), tomorrowY.getMonth(), tomorrowY.getDate());
+        end = addMonths(start, 12);
         break;
     }
     
