@@ -311,8 +311,11 @@ export async function enhanceTransactions(
   
   // Separate transactions into historical (past and today) and future
   // Today's transactions are included in past since they're already reflected in current balance
-  const pastTransactions = adjustedTransactions.filter(tx => tx.date <= today);
-  const futureTransactions = adjustedTransactions.filter(tx => tx.date > today);
+  const todayEnd = new Date(today);
+  todayEnd.setHours(23, 59, 59, 999); // End of today
+  
+  const pastTransactions = adjustedTransactions.filter(tx => tx.date <= todayEnd);
+  const futureTransactions = adjustedTransactions.filter(tx => tx.date > todayEnd);
   
   // For historical transactions, we don't calculate running balance
   // They keep their historical context
