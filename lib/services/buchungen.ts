@@ -338,6 +338,15 @@ export async function enhanceTransactions(
   
   // For future transactions (excluding today), calculate running balance starting from current balance
   let runningBalance = currentBalance || 0;
+  console.log(`[DEBUG] Starting balance: CHF ${runningBalance}`);
+  console.log(`[DEBUG] Future transactions count: ${futureTransactions.length}`);
+  console.log(`[DEBUG] First 3 future transactions:`, futureTransactions.slice(0, 3).map(tx => ({
+    date: tx.date.toISOString().split('T')[0],
+    details: tx.details?.substring(0, 30),
+    amount: tx.amount,
+    direction: tx.direction,
+    shifted: tx.shifted
+  })));
   const enhancedFutureTransactions = futureTransactions.map(tx => {
     // Update running balance based on transaction direction
     if (tx.direction === 'Incoming') {
