@@ -7,6 +7,7 @@ import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixko
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
 import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
 import { getUserSettings } from "@/lib/services/user-settings";
+import { getCurrentBalance } from "@/lib/services/daily-balance";
 import { EnhancedTransaction } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
@@ -63,6 +64,9 @@ export default function Planung() {
   // Add confirmation dialog state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<EnhancedTransaction | null>(null);
+  
+  // Store current balance for recalculations
+  const [currentBalance, setCurrentBalance] = useState<number>(0);
 
   // Fetch all data
   const fetchData = async () => {
@@ -72,17 +76,18 @@ export default function Planung() {
     setError(null);
     
     try {
-      // Load user settings for starting balance
-      const settings = await getUserSettings(user.id);
-      const startBalance = settings.start_balance;
-      
-      // Load transactions, fixed costs, employees, and overrides
-      const [buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
+      // Load current balance and other data
+      const [currentBalanceData, settings, buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
+        getCurrentBalance(),
+        getUserSettings(user.id),
         loadBuchungen(user.id),
         loadFixkosten(user.id),
         loadLohnkosten(user.id),
         loadFixkostenOverrides(user.id)
       ]);
+      
+      // Store current balance for filter recalculations
+      setCurrentBalance(currentBalanceData.balance);
       
       // Convert fixed costs and salaries to transactions
       let allTransactions = [...buchungen];
@@ -172,7 +177,24 @@ export default function Planung() {
         break;
     }
     
-    setFilteredTransactions(filtered);
+    // Recalculate running balance based only on visible transactions
+    let runningBalance = currentBalance;
+    const recalculatedTransactions = filtered.map(tx => {
+      // Update running balance based on transaction direction
+      if (tx.direction === 'Incoming') {
+        runningBalance += tx.amount;
+      } else {
+        runningBalance -= tx.amount;
+      }
+      
+      // Return transaction with recalculated balance
+      return {
+        ...tx,
+        kontostand: runningBalance
+      };
+    });
+    
+    setFilteredTransactions(recalculatedTransactions);
   };
   
   // Tab period selection
