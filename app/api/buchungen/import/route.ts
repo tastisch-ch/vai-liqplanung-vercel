@@ -474,14 +474,26 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   try {
     // Load existing tracked invoices for this user
     console.log('Loading existing invoices for user:', userId);
+    
+    // Load all existing invoices regardless of is_invoice flag
+    // Some existing records might have is_invoice=null or false
     const { data: existingInvoices, error: loadErr } = await supabase
       .from('buchungen')
-      .select('id, invoice_id, amount, date, details')
+      .select('id, invoice_id, amount, date, details, is_invoice')
       .eq('user_id', userId)
-      .eq('is_invoice', true);
+      .not('invoice_id', 'is', null);  // Only get rows that have invoice_id set
+    
+    console.log('Query executed, error:', loadErr);
+    console.log('Raw existingInvoices data:', existingInvoices);
     
     if (loadErr) {
       console.error('Error loading existing invoices:', loadErr);
+      // If columns don't exist, treat as empty result
+      if (loadErr.code === '42703') {
+        console.log('invoice_id or is_invoice columns do not exist, treating as empty');
+        const existingByInvoiceId = new Map();
+        return { newCount: 0, updatedCount: 0, removedCount: 0 };
+      }
       throw new Error(`Failed to load existing invoices: ${loadErr.message}`);
     }
     
