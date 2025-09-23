@@ -476,11 +476,20 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     console.log('Loading existing invoices for user:', userId);
     
     // Load all existing transactions for this user to check for potential conflicts
-    // The unique constraint might be on a computed invoice_id, not just the column
+    // Also check if there are any records with the specific invoice_id that's causing the conflict
     const { data: existingInvoices, error: loadErr } = await supabase
       .from('buchungen')
       .select('id, invoice_id, amount, date, details, is_invoice')
       .eq('user_id', userId);  // Get ALL transactions to see what might conflict
+    
+    // Also check specifically for the invoice_id that's causing the constraint violation
+    const { data: conflictingRecord, error: conflictErr } = await supabase
+      .from('buchungen')
+      .select('id, invoice_id, amount, date, details, is_invoice, user_id')
+      .eq('invoice_id', 'desitin pharma gmbh des')
+      .eq('user_id', userId);
+      
+    console.log('Conflicting record check:', { conflictingRecord, conflictErr });
     
     console.log('Query executed, error:', loadErr);
     console.log('Raw existingInvoices data:', existingInvoices);
@@ -558,6 +567,9 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
       const customerNumber = findValueFromPossibleKeys(row, [
         'Kundennummer', 'KundenNr', 'Kunden-Nr', 'Nummer', 'Nr'
       ]);
+      const invoiceNumber = findValueFromPossibleKeys(row, [
+        'Rechnungsnummer', 'RechnungsNr', 'Rechnung-Nr', 'Invoice', 'InvoiceNumber', 'Nr', 'ID'
+      ]);
       const amount = findValueFromPossibleKeys(row, [
         'Brutto', 'Betrag', 'Summe', 'Total', 'Rechnungsbetrag'
       ]);
@@ -585,7 +597,11 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
 
       // Build details and stable invoice_id
       const details = customerNumber ? `${customer} ${customerNumber}` : `${customer}`;
-      const invoiceId = String(details).trim().toLowerCase();
+      
+      // Use invoice number if available, otherwise fall back to customer details
+      const invoiceId = invoiceNumber 
+        ? String(invoiceNumber).trim().toLowerCase()
+        : String(details).trim().toLowerCase();
       seenIds.add(invoiceId);
 
       const normalized = {
