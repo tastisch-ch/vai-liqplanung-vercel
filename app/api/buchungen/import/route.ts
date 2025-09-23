@@ -94,15 +94,28 @@ export async function POST(request: NextRequest) {
       duplicateCount = duplicates;
     } else if (importType === 'excel' && file) {
       // Excel import: idempotent upsert/delete for invoices
-      const stats = await upsertExcelInvoices(file, userId, request);
-      return NextResponse.json(
-        {
-          success: true,
-          message: `Excel verarbeitet: neu=${stats.newCount}, aktualisiert=${stats.updatedCount}, entfernt=${stats.removedCount}`,
-          stats
-        },
-        { status: 200 }
-      );
+      try {
+        console.log('Starting Excel import for file:', file.name, 'size:', file.size);
+        const stats = await upsertExcelInvoices(file, userId, request);
+        console.log('Excel import completed successfully:', stats);
+        return NextResponse.json(
+          {
+            success: true,
+            message: `Excel verarbeitet: neu=${stats.newCount}, aktualisiert=${stats.updatedCount}, entfernt=${stats.removedCount}`,
+            stats
+          },
+          { status: 200 }
+        );
+      } catch (excelError) {
+        console.error('Excel import error:', excelError);
+        return NextResponse.json(
+          { 
+            error: 'Excel import failed', 
+            details: excelError instanceof Error ? excelError.message : 'Unknown Excel error' 
+          },
+          { status: 500 }
+        );
+      }
     } else {
       return NextResponse.json(
         { error: 'Invalid import type or missing data' },
@@ -458,13 +471,21 @@ async function processExcelImport(file: File, userId: string, request: NextReque
 async function upsertExcelInvoices(file: File, userId: string, request: NextRequest) {
   const supabase = createRouteHandlerSupabaseClient(request);
 
-  // Load existing tracked invoices for this user
-  const { data: existingInvoices, error: loadErr } = await supabase
-    .from('buchungen')
-    .select('id, invoice_id, amount, date, details')
-    .eq('user_id', userId)
-    .eq('is_invoice', true);
-  if (loadErr) throw loadErr;
+  try {
+    // Load existing tracked invoices for this user
+    console.log('Loading existing invoices for user:', userId);
+    const { data: existingInvoices, error: loadErr } = await supabase
+      .from('buchungen')
+      .select('id, invoice_id, amount, date, details')
+      .eq('user_id', userId)
+      .eq('is_invoice', true);
+    
+    if (loadErr) {
+      console.error('Error loading existing invoices:', loadErr);
+      throw new Error(`Failed to load existing invoices: ${loadErr.message}`);
+    }
+    
+    console.log('Found', existingInvoices?.length || 0, 'existing invoices');
 
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string }>();
   for (const inv of existingInvoices || []) {
@@ -479,12 +500,23 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     }
   }
 
-  // Read Excel
-  const arrayBuffer = await file.arrayBuffer();
-  const data = new Uint8Array(arrayBuffer);
-  const workbook = XLSX.read(data, { type: 'array' });
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+    // Read Excel
+    console.log('Reading Excel file...');
+    const arrayBuffer = await file.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      throw new Error('Excel file contains no sheets');
+    }
+    
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    if (!worksheet) {
+      throw new Error('Failed to read first sheet from Excel file');
+    }
+    
+    const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+    console.log('Extracted', jsonData.length, 'rows from Excel file');
 
   const toInsert: any[] = [];
   const toUpdate: { id: string; date: string; amount: number; details: string }[] = [];
@@ -591,7 +623,11 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     if (delErr) throw delErr;
   }
 
-  return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: removedIds.length };
+    return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: removedIds.length };
+  } catch (error) {
+    console.error('Error in upsertExcelInvoices:', error);
+    throw error;
+  }
 }
 
 /**
