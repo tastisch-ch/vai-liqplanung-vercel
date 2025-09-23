@@ -129,10 +129,9 @@ export default function Planung() {
   
   // Filter function with explicit balance parameter
   const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
-    // First exclude today's transactions (they're already reflected in current balance)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let filtered = allTransactions.filter(tx => tx.date > today);
+    // Filter transactions to only show future dates starting from startDate
+    // This ensures consistent date handling with fixkosten generation
+    let filtered = allTransactions.filter(tx => tx.date >= startDate);
     
     // Then filter by transaction type
     filtered = filtered.filter(tx => {
