@@ -475,13 +475,12 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     // Load existing tracked invoices for this user
     console.log('Loading existing invoices for user:', userId);
     
-    // Load all existing invoices regardless of is_invoice flag
-    // Some existing records might have is_invoice=null or false
+    // Load all existing transactions for this user to check for potential conflicts
+    // The unique constraint might be on a computed invoice_id, not just the column
     const { data: existingInvoices, error: loadErr } = await supabase
       .from('buchungen')
       .select('id, invoice_id, amount, date, details, is_invoice')
-      .eq('user_id', userId)
-      .not('invoice_id', 'is', null);  // Only get rows that have invoice_id set
+      .eq('user_id', userId);  // Get ALL transactions to see what might conflict
     
     console.log('Query executed, error:', loadErr);
     console.log('Raw existingInvoices data:', existingInvoices);
@@ -502,6 +501,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string }>();
   for (const inv of existingInvoices || []) {
     const invId = (inv as any).invoice_id as string | null;
+    
+    // If invoice_id is set, use it
     if (invId) {
       existingByInvoiceId.set(invId, {
         id: (inv as any).id,
@@ -510,7 +511,19 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         details: (inv as any).details
       });
     }
+    // If no invoice_id, but we can compute one from details, add it too
+    else if ((inv as any).details) {
+      const computedInvoiceId = String((inv as any).details).trim().toLowerCase();
+      existingByInvoiceId.set(computedInvoiceId, {
+        id: (inv as any).id,
+        amount: (inv as any).amount,
+        date: (inv as any).date,
+        details: (inv as any).details
+      });
+    }
   }
+  
+  console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
     // Read Excel
     console.log('Reading Excel file...');
