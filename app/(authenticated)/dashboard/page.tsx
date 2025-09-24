@@ -10,9 +10,9 @@ import { loadBuchungen } from '@/lib/services/buchungen';
 import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
 import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
 import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
-import { Kpis } from '@/app/components/dashboard/Kpis';
-import { ForecastChart } from '@/app/components/dashboard/ForecastChart';
-import { MonthlyCashflow } from '@/app/components/dashboard/MonthlyCashflow';
+import { KpisTremor } from '@/app/components/dashboard/KpisTremor';
+import { ForecastChartTremor } from '@/app/components/dashboard/ForecastChartTremor';
+import { MonthlyCashflowTremor } from '@/app/components/dashboard/MonthlyCashflowTremor';
 import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
 import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
 import { OverdueInvoices } from '@/app/components/dashboard/OverdueInvoices';
@@ -179,7 +179,7 @@ export default function DashboardPage() {
       
       <Alerts currentBalance={currentBalance} runwayMonths={kpi.runwayMonths} firstNegativeDate={kpi.firstNegative} />
 
-      <Kpis
+      <KpisTremor
         currentBalance={currentBalance}
         net30={kpi.net30}
         runwayMonths={kpi.runwayMonths}
@@ -188,10 +188,10 @@ export default function DashboardPage() {
         openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
       />
 
-      <ForecastChart isLoading={isLoading} points={forecastPoints} />
+      <ForecastChartTremor isLoading={isLoading} points={forecastPoints} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyCashflow data={monthlyData} />
+        <MonthlyCashflowTremor data={monthlyData} />
         <CostBreakdown data={breakdown} />
       </div>
       
