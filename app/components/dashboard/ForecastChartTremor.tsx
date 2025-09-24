@@ -59,14 +59,13 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
         </div>
         <div className="flex gap-2">
           <Badge 
-            color={trend ? "emerald" : "red"} 
-            icon={trend ? "📈" : "📉"}
+            color={trend ? "emerald" : "red"}
           >
-            {trend ? "Aufwärtstrend" : "Abwärtstrend"}
+            {trend ? "📈 Aufwärtstrend" : "📉 Abwärtstrend"}
           </Badge>
           {hasNegative && (
-            <Badge color="red" icon="⚠️">
-              Warnung: Negativer Saldo
+            <Badge color="red">
+              ⚠️ Warnung: Negativer Saldo
             </Badge>
           )}
         </div>

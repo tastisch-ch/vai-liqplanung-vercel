@@ -44,14 +44,10 @@ export function KpisTremor({
             </Metric>
           </div>
           <Badge 
-            color={balanceHealth} 
-            icon={
-              balanceHealth === 'emerald' ? '💚' : 
-              balanceHealth === 'yellow' ? '⚠️' : '🚨'
-            }
+            color={balanceHealth}
           >
-            {balanceHealth === 'emerald' ? 'Gesund' : 
-             balanceHealth === 'yellow' ? 'Achtung' : 'Kritisch'}
+            {balanceHealth === 'emerald' ? '💚 Gesund' : 
+             balanceHealth === 'yellow' ? '⚠️ Achtung' : '🚨 Kritisch'}
           </Badge>
         </Flex>
         <Text className="mt-2 text-sm text-gray-600">
@@ -111,10 +107,9 @@ export function KpisTremor({
         </Metric>
         <Flex className="mt-4" justifyContent="start">
           <Badge 
-            color={eomTrend ? "emerald" : "red"} 
-            icon={eomTrend ? "📈" : "📉"}
+            color={eomTrend ? "emerald" : "red"}
           >
-            {eomTrend ? 'Wachstum' : 'Rückgang'} vs. heute
+            {eomTrend ? '📈 Wachstum' : '📉 Rückgang'} vs. heute
           </Badge>
         </Flex>
         <Text className="mt-2 text-sm text-gray-600">
