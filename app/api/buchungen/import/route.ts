@@ -523,8 +523,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     }
     // Also try to extract invoice number from existing details for matching
     else if (details) {
-      // Try to extract invoice number from details like "Invoice #12345 - Customer Name"
-      const invoiceMatch = details.match(/Invoice #(\w+)/i);
+      // Try to extract invoice number from details like "12345 - Customer Name" or "Invoice #12345 - Customer Name" 
+      const invoiceMatch = details.match(/(?:Invoice #)?(\w+) - /i);
       if (invoiceMatch) {
         const extractedInvoiceNumber = invoiceMatch[1].toLowerCase();
         existingByInvoiceId.set(extractedInvoiceNumber, {
@@ -612,9 +612,9 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
       // Build details with invoice number prominently displayed
       let details;
       if (invoiceNumber) {
-        // Format: "Invoice #12345 - Customer Name (CustomerNumber)"
+        // Format: "12345 - Customer Name (CustomerNumber)"
         const customerInfo = customerNumber ? `${customer} (${customerNumber})` : customer;
-        details = `Invoice #${invoiceNumber} - ${customerInfo}`;
+        details = `${invoiceNumber} - ${customerInfo}`;
       } else {
         // Fallback to old format if no invoice number
         details = customerNumber ? `${customer} ${customerNumber}` : `${customer}`;
