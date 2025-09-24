@@ -510,6 +510,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string }>();
   for (const inv of existingInvoices || []) {
     const invId = (inv as any).invoice_id as string | null;
+    const details = (inv as any).details as string;
     
     // If invoice_id is set, use it
     if (invId) {
@@ -517,17 +518,30 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         id: (inv as any).id,
         amount: (inv as any).amount,
         date: (inv as any).date,
-        details: (inv as any).details
+        details: details
       });
     }
-    // If no invoice_id, but we can compute one from details, add it too
-    else if ((inv as any).details) {
-      const computedInvoiceId = String((inv as any).details).trim().toLowerCase();
+    // Also try to extract invoice number from existing details for matching
+    else if (details) {
+      // Try to extract invoice number from details like "Invoice #12345 - Customer Name"
+      const invoiceMatch = details.match(/Invoice #(\w+)/i);
+      if (invoiceMatch) {
+        const extractedInvoiceNumber = invoiceMatch[1].toLowerCase();
+        existingByInvoiceId.set(extractedInvoiceNumber, {
+          id: (inv as any).id,
+          amount: (inv as any).amount,
+          date: (inv as any).date,
+          details: details
+        });
+      }
+      
+      // Also add the full details as fallback
+      const computedInvoiceId = String(details).trim().toLowerCase();
       existingByInvoiceId.set(computedInvoiceId, {
         id: (inv as any).id,
         amount: (inv as any).amount,
         date: (inv as any).date,
-        details: (inv as any).details
+        details: details
       });
     }
   }
@@ -595,10 +609,18 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
       else parsedAmount = Number(amount);
       if (isNaN(parsedAmount)) continue;
 
-      // Build details and stable invoice_id
-      const details = customerNumber ? `${customer} ${customerNumber}` : `${customer}`;
+      // Build details with invoice number prominently displayed
+      let details;
+      if (invoiceNumber) {
+        // Format: "Invoice #12345 - Customer Name (CustomerNumber)"
+        const customerInfo = customerNumber ? `${customer} (${customerNumber})` : customer;
+        details = `Invoice #${invoiceNumber} - ${customerInfo}`;
+      } else {
+        // Fallback to old format if no invoice number
+        details = customerNumber ? `${customer} ${customerNumber}` : `${customer}`;
+      }
       
-      // Use invoice number if available, otherwise fall back to customer details
+      // Use invoice number as unique ID if available, otherwise fall back to customer details
       const invoiceId = invoiceNumber 
         ? String(invoiceNumber).trim().toLowerCase()
         : String(details).trim().toLowerCase();
