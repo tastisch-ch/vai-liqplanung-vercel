@@ -244,11 +244,17 @@ export function convertFixkostenToBuchungen(
   
   // For each fixed cost, generate transactions within the date range
   fixkosten.forEach(fixkosten => {
-    let currentDate = new Date(Math.max(fixkosten.start.getTime(), startDate.getTime()));
+    // Start from the fixkosten's original start date
+    let currentDate = new Date(fixkosten.start);
     
     // If fixed cost already ended before the start date, skip
     if (fixkosten.enddatum && fixkosten.enddatum < startDate) {
       return;
+    }
+    
+    // Find the first occurrence on or after the startDate
+    while (currentDate < startDate) {
+      currentDate = getNextOccurrence(currentDate, fixkosten.rhythmus);
     }
     
     // Generate occurrences until end date
