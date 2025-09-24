@@ -36,27 +36,6 @@ export function MonthlyCashflowTremor({ data }: Props) {
         yAxisWidth={80}
         showLegend={false}
         showGridLines={true}
-        showXAxis={true}
-        showYAxis={true}
-        animationDuration={1000}
-        customTooltip={({ active, payload, label }) => {
-          if (active && payload && payload.length) {
-            const value = payload[0].value as number;
-            const isPositive = value >= 0;
-            return (
-              <div className="bg-white p-3 shadow-lg rounded-lg border">
-                <p className="font-medium text-gray-900">{label}</p>
-                <p className={`text-sm ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-                  <span className="font-medium">
-                    {isPositive ? '📈 Gewinn: ' : '📉 Verlust: '}
-                  </span>
-                  {formatCHF(Math.abs(value))}
-                </p>
-              </div>
-            );
-          }
-          return null;
-        }}
       />
     </Card>
   );

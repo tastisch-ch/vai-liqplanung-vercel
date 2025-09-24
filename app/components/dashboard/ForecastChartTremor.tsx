@@ -81,42 +81,6 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
         yAxisWidth={80}
         showLegend={true}
         showGridLines={true}
-        animationDuration={1500}
-        fillOpacity={0.2}
-        strokeWidth={2}
-        curveType="monotone"
-        customTooltip={({ active, payload, label }) => {
-          if (active && payload && payload.length) {
-            const balance = payload[0].value as number;
-            const isNegative = balance < 0;
-            const dayDate = new Date(label);
-            const formattedDate = dayDate.toLocaleDateString('de-CH', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-            
-            return (
-              <div className="bg-white p-4 shadow-xl rounded-lg border border-gray-200">
-                <p className="font-medium text-gray-900 mb-2">{formattedDate}</p>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isNegative ? 'bg-red-500' : 'bg-blue-500'}`}></div>
-                  <p className={`font-semibold ${isNegative ? 'text-red-600' : 'text-blue-600'}`}>
-                    {formatCHF(balance)}
-                  </p>
-                </div>
-                {isNegative && (
-                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                    ⚠️ Kontostand im Minus
-                  </p>
-                )}
-              </div>
-            );
-          }
-          return null;
-        }}
-        showTooltip={true}
       />
     </Card>
   );
