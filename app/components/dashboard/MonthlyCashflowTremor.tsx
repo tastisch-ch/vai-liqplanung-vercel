@@ -21,11 +21,11 @@ export function MonthlyCashflowTremor({ data }: Props) {
   const getBarColor = (value: number) => value >= 0 ? 'emerald' : 'red';
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-200">
-      <Title className="text-2xl font-bold text-gray-800">Monatlicher Cashflow</Title>
-      <Subtitle className="text-gray-600 mt-1">
+    <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">Monatlicher Cashflow</h2>
+      <p className="text-gray-600 mb-8">
         Einnahmen vs. Ausgaben über die Zeit
-      </Subtitle>
+      </p>
       <BarChart
         className="mt-6"
         data={chartData}
@@ -37,6 +37,6 @@ export function MonthlyCashflowTremor({ data }: Props) {
         showLegend={false}
         showGridLines={true}
       />
-    </Card>
+    </div>
   );
 }

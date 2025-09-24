@@ -49,25 +49,24 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
   const valueFormatter = (number: number) => formatCHF(number);
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-200">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+    <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
         <div>
-          <Title className="text-2xl font-bold text-gray-800">Kontostand-Prognose</Title>
-          <Subtitle className="text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-gray-800">Kontostand-Prognose</h2>
+          <p className="text-gray-600 mt-1">
             Basierend auf geplantem Zahlungsplan und aktuellem Kontostand
-          </Subtitle>
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Badge 
-            color={trend ? "emerald" : "red"}
-            className="text-sm"
-          >
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+            trend ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+          }`}>
             {trend ? "📈 Aufwärtstrend" : "📉 Abwärtstrend"}
-          </Badge>
+          </span>
           {hasNegative && (
-            <Badge color="red" className="text-sm">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
               ⚠️ Warnung: Negativer Saldo
-            </Badge>
+            </span>
           )}
         </div>
       </div>
@@ -83,6 +82,6 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
         showLegend={true}
         showGridLines={true}
       />
-    </Card>
+    </div>
   );
 }

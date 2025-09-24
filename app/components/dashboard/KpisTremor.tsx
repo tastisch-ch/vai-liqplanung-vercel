@@ -30,75 +30,111 @@ export function KpisTremor({
   const runwayProgress = Math.min((runwayMonths / 12) * 100, 100);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       {/* Current Balance */}
-      <Card className="p-6 bg-gradient-to-br from-white to-gray-50 border-l-4 border-l-emerald-500 shadow-lg">
-        <div className="flex justify-between items-start">
+      <div className="group relative overflow-hidden bg-white rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-blue-50/30"></div>
+        <div className="relative p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              </svg>
+            </div>
+            <Badge 
+              color={balanceHealth}
+              className="px-3 py-1 text-xs font-semibold"
+            >
+              {balanceHealth === 'emerald' ? '💚 Gesund' : 
+               balanceHealth === 'yellow' ? '⚠️ Achtung' : '🚨 Kritisch'}
+            </Badge>
+          </div>
           <div>
-            <Text className="text-gray-600 font-medium">Aktueller Kontostand</Text>
-            <Metric className={`mt-2 text-3xl font-bold ${
+            <p className="text-sm font-medium text-gray-600 mb-2">Aktueller Kontostand</p>
+            <p className={`text-4xl font-bold mb-1 ${
               balanceHealth === 'emerald' ? 'text-emerald-600' : 
               balanceHealth === 'yellow' ? 'text-yellow-600' : 'text-red-600'
             }`}>
               {formatCHF(currentBalance)}
-            </Metric>
+            </p>
+            <p className="text-xs text-gray-500">
+              Stand: {new Date().toLocaleDateString('de-CH')}
+            </p>
           </div>
-          <Badge 
-            color={balanceHealth}
-            className="text-xs"
-          >
-            {balanceHealth === 'emerald' ? '💚 Gesund' : 
-             balanceHealth === 'yellow' ? '⚠️ Achtung' : '🚨 Kritisch'}
-          </Badge>
         </div>
-        <Text className="mt-4 text-sm text-gray-500">
-          Stand: {new Date().toLocaleDateString('de-CH')}
-        </Text>
-      </Card>
+      </div>
 
       {/* 30-Day Net */}
-      <Card className="p-6 bg-gradient-to-br from-white to-gray-50 border-l-4 border-l-blue-500 shadow-lg">
-        <Text className="text-gray-600 font-medium">Netto 30 Tage</Text>
-        <Metric className={`mt-2 text-3xl font-bold ${net30 >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-          {formatCHF(net30)}
-        </Metric>
-        <div className="mt-4 flex gap-4">
-          <div className="text-sm">
-            <span className="text-emerald-600">📈 Eingehend:</span>
-            <div className="font-semibold">{formatCHF(openIncoming.sum)}</div>
+      <div className="group relative overflow-hidden bg-white rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/30"></div>
+        <div className="relative p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+            </div>
+            <Badge color={net30 >= 0 ? "emerald" : "red"} className="px-3 py-1 text-xs font-semibold">
+              {openIncoming.count + openOutgoing.count} Transaktionen
+            </Badge>
           </div>
-          <div className="text-sm">
-            <span className="text-red-600">📉 Ausgehend:</span>
-            <div className="font-semibold">{formatCHF(openOutgoing.sum)}</div>
+          <div>
+            <p className="text-sm font-medium text-gray-600 mb-2">Netto 30 Tage</p>
+            <p className={`text-4xl font-bold mb-4 ${net30 >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              {formatCHF(net30)}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-emerald-50 p-3 rounded-lg">
+                <p className="text-xs text-emerald-600 font-medium">Eingehend</p>
+                <p className="text-lg font-bold text-emerald-700">{formatCHF(openIncoming.sum)}</p>
+              </div>
+              <div className="bg-red-50 p-3 rounded-lg">
+                <p className="text-xs text-red-600 font-medium">Ausgehend</p>
+                <p className="text-lg font-bold text-red-700">{formatCHF(openOutgoing.sum)}</p>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="mt-4">
-          <Badge color={net30 >= 0 ? "emerald" : "red"} size="xs">
-            {openIncoming.count + openOutgoing.count} geplante Transaktionen
-          </Badge>
-        </div>
-      </Card>
+      </div>
 
       {/* Financial Runway */}
-      <Card className="p-6 bg-gradient-to-br from-white to-gray-50 border-l-4 border-l-purple-500 shadow-lg">
-        <div className="w-full">
-          <Text className="text-gray-600 font-medium">Finanzielle Reichweite</Text>
-          <Metric className={`mt-2 text-3xl font-bold ${
-            runwayHealth === 'emerald' ? 'text-emerald-600' : 
-            runwayHealth === 'yellow' ? 'text-yellow-600' : 'text-red-600'
-          }`}>
-            {runwayMonths.toFixed(1)} Monate
-          </Metric>
-          <ProgressBar 
-            value={runwayProgress} 
-            color={runwayHealth}
-            className="mt-4"
-          />
+      <div className="group relative overflow-hidden bg-white rounded-2xl shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/30"></div>
+        <div className="relative p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <Badge 
+              color={runwayHealth}
+              className="px-3 py-1 text-xs font-semibold"
+            >
+              {runwayHealth === 'emerald' ? 'Sicher' : runwayHealth === 'yellow' ? 'Achtung' : 'Kritisch'}
+            </Badge>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600 mb-2">Finanzielle Reichweite</p>
+            <p className={`text-4xl font-bold mb-4 ${
+              runwayHealth === 'emerald' ? 'text-emerald-600' : 
+              runwayHealth === 'yellow' ? 'text-yellow-600' : 'text-red-600'
+            }`}>
+              {runwayMonths.toFixed(1)} Monate
+            </p>
+            <div className="mb-3">
+              <ProgressBar 
+                value={runwayProgress} 
+                color={runwayHealth}
+                className="h-3"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Bei aktuellem Ausgabeniveau
+            </p>
+          </div>
         </div>
-        <Text className="mt-4 text-sm text-gray-500">
-          Bei aktuellem Ausgabeniveau
-        </Text>
-      </Card>
+      </div>
 
       {/* End of Month Forecast */}
       <Card className="p-6 bg-gradient-to-br from-white to-gray-50 border-l-4 border-l-indigo-500 shadow-lg">

@@ -10,7 +10,7 @@ import { loadBuchungen } from '@/lib/services/buchungen';
 import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixkosten';
 import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
 import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
-import { KpisTremor } from '@/app/components/dashboard/KpisTremor';
+import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
 import { ForecastChartTremor } from '@/app/components/dashboard/ForecastChartTremor';
 import { MonthlyCashflowTremor } from '@/app/components/dashboard/MonthlyCashflowTremor';
 import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
@@ -179,7 +179,7 @@ export default function DashboardPage() {
       
       <Alerts currentBalance={currentBalance} runwayMonths={kpi.runwayMonths} firstNegativeDate={kpi.firstNegative} />
 
-      <KpisTremor
+      <ModernKpiCards
         currentBalance={currentBalance}
         net30={kpi.net30}
         runwayMonths={kpi.runwayMonths}
