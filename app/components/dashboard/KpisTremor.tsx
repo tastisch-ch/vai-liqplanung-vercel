@@ -61,14 +61,14 @@ export function KpisTremor({
         <Metric className={net30 >= 0 ? 'text-emerald-600' : 'text-red-600'}>
           {formatCHF(net30)}
         </Metric>
-        <Flex className="mt-4" justifyContent="start" spaceX="space-x-2">
+        <div className="mt-4 flex gap-4">
           <Text className="text-sm">
             📈 Eingehend: {formatCHF(openIncoming.sum)}
           </Text>
           <Text className="text-sm">
             📉 Ausgehend: {formatCHF(openOutgoing.sum)}
           </Text>
-        </Flex>
+        </div>
         <div className="mt-2">
           <Badge color={net30 >= 0 ? "emerald" : "red"} size="xs">
             {openIncoming.count + openOutgoing.count} geplante Transaktionen
@@ -105,13 +105,13 @@ export function KpisTremor({
         <Metric className={eomForecast >= 0 ? 'text-emerald-600' : 'text-red-600'}>
           {formatCHF(eomForecast)}
         </Metric>
-        <Flex className="mt-4" justifyContent="start">
+        <div className="mt-4">
           <Badge 
             color={eomTrend ? "emerald" : "red"}
           >
             {eomTrend ? '📈 Wachstum' : '📉 Rückgang'} vs. heute
           </Badge>
-        </Flex>
+        </div>
         <Text className="mt-2 text-sm text-gray-600">
           Differenz: {formatCHF(eomForecast - currentBalance)}
         </Text>
@@ -121,7 +121,7 @@ export function KpisTremor({
       <Card className="max-w-full col-span-2">
         <Text>Offene Transaktionen</Text>
         <div className="mt-4 space-y-3">
-          <Flex>
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
               <Text>Eingehende Zahlungen</Text>
@@ -134,9 +134,9 @@ export function KpisTremor({
                 {openIncoming.count} Transaktionen
               </Text>
             </div>
-          </Flex>
+          </div>
           
-          <Flex>
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <Text>Ausgehende Zahlungen</Text>
@@ -149,7 +149,7 @@ export function KpisTremor({
                 {openOutgoing.count} Transaktionen
               </Text>
             </div>
-          </Flex>
+          </div>
         </div>
       </Card>
     </Grid>
