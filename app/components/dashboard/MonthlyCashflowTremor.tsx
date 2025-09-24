@@ -21,9 +21,9 @@ export function MonthlyCashflowTremor({ data }: Props) {
   const getBarColor = (value: number) => value >= 0 ? 'emerald' : 'red';
 
   return (
-    <Card className="max-w-full">
-      <Title>Monatlicher Cashflow</Title>
-      <Subtitle>
+    <Card className="p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-200">
+      <Title className="text-2xl font-bold text-gray-800">Monatlicher Cashflow</Title>
+      <Subtitle className="text-gray-600 mt-1">
         Einnahmen vs. Ausgaben über die Zeit
       </Subtitle>
       <BarChart

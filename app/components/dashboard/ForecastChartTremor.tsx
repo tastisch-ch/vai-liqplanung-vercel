@@ -49,27 +49,28 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
   const valueFormatter = (number: number) => formatCHF(number);
 
   return (
-    <Card className="max-w-full">
-      <Flex>
+    <Card className="p-6 bg-gradient-to-br from-white to-gray-50 shadow-lg border border-gray-200">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <Title>Kontostand-Prognose</Title>
-          <Subtitle>
+          <Title className="text-2xl font-bold text-gray-800">Kontostand-Prognose</Title>
+          <Subtitle className="text-gray-600 mt-1">
             Basierend auf geplantem Zahlungsplan und aktuellem Kontostand
           </Subtitle>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Badge 
             color={trend ? "emerald" : "red"}
+            className="text-sm"
           >
             {trend ? "📈 Aufwärtstrend" : "📉 Abwärtstrend"}
           </Badge>
           {hasNegative && (
-            <Badge color="red">
+            <Badge color="red" className="text-sm">
               ⚠️ Warnung: Negativer Saldo
             </Badge>
           )}
         </div>
-      </Flex>
+      </div>
       
       <AreaChart
         className="mt-6"
