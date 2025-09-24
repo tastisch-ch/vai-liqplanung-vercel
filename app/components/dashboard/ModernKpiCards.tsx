@@ -30,9 +30,7 @@ export function ModernKpiCards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {/* Current Balance */}
-      <div className="group relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-emerald-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-emerald-100 rounded-lg">
               <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,13 +58,10 @@ export function ModernKpiCards({
               Stand: {new Date().toLocaleDateString('de-CH')}
             </p>
           </div>
-        </div>
       </div>
 
       {/* 30-Day Net */}
-      <div className="group relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-blue-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-blue-100 rounded-lg">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,13 +82,10 @@ export function ModernKpiCards({
               <span className="text-red-600">-{formatCHF(openOutgoing.sum)}</span>
             </div>
           </div>
-        </div>
       </div>
 
       {/* Financial Runway */}
-      <div className="group relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-purple-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-purple-100 rounded-lg">
               <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,13 +122,10 @@ export function ModernKpiCards({
               </div>
             </div>
           </div>
-        </div>
       </div>
 
       {/* EOM Forecast */}
-      <div className="group relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-        <div className="relative bg-white rounded-2xl p-6 shadow-xl border border-gray-100">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-indigo-200">
           <div className="flex items-center justify-between mb-4">
             <div className="p-2 bg-indigo-100 rounded-lg">
               <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +147,6 @@ export function ModernKpiCards({
               Δ {formatCHF(eomForecast - currentBalance)}
             </p>
           </div>
-        </div>
       </div>
 
       {/* Open Transactions Summary - Full Width */}
