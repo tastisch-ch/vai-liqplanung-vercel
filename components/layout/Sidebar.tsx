@@ -187,7 +187,14 @@ export default function Sidebar() {
       {isAuthenticated && (
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-700">💰 Kontostand</h3>
+            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+              <svg className="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M8 12h8"/>
+                <path d="M12 8v8"/>
+              </svg>
+              Kontostand
+            </h3>
             {!isBalanceEditing && !isLoadingBalance && (
               <button 
                 onClick={() => setIsBalanceEditing(true)}
