@@ -10,6 +10,7 @@ import { getCurrentBalance, setCurrentBalance } from '@/lib/services/daily-balan
 import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import Image from 'next/image';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -169,7 +170,7 @@ export default function Sidebar() {
       {/* Sidebar Header with logo + collapse */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <svg className="h-6 w-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          <Image src="/assets/vaios-logo.svg" alt="vaios" width={collapsed ? 28 : 110} height={24} priority />
           {!collapsed && <span className="font-semibold text-gray-800">Liq-Planung</span>}
         </div>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Sidebar einklappen/ausklappen">
@@ -208,9 +209,9 @@ export default function Sidebar() {
                 <path d="M8 12h8"/>
                 <path d="M12 8v8"/>
               </svg>
-              Kontostand
+              {!collapsed && 'Kontostand'}
             </h3>
-            {!isBalanceEditing && !isLoadingBalance && (
+            {!collapsed && !isBalanceEditing && !isLoadingBalance && (
               <button 
                 onClick={() => setIsBalanceEditing(true)}
                 className="text-xs text-blue-600 hover:text-blue-800"
@@ -220,62 +221,63 @@ export default function Sidebar() {
               </button>
             )}
           </div>
-          
-          {isBalanceEditing ? (
-            <div className="mb-2">
-              <input
-                type="text"
-                value={kontostandInput}
-                onChange={(e) => setKontostandInput(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-right"
-                disabled={isReadOnly}
-                autoFocus
-              />
-              <div className="flex justify-end mt-2 space-x-2">
-                <button
-                  onClick={() => {
-                    setIsBalanceEditing(false);
-                    setKontostandInput(formatCHF(startBalance));
-                  }}
-                  className="px-2 py-1 text-xs text-gray-700 border border-gray-300 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={updateKontostand}
-                  className="px-2 py-1 text-xs text-white bg-blue-600 rounded"
+          {!collapsed && (
+            isBalanceEditing ? (
+              <div className="mb-2">
+                <input
+                  type="text"
+                  value={kontostandInput}
+                  onChange={(e) => setKontostandInput(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-right"
                   disabled={isReadOnly}
-                >
-                  Save
-                </button>
-              </div>
-              {kontostandError && (
-                <p className="mt-1 text-xs text-red-600">
-                  Bitte gib einen gültigen Betrag ein
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-gray-50 rounded p-3">
-              {isLoadingBalance ? (
-                <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
-              ) : (
-                <>
-                  <p className="text-xl font-bold text-gray-900">
-                    {formatCHF(startBalance)}
+                  autoFocus
+                />
+                <div className="flex justify-end mt-2 space-x-2">
+                  <button
+                    onClick={() => {
+                      setIsBalanceEditing(false);
+                      setKontostandInput(formatCHF(startBalance));
+                    }}
+                    className="px-2 py-1 text-xs text-gray-700 border border-gray-300 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={updateKontostand}
+                    className="px-2 py-1 text-xs text-white bg-blue-600 rounded"
+                    disabled={isReadOnly}
+                  >
+                    Save
+                  </button>
+                </div>
+                {kontostandError && (
+                  <p className="mt-1 text-xs text-red-600">
+                    Bitte gib einen gültigen Betrag ein
                   </p>
-                  <p className="text-xs text-gray-500">Aktueller Kontostand</p>
-                  {lastUpdated && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Letzte Aktualisierung: {' '}
-                      <span title={format(new Date(lastUpdated), 'dd.MM.yyyy HH:mm', { locale: de })}>
-                        vor {formatDistanceToNow(new Date(lastUpdated), { locale: de })}
-                      </span>
+                )}
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded p-3">
+                {isLoadingBalance ? (
+                  <div className="animate-pulse h-6 bg-gray-200 rounded"></div>
+                ) : (
+                  <>
+                    <p className="text-xl font-bold text-gray-900">
+                      {formatCHF(startBalance)}
                     </p>
-                  )}
-                </>
-              )}
-            </div>
+                    <p className="text-xs text-gray-500">Aktueller Kontostand</p>
+                    {lastUpdated && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Letzte Aktualisierung: {' '}
+                        <span title={format(new Date(lastUpdated), 'dd.MM.yyyy HH:mm', { locale: de })}>
+                          vor {formatDistanceToNow(new Date(lastUpdated), { locale: de })}
+                        </span>
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )
           )}
         </div>
       )}
