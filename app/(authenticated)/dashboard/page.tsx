@@ -13,10 +13,7 @@ import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
 import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
 import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChart';
 // Removed charts after balance chart for now
-import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
-import { OverdueInvoices } from '@/app/components/dashboard/OverdueInvoices';
-import { TopOutflows } from '@/app/components/dashboard/TopOutflows';
-import { SimulationImpact } from '@/app/components/dashboard/SimulationImpact';
+// Lists removed for now
 import { Alerts } from '@/app/components/dashboard/Alerts';
 
 export default function DashboardPage() {
@@ -139,14 +136,7 @@ export default function DashboardPage() {
   const lmEnd = endOfMonth(subMonths(today, 1));
   // breakdown removed with charts
 
-  const upcoming = useMemo(() => {
-    const in14 = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
-    return enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in14).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10);
-  }, [enhanced]);
-
-  const overdue = useMemo(() => enhanced.filter(t => (t as any).is_invoice && t.date < today).sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 10), [enhanced]);
-  const topOutflows = useMemo(() => { const in30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000); return enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= in30).sort((a, b) => b.amount - a.amount).slice(0, 5); }, [enhanced]);
-  const simulationImpact = useMemo(() => { const eom = endOfMonth(today); const sims = enhanced.filter(t => t.kategorie === 'Simulation' && t.date >= today && t.date <= eom); const delta = sims.reduce((s, t) => s + signed(t.amount, t.direction), 0); return { delta, items: sims.slice(0, 10) }; }, [enhanced]);
+  // Lists data removed for now
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -185,15 +175,7 @@ export default function DashboardPage() {
 
       {/* Charts after balance chart temporarily removed */}
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UpcomingPayments items={upcoming} />
-        <OverdueInvoices items={overdue} />
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopOutflows items={topOutflows} />
-        <SimulationImpact delta={simulationImpact.delta} items={simulationImpact.items} />
-      </div>
+      {/* Lists temporarily removed */}
     </div>
   );
 } 
