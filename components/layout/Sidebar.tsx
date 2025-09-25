@@ -72,11 +72,19 @@ export default function Sidebar() {
 
   // Smooth fade-in of balance content when expanding
   const [balanceOpacity, setBalanceOpacity] = useState(0);
+  const [showExpandedContent, setShowExpandedContent] = useState(false);
   useEffect(() => {
     if (!collapsed) {
-      setBalanceOpacity(0);
-      const r = requestAnimationFrame(() => setBalanceOpacity(1));
-      return () => cancelAnimationFrame(r);
+      // wait for width transition to finish then reveal content
+      const t = setTimeout(() => {
+        setShowExpandedContent(true);
+        setBalanceOpacity(0);
+        const r = requestAnimationFrame(() => setBalanceOpacity(1));
+        return () => cancelAnimationFrame(r);
+      }, 250);
+      return () => clearTimeout(t);
+    } else {
+      setShowExpandedContent(false);
     }
   }, [collapsed]);
 
@@ -215,7 +223,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-[calc(100vh-1.5rem)] flex flex-col`}>
+    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-[calc(100vh-1.5rem)] flex flex-col transition-[width] duration-300`}>
       {/* Sidebar Header with logo + collapse */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-center">
         <div className="flex items-center gap-3">
@@ -272,7 +280,7 @@ export default function Sidebar() {
               </button>
             )}
           </div>
-          {!collapsed && (
+          {showExpandedContent && (
             <div className={`transition-opacity duration-300 ease-out ${balanceOpacity ? 'opacity-100' : 'opacity-0'}`} style={{width: '100%'}}>
             {isBalanceEditing ? (
               <div className="mb-2">
