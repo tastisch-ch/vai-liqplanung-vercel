@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RiArrowRightUpLine, RiCloseLine } from '@remixicon/react';
 import { LineChart } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
@@ -33,25 +33,21 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     );
   }
 
-  // Transform data for AreaChart
-  const chartData = points.map(p => {
-    const date = new Date(p.date);
-    const formattedDate = date.toLocaleDateString('de-CH', { 
-      month: 'short', 
-      day: 'numeric' 
+  // Transform data for LineChart (memoized)
+  const chartData = useMemo(() => {
+    return points.map(p => {
+      const d = new Date(p.date);
+      const label = d.toLocaleDateString('de-CH', { month: 'short', day: 'numeric' });
+      return { date: label, Kontostand: p.balance };
     });
-    
-    return {
-      date: formattedDate,
-      'Kontostand': p.balance,
-    };
-  });
+  }, [points]);
 
-  // Get current balance
-  const currentBalance = points[0]?.balance || 0;
-  const finalBalance = points[points.length - 1]?.balance || 0;
-  const isIncreasing = finalBalance > currentBalance;
-  const hasNegativeBalance = points.some(p => p.balance < 0);
+  // Derived metrics (memoized)
+  const firstBalance = useMemo(() => points[0]?.balance || 0, [points]);
+  const currentBalance = useMemo(() => points[points.length - 1]?.balance || 0, [points]);
+  const isIncreasing = useMemo(() => currentBalance > firstBalance, [currentBalance, firstBalance]);
+  const hasNegativeBalance = useMemo(() => points.some(p => p.balance < 0), [points]);
+  const firstNegativeDate = useMemo(() => points.find(p => p.balance < 0)?.date || null, [points]);
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -65,7 +61,10 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         colors={['blue']}
         showLegend={false}
         valueFormatter={valueFormatter}
-        showYAxis={false}
+        showYAxis={true}
+        yAxisWidth={60}
+        showXAxis={true}
+        showGridLines={true}
         className="mt-6 hidden h-48 sm:block"
       />
       
@@ -82,57 +81,55 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
       />
 
       {isWarningOpen && hasNegativeBalance ? (
-        <div className="relative mt-4 rounded-tremor-small border border-tremor-border bg-tremor-background-muted p-4 dark:border-dark-tremor-border dark:bg-dark-tremor-background-subtle">
+        <div className="relative mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="flex items-center space-x-2.5">
             <RiArrowRightUpLine
-              className="size-5 shrink-0 text-red-600 dark:text-red-500"
+              className="size-5 shrink-0 text-red-600"
               aria-hidden={true}
             />
-            <h4 className="text-tremor-default font-medium text-red-600 dark:text-red-500">
-              Liquiditätswarnung erkannt
+            <h4 className="text-sm font-medium text-red-700">
+              Negativer Kontostand erwartet{firstNegativeDate ? ` ab ${new Date(firstNegativeDate).toLocaleDateString('de-CH')}` : ''}
             </h4>
           </div>
           <div className="absolute right-0 top-0 pr-1 pt-1">
             <button
               type="button"
-              className="rounded-tremor-small p-1 text-tremor-content-subtle hover:text-tremor-content dark:text-dark-tremor-content-subtle hover:dark:text-tremor-content"
+              className="rounded-md p-1 text-gray-400 hover:text-gray-600"
               onClick={() => setIsWarningOpen(false)}
               aria-label="Close"
             >
               <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
             </button>
           </div>
-          <p className="mt-2 text-tremor-default leading-6 text-tremor-content dark:text-dark-tremor-content">
-            Die Prognose zeigt einen negativen Kontostand in der kommenden Periode. 
-            Überprüfen Sie Ihre Zahlungspläne und erwägen Sie Maßnahmen zur Liquiditätssicherung.
+          <p className="mt-2 text-sm leading-6 text-red-800">
+            Prognose fällt unter 0. Bitte Planung prüfen.
           </p>
         </div>
       ) : null}
 
       {isPositiveOpen && isIncreasing && !hasNegativeBalance ? (
-        <div className="relative mt-4 rounded-tremor-small border border-tremor-border bg-tremor-background-muted p-4 dark:border-dark-tremor-border dark:bg-dark-tremor-background-subtle">
+        <div className="relative mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-center space-x-2.5">
             <RiArrowRightUpLine
-              className="size-5 shrink-0 text-tremor-brand dark:text-dark-tremor-brand"
+              className="size-5 shrink-0 text-emerald-600"
               aria-hidden={true}
             />
-            <h4 className="text-tremor-default font-medium text-tremor-brand dark:text-dark-tremor-brand">
+            <h4 className="text-sm font-medium text-emerald-700">
               Positive Entwicklung erwartet
             </h4>
           </div>
           <div className="absolute right-0 top-0 pr-1 pt-1">
             <button
               type="button"
-              className="rounded-tremor-small p-1 text-tremor-content-subtle hover:text-tremor-content dark:text-dark-tremor-content-subtle hover:dark:text-tremor-content"
+              className="rounded-md p-1 text-gray-400 hover:text-gray-600"
               onClick={() => setIsPositiveOpen(false)}
               aria-label="Close"
             >
               <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
             </button>
           </div>
-          <p className="mt-2 text-tremor-default leading-6 text-tremor-content dark:text-dark-tremor-content">
-            Ihr Kontostand zeigt eine positive Entwicklung über die Prognoseperiode. 
-            Die aktuelle Finanzplanung verläuft planmäßig.
+          <p className="mt-2 text-sm leading-6 text-emerald-800">
+            Kontostand steigt über den Zeitraum.
           </p>
         </div>
       ) : null}
