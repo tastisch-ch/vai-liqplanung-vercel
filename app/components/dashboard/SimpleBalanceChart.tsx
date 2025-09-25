@@ -56,6 +56,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         showYAxis={true}
         yAxisWidth={64}
         showGridLines={true}
+        maxYTicks={6}
         className="mt-6 hidden h-48 sm:block"
       />
       
@@ -68,6 +69,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         valueFormatter={valueFormatter}
         startEndOnly={true}
         showYAxis={false}
+        maxXTicks={6}
         className="mt-6 h-48 sm:hidden"
       />
     </div>
