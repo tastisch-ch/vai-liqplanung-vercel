@@ -65,6 +65,9 @@ export default function PlanningFilters(props: Props) {
               value={{ from: startDate, to: endDate }}
               onChange={(r)=> onDateRangeChange(r?.from, r?.to)}
               enableYearNavigation
+              toDate={new Date()}
+              placeholder="Zeitraum wählen"
+              translations={{ cancel: 'Abbrechen', apply: 'Übernehmen', range: 'Zeiträume' }}
             />
           </div>
         </div>
