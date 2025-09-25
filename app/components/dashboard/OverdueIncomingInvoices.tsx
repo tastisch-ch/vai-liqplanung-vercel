@@ -40,7 +40,7 @@ export function OverdueIncomingInvoices({ items }: Props) {
               className="relative flex w-full items-center space-x-3 rounded-lg bg-gray-50 p-2 hover:bg-gray-100"
             >
               <span className="inline-flex min-w-20 justify-center rounded bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white">
-                {invoice || '–'}
+                {invoice ? String(invoice).toUpperCase() : '–'}
               </span>
               <p className="flex w-full items-center justify-between space-x-4 truncate text-sm font-medium">
                 <span className="truncate text-gray-700">
