@@ -26,17 +26,19 @@ export function MonthlyCashflowTremor({ data }: Props) {
       <p className="text-gray-600 mb-8">
         Einnahmen vs. Ausgaben über die Zeit
       </p>
-      <BarChart
-        className="mt-6"
-        data={chartData}
-        index="month"
-        categories={['Cashflow']}
-        colors={['blue']}
-        valueFormatter={valueFormatter}
-        yAxisWidth={80}
-        showLegend={false}
-        showGridLines={true}
-      />
+      <div className="relative overflow-visible">
+        <BarChart
+          className="mt-6"
+          data={chartData}
+          index="month"
+          categories={['Cashflow']}
+          colors={['blue']}
+          valueFormatter={valueFormatter}
+          yAxisWidth={80}
+          showLegend={false}
+          showGridLines={true}
+        />
+      </div>
     </div>
   );
 }

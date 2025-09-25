@@ -1,0 +1,66 @@
+/* Global tooltip styles for Tremor/Recharts */
+.recharts-tooltip-wrapper {
+  z-index: 9999 !important;
+  pointer-events: none !important;
+}
+
+.recharts-default-tooltip {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  z-index: 9999 !important;
+  opacity: 1 !important;
+  padding: 16px !important;
+  min-width: 180px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.recharts-tooltip-label {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  padding-bottom: 4px !important;
+}
+
+.recharts-tooltip-item {
+  color: #374151 !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin: 4px 0 !important;
+}
+
+.recharts-tooltip-item-name {
+  margin-right: 8px !important;
+  color: #6b7280 !important;
+}
+
+.recharts-tooltip-item-value {
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+/* Ensure tooltips appear above everything */
+.recharts-surface {
+  overflow: visible !important;
+}
+
+.recharts-wrapper {
+  overflow: visible !important;
+}
+
+/* Specific styling for different chart types */
+.recharts-tooltip-item[data-key="Kontostand"] .recharts-tooltip-item-value {
+  color: #1d4ed8 !important;
+}
+
+.recharts-tooltip-item[data-key="Kritische Schwelle"] .recharts-tooltip-item-value {
+  color: #dc2626 !important;
+}
+
+.recharts-tooltip-item[data-key="Cashflow"] .recharts-tooltip-item-value {
+  color: #1d4ed8 !important;
+}

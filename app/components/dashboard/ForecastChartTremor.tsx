@@ -71,17 +71,19 @@ export function ForecastChartTremor({ isLoading, points }: Props) {
         </div>
       </div>
       
-      <AreaChart
-        className="mt-6"
-        data={chartData}
-        index="date"
-        categories={['Kontostand', 'Kritische Schwelle']}
-        colors={['blue', 'red']}
-        valueFormatter={valueFormatter}
-        yAxisWidth={80}
-        showLegend={true}
-        showGridLines={true}
-      />
+      <div className="relative overflow-visible">
+        <AreaChart
+          className="mt-6"
+          data={chartData}
+          index="date"
+          categories={['Kontostand', 'Kritische Schwelle']}
+          colors={['blue', 'red']}
+          valueFormatter={valueFormatter}
+          yAxisWidth={80}
+          showLegend={true}
+          showGridLines={true}
+        />
+      </div>
     </div>
   );
 }
