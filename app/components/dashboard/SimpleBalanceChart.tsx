@@ -17,8 +17,6 @@ interface Props { isLoading: boolean; points: Point[] }
 const valueFormatter = (number: number) => formatCHF(number);
 const axisFormatter = (n: number) =>
   new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
     maximumFractionDigits: 0,
   }).format(n);
 
