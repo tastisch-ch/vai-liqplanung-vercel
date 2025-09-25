@@ -18,6 +18,7 @@ export default function Sidebar() {
   const router = useRouter();
   const [isBalanceEditing, setIsBalanceEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [tooltip, setTooltip] = useState<{x:number; y:number; name:string; desc:string; visible:boolean}>({x:0,y:0,name:'',desc:'',visible:false});
   
   // Use our logger hook
   const logError = (err: unknown, message?: string) => {
@@ -142,22 +143,26 @@ export default function Sidebar() {
         <li key={link.path}>
           <Link 
             href={link.path}
-            className={`relative group flex items-center px-3 py-2 text-sm rounded-md
+            className={`relative flex items-center px-3 py-2 text-sm rounded-md
               ${pathname === link.path ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+            onMouseEnter={(e)=>{
+              if (!collapsed) return;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setTooltip({
+                x: rect.right + 8,
+                y: rect.top + rect.height/2,
+                name: link.name,
+                desc: link.description,
+                visible: true,
+              });
+            }}
+            onMouseLeave={()=>{ if (tooltip.visible) setTooltip(prev=>({...prev, visible:false})); }}
           >
             <span className="mr-3 text-gray-600 flex-shrink-0">{renderIcon(link.icon)}</span>
             {!collapsed && (
               <div className="min-w-0">
                 <div className="truncate">{link.name}</div>
                 <div className="text-xs text-gray-500 group-hover:text-gray-700">{link.description}</div>
-              </div>
-            )}
-            {collapsed && (
-              <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 hidden group-hover:block">
-                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
-                  <div className="text-sm font-medium text-gray-900 whitespace-nowrap">{link.name}</div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap">{link.description}</div>
-                </div>
               </div>
             )}
           </Link>
@@ -192,6 +197,15 @@ export default function Sidebar() {
           <Image src="/assets/vaios-logo.svg" alt="vaios" width={112} height={24} priority className={`${collapsed ? 'hidden' : 'block'}`} />
         </div>
       </div>
+      {/* Floating tooltip outside sidebar via fixed positioning */}
+      {collapsed && tooltip.visible && (
+        <div style={{ position:'fixed', top: tooltip.y, left: tooltip.x, transform:'translateY(-50%)' }} className="z-50">
+          <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
+            <div className="text-sm font-medium text-gray-900 whitespace-nowrap">{tooltip.name}</div>
+            <div className="text-xs text-gray-500 whitespace-nowrap">{tooltip.desc}</div>
+          </div>
+        </div>
+      )}
 
       {/* Account Section integrated */}
       {isAuthenticated && user && (
