@@ -17,6 +17,8 @@ import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChar
 import { Alerts } from '@/app/components/dashboard/Alerts';
 import { OverdueIncomingInvoices } from '@/app/components/dashboard/OverdueIncomingInvoices';
 import { CostStructureDonut } from '@/app/components/dashboard/CostStructureDonut';
+import { UpcomingLargeOutflows } from '@/app/components/dashboard/UpcomingLargeOutflows';
+import { SimulationEffectsCard } from '@/app/components/dashboard/SimulationEffectsCard';
 
 export default function DashboardPage() {
   const auth = useAuth();
@@ -139,6 +141,19 @@ export default function DashboardPage() {
     return Array.from(map.entries()).map(([name, amount]) => ({ name, amount }));
   }, [enhanced]);
 
+  const largeOutflows = useMemo(() => {
+    const today2 = startOfDay(new Date());
+    const in60 = new Date(today2.getTime() + 60 * 24 * 3600 * 1000);
+    return enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today2 && t.date <= in60 && t.amount >= 5000).sort((a,b)=> a.date.getTime() - b.date.getTime());
+  }, [enhanced]);
+
+  const effects = useMemo(() => {
+    const eom = endOfMonth(today);
+    const sims = enhanced.filter(t => t.kategorie === 'Simulation' && t.date >= today && t.date <= eom);
+    const delta = sims.reduce((s,t)=> s + (t.direction === 'Incoming' ? t.amount : -t.amount), 0);
+    return { sims, delta };
+  }, [enhanced]);
+
   // Lists data removed for now
 
   return (
@@ -183,6 +198,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <OverdueIncomingInvoices items={overdueIncoming} />
         <CostStructureDonut data={costStructure} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UpcomingLargeOutflows items={largeOutflows} />
+        <SimulationEffectsCard items={effects.sims} delta={effects.delta} />
       </div>
     </div>
   );
