@@ -64,7 +64,7 @@ export default function PlanningFilters(props: Props) {
               className="w-full border-tremor-border dark:border-dark-tremor-border"
               value={{ from: startDate, to: endDate }}
               onChange={(r)=> onDateRangeChange(r?.from, r?.to)}
-              toDate={undefined}
+              enableYearNavigation
             />
           </div>
         </div>

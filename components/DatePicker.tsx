@@ -10,12 +10,13 @@ type Props = {
   onChange?: (range: DateRange | undefined) => void;
   fromDate?: Date;
   toDate?: Date;
+  enableYearNavigation?: boolean;
   className?: string;
   id?: string;
   name?: string;
 };
 
-export function DateRangePicker({ value, onChange, fromDate, toDate, className, id, name }: Props) {
+export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearNavigation, className, id, name }: Props) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement | null>(null);
 
@@ -51,7 +52,7 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, className, 
         </span>
       </button>
       {open && (
-        <div className="absolute z-50 mt-2 rounded-tremor-default border border-tremor-border bg-white p-2 shadow-lg dark:border-dark-tremor-border dark:bg-dark-tremor-background">
+        <div className="absolute z-50 mt-2 rounded-tremor-default border border-tremor-border bg-white p-3 shadow-lg dark:border-dark-tremor-border dark:bg-dark-tremor-background">
           <DayPicker
             mode="range"
             selected={value}
@@ -59,7 +60,19 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, className, 
             fromDate={fromDate}
             toDate={toDate}
             weekStartsOn={1}
-            numberOfMonths={1}
+            numberOfMonths={2}
+            captionLayout={enableYearNavigation ? 'dropdown' : 'buttons'}
+            fromYear={fromDate?.getFullYear() ?? 2010}
+            toYear={(toDate ?? new Date()).getFullYear() + 1}
+            className="rdp-tremor"
+            modifiersClassNames={{
+              selected: 'bg-emerald-100 text-emerald-900 hover:bg-emerald-200',
+              range_start: 'bg-emerald-200 text-emerald-900',
+              range_end: 'bg-emerald-200 text-emerald-900',
+              range_middle: 'bg-emerald-50 text-emerald-900',
+              today: 'ring-1 ring-emerald-500',
+              outside: 'text-gray-300',
+            }}
           />
         </div>
       )}
