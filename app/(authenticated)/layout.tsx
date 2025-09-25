@@ -77,7 +77,7 @@ export default function AuthenticatedLayout({
         <div className="min-h-screen flex flex-col">
           <AuthNav onSidebarToggle={toggleSidebar} />
           
-          <div className="flex-grow flex flex-row">
+          <div className="flex-grow flex flex-row pt-16">
             {/* Sidebar - hidden on mobile by default unless toggled */}
             <div className={`
               ${isSidebarOpen ? 'block' : 'hidden'} 

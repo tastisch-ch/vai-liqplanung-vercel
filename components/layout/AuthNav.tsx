@@ -86,7 +86,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
   }
   
   return (
-    <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200 py-3 mb-4 shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200 py-3 shadow-sm">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
           {/* Sidebar toggle button for mobile */}
