@@ -30,7 +30,7 @@ export function CostStructureDonut({ data }: Props) {
         <span className="text-xs text-gray-500">{formatCHF(total)}</span>
       </div>
       <DonutChart
-        className="mt-6"
+        className="mt-6 h-72 sm:h-80"
         data={shares}
         category="amount"
         index="name"
