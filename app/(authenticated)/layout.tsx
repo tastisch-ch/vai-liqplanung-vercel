@@ -81,7 +81,7 @@ export default function AuthenticatedLayout({
             {/* Sidebar - hidden on mobile by default unless toggled */}
             <div className={`
               ${isSidebarOpen ? 'block' : 'hidden'} 
-              md:block fixed md:relative z-10 h-[calc(100vh-4rem)] md:h-auto
+              md:block fixed md:sticky md:top-16 md:self-start z-10 h-[calc(100vh-4rem)]
               shadow-lg md:shadow-none
             `}>
               <Sidebar />
