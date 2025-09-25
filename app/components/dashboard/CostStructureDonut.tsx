@@ -1,15 +1,16 @@
 'use client';
 
-import { DonutChart, List, ListItem } from '@tremor/react';
+import { List, ListItem } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip } from 'recharts';
 
 interface Item { name: string; amount: number }
 interface Props { data: Item[] }
 
 function classNames(...classes: string[]) { return classes.filter(Boolean).join(' '); }
 
-const palette = ['cyan', 'blue', 'indigo', 'violet', 'fuchsia', 'emerald', 'rose', 'amber'];
-const bgPalette = ['bg-cyan-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-fuchsia-500','bg-emerald-500','bg-rose-500','bg-amber-500'];
+const chartColors = ['#06b6d4','#3b82f6','#6366f1','#8b5cf6','#d946ef','#10b981','#f59e0b','#ef4444'];
+const bgPalette = ['bg-cyan-500','bg-blue-500','bg-indigo-500','bg-violet-500','bg-fuchsia-500','bg-emerald-500','bg-amber-500','bg-rose-500'];
 
 export function CostStructureDonut({ data }: Props) {
   const sorted = [...data].sort((a,b) => b.amount - a.amount);
@@ -29,20 +30,30 @@ export function CostStructureDonut({ data }: Props) {
         </div>
         <span className="text-xs text-gray-500">{formatCHF(total)}</span>
       </div>
-      <DonutChart
-        className="mt-6 h-72 sm:h-80"
-        data={shares}
-        category="amount"
-        index="name"
-        valueFormatter={(n:number)=>formatCHF(n)}
-        showTooltip={true}
-        colors={palette as any}
-      />
+      <div className="mt-6 h-72 sm:h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={shares}
+              dataKey="amount"
+              nameKey="name"
+              innerRadius={80}
+              outerRadius={120}
+              paddingAngle={1}
+            >
+              {shares.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
+              ))}
+            </Pie>
+            <RTooltip content={<CustomTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
       <p className="mt-6 flex items-center justify-between text-xs text-gray-500">
         <span>Kategorie</span>
         <span>Betrag / Anteil</span>
       </p>
-      <List className="mt-2">
+      <List className="mt-2 text-sm">
         {shares.map((item, i) => (
           <ListItem key={item.name} className="space-x-6">
             <div className="flex items-center space-x-2.5 truncate">
@@ -56,6 +67,21 @@ export function CostStructureDonut({ data }: Props) {
           </ListItem>
         ))}
       </List>
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null;
+  const p = payload[0];
+  const name = p?.payload?.name;
+  const amount = p?.payload?.amount as number;
+  const share = p?.payload?.share as string;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
+      <div className="text-xs text-gray-500 mb-1">{name}</div>
+      <div className="text-sm font-semibold text-gray-900">{formatCHF(amount)}</div>
+      <div className="text-xs text-gray-600 mt-0.5">{share}</div>
     </div>
   );
 }
