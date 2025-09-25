@@ -18,6 +18,25 @@ export default function Sidebar() {
   const router = useRouter();
   const [isBalanceEditing, setIsBalanceEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  // restore persisted collapsed state
+  useEffect(() => {
+    try {
+      const v = typeof window !== 'undefined' ? window.localStorage.getItem('sidebarCollapsed') : null;
+      if (v === '1') setCollapsed(true);
+    } catch {}
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed(prev => {
+      const next = !prev;
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('sidebarCollapsed', next ? '1' : '0');
+        }
+      } catch {}
+      return next;
+    });
+  };
   const [tooltip, setTooltip] = useState<{x:number; y:number; name:string; desc:string; visible:boolean}>({x:0,y:0,name:'',desc:'',visible:false});
   
   // Use our logger hook
@@ -328,7 +347,7 @@ export default function Sidebar() {
             </span>
           </button>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="mt-3 w-full flex items-center justify-center px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" aria-label="Sidebar einklappen/ausklappen">
+        <button onClick={toggleCollapsed} className="mt-3 w-full flex items-center justify-center px-3 py-2 rounded-md hover:bg-gray-100 text-gray-700" aria-label="Sidebar einklappen/ausklappen">
           {collapsed ? (
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           ) : (
