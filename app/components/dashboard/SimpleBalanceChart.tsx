@@ -50,7 +50,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     };
   });
 
-  // Get current balance
+  // Get current balance and memoize calculations
   const currentBalance = points[0]?.balance || 0;
   const finalBalance = points[points.length - 1]?.balance || 0;
   const isIncreasing = finalBalance > currentBalance;
@@ -60,13 +60,13 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    if (!isOpen && hasNegativeBalance) {
+    if (!isOpen) {
       timeoutId = setTimeout(() => {
         setIsOpen(true);
       }, 3000);
     }
     return () => clearTimeout(timeoutId);
-  }, [isOpen, hasNegativeBalance]);
+  }, [isOpen]);
 
   return (
     <Card className="sm:mx-auto sm:max-w-lg">
