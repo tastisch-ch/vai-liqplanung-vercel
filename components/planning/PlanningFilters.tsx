@@ -1,19 +1,8 @@
 'use client';
 
 import { ReactNode } from 'react';
-import {
-  Grid,
-  Flex,
-  TabGroup,
-  TabList,
-  Tab,
-  DateRangePicker,
-  MultiSelect,
-  MultiSelectItem,
-  TextInput,
-  Select,
-  SelectItem,
-} from '@tremor/react';
+import { Grid, Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem } from '@tremor/react';
+import { DateRangePicker as TremorDatePicker } from '@/components/DatePicker';
 import { Switch } from '@/components/ui/switch';
 
 type Props = {
@@ -71,16 +60,11 @@ export default function PlanningFilters(props: Props) {
         <div className="w-full">
           <label className="text-tremor-default font-medium text-gray-900">Zeitraum</label>
           <div className="mt-2 relative z-40">
-            <DateRangePicker
+            <TremorDatePicker
               className="w-full border-tremor-border dark:border-dark-tremor-border"
-              value={{ from: startDate as any, to: endDate as any }}
-              onValueChange={(v: { from?: Date|string; to?: Date|string }) => {
-                if (v?.from) onDateRangeChange(new Date(v.from), endDate);
-                if (v?.to) onDateRangeChange(startDate, new Date(v.to));
-              }}
-              enableSelect={false}
-              placeholder="Zeitraum wählen"
-              color="emerald"
+              value={{ from: startDate, to: endDate }}
+              onChange={(r)=> onDateRangeChange(r?.from, r?.to)}
+              toDate={undefined}
             />
           </div>
         </div>
