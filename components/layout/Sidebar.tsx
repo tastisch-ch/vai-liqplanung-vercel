@@ -40,11 +40,11 @@ export default function Sidebar() {
 
   // Core navigation links
   const navLinks = [
-    { name: 'Dashboard', path: '/dashboard', icon: '📊', description: 'Übersicht' },
-    { name: 'Planung', path: '/planung', icon: '📆', description: 'Finanzplanung' },
-    { name: 'Fixkosten', path: '/fixkosten', icon: '💸', description: 'Fixkosten verwalten' },
-    { name: 'Mitarbeiter', path: '/mitarbeiter', icon: '👥', description: 'Team verwalten' },
-    { name: 'Datenimport', path: '/datenimport', icon: '📥', description: 'CSV/Excel importieren' },
+    { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', description: 'Übersicht' },
+    { name: 'Planung', path: '/planung', icon: 'calendar', description: 'Finanzplanung' },
+    { name: 'Fixkosten', path: '/fixkosten', icon: 'wallet', description: 'Fixkosten verwalten' },
+    { name: 'Mitarbeiter', path: '/mitarbeiter', icon: 'users', description: 'Team verwalten' },
+    { name: 'Datenimport', path: '/datenimport', icon: 'import', description: 'CSV/Excel importieren' },
   ];
   
   // Admin links
@@ -56,7 +56,7 @@ export default function Sidebar() {
   type NavLink = {
     name: string;
     path: string;
-    icon: string;
+    icon: 'dashboard' | 'calendar' | 'wallet' | 'users' | 'import';
     description: string;
   };
 
@@ -133,7 +133,7 @@ export default function Sidebar() {
                 : 'text-gray-700 hover:bg-gray-100'}
             `}
           >
-            <span className="mr-3 text-lg">{link.icon}</span>
+            <span className="mr-3 text-gray-600">{renderIcon(link.icon)}</span>
             <div>
               <div>{link.name}</div>
               <div className="text-xs text-gray-500 group-hover:text-gray-700">{link.description}</div>
@@ -143,6 +143,21 @@ export default function Sidebar() {
       ))}
     </ul>
   );
+
+  function renderIcon(icon: NavLink['icon']) {
+    switch (icon) {
+      case 'dashboard':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>);
+      case 'calendar':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>);
+      case 'wallet':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h15a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2H6"/></svg>);
+      case 'users':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
+      case 'import':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>);
+    }
+  }
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">

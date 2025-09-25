@@ -86,7 +86,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
   }
   
   return (
-    <nav className="bg-white border-b border-gray-200 py-3 mb-4">
+    <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200 py-3 mb-4 shadow-sm">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
           {/* Sidebar toggle button for mobile */}
@@ -133,7 +133,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
             title="Daten importieren"
           >
             <span className="hidden md:inline">Import</span>
-            <span className="md:hidden">📥</span>
+            <svg className="md:hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           </Link>
           
           <button
@@ -142,7 +142,7 @@ export default function AuthNav({ onSidebarToggle }: AuthNavProps) {
             disabled={isSigningOut}
           >
             <span className="hidden md:inline">Abmelden</span>
-            <span className="md:hidden">🚪</span>
+            <svg className="md:hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           </button>
         </div>
       </div>
