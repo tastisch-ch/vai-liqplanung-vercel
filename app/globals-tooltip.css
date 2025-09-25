@@ -1,35 +1,10 @@
-/* Global tooltip styles for Tremor/Recharts */
-.recharts-tooltip-wrapper {
-  z-index: 99999 !important;
-}
+/* Minimal tooltip styling kept */
+.recharts-tooltip-wrapper { z-index: 99999; }
+.recharts-default-tooltip { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 25px -10px rgba(0,0,0,.25); padding: 12px 14px; min-width: 160px; }
 
-.recharts-default-tooltip {
-  background: #fff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.25) !important; /* subtle floating shadow */
-  z-index: 99999 !important;
-  opacity: 1 !important;
-  padding: 12px 14px !important;
-  min-width: 160px !important;
-}
+/* (label/items styles not needed anymore) */
 
-.recharts-tooltip-label {
-  color: #111827 !important;
-  font-weight: 600 !important;
-  margin-bottom: 8px !important;
-  font-size: 14px !important;
-  border-bottom: 1px solid #f3f4f6 !important;
-  padding-bottom: 4px !important;
-}
-
-.recharts-tooltip-item {
-  color: #374151 !important;
-  font-weight: 500 !important;
-  font-size: 13px !important;
-  line-height: 1.5 !important;
-  margin: 4px 0 !important;
-}
+/* -- */
 
 .recharts-tooltip-item-name {
   margin-right: 8px !important;
@@ -43,35 +18,13 @@
 
 /* Keep chart content clipped within container (default overflow behavior) */
 
-/* Specific styling for different chart types */
-.recharts-tooltip-item[data-key="Kontostand"] .recharts-tooltip-item-value {
-  color: #059669 !important;
-}
+/* -- */
 
-.recharts-tooltip-item[data-key="Kritische Schwelle"] .recharts-tooltip-item-value {
-  color: #dc2626 !important;
-}
+/* -- */
 
-.recharts-tooltip-item[data-key="Cashflow"] .recharts-tooltip-item-value {
-  color: #1d4ed8 !important;
-}
+/* -- */
 
-/* Ensure chart area colors match legend */
-.recharts-area[fill="var(--tremor-color-emerald-500)"] {
-  fill: #10b981 !important;
-}
-
-.recharts-area[fill="var(--tremor-color-red-500)"] {
-  fill: #ef4444 !important;
-}
-
-/* Legend color fixes */
-.recharts-legend-item-text {
-  color: #374151 !important;
-  font-weight: 500 !important;
-}
-
-/* Remove the rule that hid Tremor/Recharts default tooltip, so demos look native */
+/* -- */
 
 /* Subtle grid like Tremor demos */
 .recharts-cartesian-grid-horizontal line,

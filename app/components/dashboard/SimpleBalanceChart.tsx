@@ -52,6 +52,13 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
 
   // Get current balance
   const currentBalance = points[0]?.balance || 0;
+  // Domain calc with 10% padding and include 0
+  const values = points.map(p => p.balance);
+  const minV = Math.min(...values, 0);
+  const maxV = Math.max(...values, 0);
+  const pad = Math.max(1, Math.round((maxV - minV) * 0.1));
+  const domainMin = minV - pad;
+  const domainMax = maxV + pad;
 
   return (
     <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 overflow-hidden">
@@ -62,8 +69,8 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
           <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
-            <YAxis width={64} tickFormatter={axisFormatter as any} tick={{ fontSize: 12 }} />
-            <RTooltip content={<CustomTooltip />} />
+            <YAxis width={64} tickFormatter={axisFormatter as any} tick={{ fontSize: 12 }} domain={[domainMin, domainMax]} />
+            <RTooltip content={<CustomTooltip data={chartData} />} />
             <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
           </RLineChart>
         </ResponsiveContainer>
@@ -74,7 +81,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
           <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
-            <RTooltip content={<CustomTooltip />} />
+            <RTooltip content={<CustomTooltip data={chartData} />} />
             <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
           </RLineChart>
         </ResponsiveContainer>
@@ -83,13 +90,25 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   );
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label, data }: any) {
   if (!active || !payload || !payload.length) return null;
   const value = payload[0].value as number;
+  // find previous point for delta
+  const idx = data.findIndex((d: any) => d.date === label);
+  const prev = idx > 0 ? (data[idx - 1].Kontostand as number) : undefined;
+  const delta = prev !== undefined ? value - prev : undefined;
+  const deltaColor = delta !== undefined ? (delta >= 0 ? 'text-emerald-600' : 'text-red-600') : 'text-gray-500';
+  const [dd, mm] = label.split('.');
+  const displayDate = `${dd}.${mm}.`;
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
+      <div className="text-xs text-gray-500 mb-1">{displayDate}</div>
       <div className="text-sm font-semibold text-gray-900">{formatCHF(value)}</div>
+      {delta !== undefined && (
+        <div className={`text-xs mt-0.5 ${deltaColor}`}>
+          {delta >= 0 ? '+' : ''}{formatCHF(delta)} vs. Vortag
+        </div>
+      )}
     </div>
   );
 }
