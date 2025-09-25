@@ -66,7 +66,7 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6 relative z-30 overflow-visible">
       <Flex className="mb-4 items-center">
         <div className="inline-flex items-center gap-2">
           <span className="p-2 rounded-lg bg-blue-100">
@@ -91,7 +91,7 @@ export default function PlanningFilters(props: Props) {
             </TabList>
           </TabGroup>
         </div>
-        <div>
+        <div className="relative z-40">
           <DateRangePicker
             className="w-full"
             value={{ from: startDate as any, to: endDate as any }}
@@ -104,7 +104,7 @@ export default function PlanningFilters(props: Props) {
             color="emerald"
           />
         </div>
-        <div>
+        <div className="relative z-30">
           <TextInput
             className="w-full"
             value={searchText}
@@ -116,7 +116,7 @@ export default function PlanningFilters(props: Props) {
       </Grid>
 
       <Grid numItemsSm={1} numItemsLg={3} className="gap-4 mt-4">
-        <div>
+        <div className="relative z-40">
           <MultiSelect
             className="w-full"
             placeholder="Kategorien filtern"
