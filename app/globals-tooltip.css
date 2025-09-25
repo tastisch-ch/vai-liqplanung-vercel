@@ -1,19 +1,21 @@
 /* Global tooltip styles for Tremor/Recharts */
 .recharts-tooltip-wrapper {
-  z-index: 9999 !important;
+  z-index: 99999 !important;
   pointer-events: none !important;
+  position: relative !important;
 }
 
 .recharts-default-tooltip {
-  background: white !important;
+  background: rgba(255, 255, 255, 0.98) !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 12px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
-  z-index: 9999 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  z-index: 99999 !important;
   opacity: 1 !important;
   padding: 16px !important;
-  min-width: 180px !important;
-  backdrop-filter: blur(8px) !important;
+  min-width: 200px !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
 }
 
 .recharts-tooltip-label {
@@ -54,7 +56,7 @@
 
 /* Specific styling for different chart types */
 .recharts-tooltip-item[data-key="Kontostand"] .recharts-tooltip-item-value {
-  color: #1d4ed8 !important;
+  color: #059669 !important;
 }
 
 .recharts-tooltip-item[data-key="Kritische Schwelle"] .recharts-tooltip-item-value {
@@ -63,4 +65,30 @@
 
 .recharts-tooltip-item[data-key="Cashflow"] .recharts-tooltip-item-value {
   color: #1d4ed8 !important;
+}
+
+/* Ensure chart area colors match legend */
+.recharts-area[fill="var(--tremor-color-emerald-500)"] {
+  fill: #10b981 !important;
+}
+
+.recharts-area[fill="var(--tremor-color-red-500)"] {
+  fill: #ef4444 !important;
+}
+
+/* Legend color fixes */
+.recharts-legend-item-text {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+/* Custom tooltip container override */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  display: none !important;
+}
+
+/* Force custom tooltip to be visible */
+.recharts-tooltip-wrapper > div:not(.recharts-default-tooltip) {
+  z-index: 99999 !important;
+  position: relative !important;
 }
