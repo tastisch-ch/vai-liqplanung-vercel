@@ -12,8 +12,7 @@ import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/loh
 import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
 import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
 import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChart';
-import { ModernCashflowChart } from '@/app/components/dashboard/ModernCashflowChart';
-import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
+// Removed charts after balance chart for now
 import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
 import { OverdueInvoices } from '@/app/components/dashboard/OverdueInvoices';
 import { TopOutflows } from '@/app/components/dashboard/TopOutflows';
@@ -133,21 +132,12 @@ export default function DashboardPage() {
     return points;
   }, [enhanced, currentBalance]);
 
-  const monthlyData = useMemo(() => {
-    const map = new Map<string, number>();
-    enhanced.forEach(t => { const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, '0')}`; map.set(key, (map.get(key) || 0) + signed(t.amount, t.direction)); });
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([m, v]) => ({ month: m, value: v }));
-  }, [enhanced]);
+  // monthlyData removed with charts
 
   const today = startOfDay(new Date());
   const lmStart = startOfMonth(subMonths(today, 1));
   const lmEnd = endOfMonth(subMonths(today, 1));
-  const breakdown = useMemo(() => {
-    const lastMonthOutgoing = enhanced.filter(t => t.date >= lmStart && t.date <= lmEnd && t.direction === 'Outgoing');
-    const map = new Map<string, number>();
-    lastMonthOutgoing.forEach(t => { const cat = t.kategorie || 'Standard'; map.set(cat, (map.get(cat) || 0) + t.amount); });
-    return Array.from(map.entries()).map(([label, value]) => ({ label, value }));
-  }, [enhanced]);
+  // breakdown removed with charts
 
   const upcoming = useMemo(() => {
     const in14 = new Date(today.getTime() + 14 * 24 * 3600 * 1000);
@@ -193,10 +183,7 @@ export default function DashboardPage() {
         <div className="hidden lg:block" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ModernCashflowChart data={monthlyData} />
-        <CostBreakdown data={breakdown} />
-      </div>
+      {/* Charts after balance chart temporarily removed */}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <UpcomingPayments items={upcoming} />
