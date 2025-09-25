@@ -36,6 +36,7 @@ import {
   Select,
   SelectItem,
 } from "@tremor/react";
+import { Card, Title, Text, Divider } from "@tremor/react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -432,17 +433,15 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      {/* Filters Card using Tremor controls inside our card shell */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6 relative">
-        <div className="flex items-center justify-between mb-4">
-          <div className="inline-flex items-center gap-2">
-            <span className="p-2 rounded-lg bg-blue-100">
-              <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h18M3 10h18M3 16h18"/></svg>
-            </span>
-            <span className="text-sm text-gray-500">Filter</span>
+      {/* Filters with Tremor Blocks */}
+      <Card className="p-6">
+        <Flex className="mb-4 items-center">
+          <div className="grow">
+            <Title className="text-gray-900">Filter</Title>
+            <Text className="text-gray-500">Zeitraum, Suche und Kategorien einschränken</Text>
           </div>
           <Button onClick={() => setIsFormOpen(true)} className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">Neue Transaktion</Button>
-        </div>
+        </Flex>
         <Grid numItemsSm={1} numItemsLg={3} className="gap-4">
           <div>
             <TabGroup index={["monthly","quarterly","yearly"].indexOf(activeTab)} onIndexChange={(i)=>handleTabChange(["monthly","quarterly","yearly"][i] as string)}>
@@ -513,7 +512,7 @@ export default function Planung() {
             </Select>
           </div>
         </Grid>
-      </div>
+      </Card>
       {/* Content area */}
       {isLoading ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-pulse">
@@ -525,17 +524,11 @@ export default function Planung() {
           </div>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 text-center text-red-500">{error}</div>
+        <Card className="p-6 text-center text-red-500">{error}</Card>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="inline-flex items-center gap-2">
-              <span className="p-2 rounded-lg bg-emerald-100">
-                <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M12 3v18"/></svg>
-              </span>
-              <span className="text-sm text-gray-500">Transaktionen</span>
-            </div>
-          </div>
+        <Card className="p-6">
+          <Title className="text-gray-900 mb-2">Transaktionen</Title>
+          <Divider />
           <Table>
             <TableHead>
               <TableRow>
@@ -558,7 +551,7 @@ export default function Planung() {
                 const isIncome = transaction.direction === 'Incoming';
                 const amountClass = isIncome ? 'text-emerald-600' : 'text-red-600';
                 return (
-                  <TableRow key={transaction.id} className="bg-gray-50 hover:bg-gray-100">
+                  <TableRow key={transaction.id}>
                     <TableCell className="text-sm text-gray-600">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
                     <TableCell className="text-sm text-gray-900">{transaction.details}</TableCell>
                     <TableCell>
@@ -603,7 +596,7 @@ export default function Planung() {
               })}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {/* Delete confirmation dialog */}
