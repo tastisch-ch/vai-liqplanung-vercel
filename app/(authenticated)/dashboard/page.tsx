@@ -91,8 +91,9 @@ export default function DashboardPage() {
   }, [enhanced, currentBalance]);
 
   const forecastPoints = useMemo(() => {
-    // Robust daily projection: cumulative day sums from today's balance
+    // Robust daily projection: cumulative day sums starting from tomorrow
     const today = startOfDay(new Date());
+    const start = addDays(today, 1); // first point is always tomorrow
     const end = addMonths(today, timeRange);
     const keyOf = (d: Date) => {
       const y = d.getFullYear();
@@ -103,7 +104,7 @@ export default function DashboardPage() {
     // Sum of signed amounts per day for dates >= today
     const daySum = new Map<string, number>();
     for (const t of enhanced) {
-      if (t.date < today) continue;
+      if (t.date < start) continue; // ignore transactions dated today
       const k = keyOf(t.date);
       const s = t.direction === 'Incoming' ? t.amount : -t.amount;
       daySum.set(k, (daySum.get(k) || 0) + s);
@@ -111,7 +112,7 @@ export default function DashboardPage() {
     // Build contiguous list of days from today -> end
     let bal = currentBalance;
     const points: { date: string; balance: number }[] = [];
-    for (let d = today; d <= end; d = addDays(d, 1)) {
+    for (let d = start; d <= end; d = addDays(d, 1)) {
       const k = keyOf(d);
       bal += daySum.get(k) || 0;
       points.push({ date: k, balance: bal });
