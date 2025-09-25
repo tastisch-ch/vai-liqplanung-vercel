@@ -14,7 +14,11 @@ export function OverdueIncomingInvoices({ items }: Props) {
     <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">💶</span>
+          <svg className="w-6 h-6 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="9" x2="16" y2="9"></line>
+            <line x1="8" y1="13" x2="12" y2="13"></line>
+          </svg>
           <dt className="text-sm font-medium text-gray-600">Überfällige Kundenrechnungen</dt>
         </div>
         <span className="text-xs text-gray-500">{count} Rechnungen</span>
