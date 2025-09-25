@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RiArrowRightUpLine, RiCloseLine } from '@remixicon/react';
-import { AreaChart } from '@tremor/react';
+import { LineChart } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
 
 interface Point { date: string; balance: number }
@@ -58,25 +58,23 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
       <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       
-      <AreaChart
+      <LineChart
         data={chartData}
         index="date"
         categories={['Kontostand']}
         colors={['blue']}
         showLegend={false}
-        showGradient={false}
         valueFormatter={valueFormatter}
         showYAxis={false}
         className="mt-6 hidden h-48 sm:block"
       />
       
-      <AreaChart
+      <LineChart
         data={chartData}
         index="date"
         categories={['Kontostand']}
         colors={['blue']}
         showLegend={false}
-        showGradient={false}
         valueFormatter={valueFormatter}
         startEndOnly={true}
         showYAxis={false}

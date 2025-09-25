@@ -82,13 +82,4 @@
   font-weight: 500 !important;
 }
 
-/* Custom tooltip container override */
-.recharts-tooltip-wrapper .recharts-default-tooltip {
-  display: none !important;
-}
-
-/* Force custom tooltip to be visible */
-.recharts-tooltip-wrapper > div:not(.recharts-default-tooltip) {
-  z-index: 99999 !important;
-  position: relative !important;
-}
+/* Remove the rule that hid Tremor/Recharts default tooltip, so demos look native */
