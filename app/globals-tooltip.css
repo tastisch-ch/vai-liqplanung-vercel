@@ -91,14 +91,17 @@
   display: none !important;
 }
 
-/* Make default tooltip more minimal (not table-like) */
+/* Make tooltip more minimal (not table-like), regardless of class nesting */
+.recharts-tooltip-wrapper .recharts-tooltip-item-list,
 .recharts-default-tooltip .recharts-tooltip-item-list {
   margin: 0 !important;
   padding: 0 !important;
 }
-.recharts-tooltip-item-name {
+.recharts-tooltip-wrapper .recharts-tooltip-item-name,
+.recharts-default-tooltip .recharts-tooltip-item-name {
   display: none !important; /* hide series name since we only have one */
 }
-.recharts-tooltip-item-value {
+.recharts-tooltip-wrapper .recharts-tooltip-item-value,
+.recharts-default-tooltip .recharts-tooltip-item-value {
   font-size: 16px !important;
 }
