@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RiArrowRightUpLine, RiCloseLine } from '@remixicon/react';
 import { AreaChart, Card } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
@@ -11,7 +11,8 @@ interface Props { isLoading: boolean; points: Point[] }
 const valueFormatter = (number: number) => formatCHF(number);
 
 export function SimpleBalanceChart({ isLoading, points }: Props) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isWarningOpen, setIsWarningOpen] = useState(true);
+  const [isPositiveOpen, setIsPositiveOpen] = useState(true);
 
   if (isLoading) {
     return (
@@ -50,23 +51,11 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     };
   });
 
-  // Get current balance and memoize calculations
+  // Get current balance
   const currentBalance = points[0]?.balance || 0;
   const finalBalance = points[points.length - 1]?.balance || 0;
   const isIncreasing = finalBalance > currentBalance;
   const hasNegativeBalance = points.some(p => p.balance < 0);
-
-  // Auto-close alert after some time (like in demo)
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (!isOpen) {
-      timeoutId = setTimeout(() => {
-        setIsOpen(true);
-      }, 3000);
-    }
-    return () => clearTimeout(timeoutId);
-  }, [isOpen]);
 
   return (
     <Card className="sm:mx-auto sm:max-w-lg">
@@ -102,7 +91,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         className="mt-6 h-48 sm:hidden"
       />
 
-      {isOpen && hasNegativeBalance ? (
+      {isWarningOpen && hasNegativeBalance ? (
         <div className="relative mt-4 rounded-tremor-small border border-tremor-border bg-tremor-background-muted p-4 dark:border-dark-tremor-border dark:bg-dark-tremor-background-subtle">
           <div className="flex items-center space-x-2.5">
             <RiArrowRightUpLine
@@ -117,7 +106,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
             <button
               type="button"
               className="rounded-tremor-small p-1 text-tremor-content-subtle hover:text-tremor-content dark:text-dark-tremor-content-subtle hover:dark:text-tremor-content"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsWarningOpen(false)}
               aria-label="Close"
             >
               <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
@@ -130,7 +119,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         </div>
       ) : null}
 
-      {isOpen && isIncreasing && !hasNegativeBalance ? (
+      {isPositiveOpen && isIncreasing && !hasNegativeBalance ? (
         <div className="relative mt-4 rounded-tremor-small border border-tremor-border bg-tremor-background-muted p-4 dark:border-dark-tremor-border dark:bg-dark-tremor-background-subtle">
           <div className="flex items-center space-x-2.5">
             <RiArrowRightUpLine
@@ -145,7 +134,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
             <button
               type="button"
               className="rounded-tremor-small p-1 text-tremor-content-subtle hover:text-tremor-content dark:text-dark-tremor-content-subtle hover:dark:text-tremor-content"
-              onClick={() => setIsOpen(false)}
+              onClick={() => setIsPositiveOpen(false)}
               aria-label="Close"
             >
               <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
