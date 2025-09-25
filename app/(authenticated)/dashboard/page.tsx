@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { addMonths, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
+import { addMonths, addDays, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getCurrentBalance } from '@/lib/services/daily-balance';
 import { enhanceTransactions } from '@/lib/services/buchungen';
@@ -93,6 +93,7 @@ export default function DashboardPage() {
   const forecastPoints = useMemo(() => {
     // Robust daily projection: cumulative day sums from today's balance
     const today = startOfDay(new Date());
+    const end = addMonths(today, timeRange);
     const keyOf = (d: Date) => {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -107,27 +108,16 @@ export default function DashboardPage() {
       const s = t.direction === 'Incoming' ? t.amount : -t.amount;
       daySum.set(k, (daySum.get(k) || 0) + s);
     }
-    if (typeof window !== 'undefined') {
-      const kA = '2025-09-11';
-      const kB = '2025-09-12';
-      // Debug specific dates if present
-      const dbg = [kA, kB].filter(k => daySum.has(k)).map(k => ({ day: k, net: daySum.get(k) }));
-      if (dbg.length) {
-        // eslint-disable-next-line no-console
-        console.log('[Dashboard] Day sums debug:', dbg);
-      }
-    }
-    // Build ordered list of days
-    const days = Array.from(daySum.keys()).sort();
-    // Start from currentBalance and accumulate per day
+    // Build contiguous list of days from today -> end
     let bal = currentBalance;
     const points: { date: string; balance: number }[] = [];
-    for (const d of days) {
-      bal += daySum.get(d) || 0;
-      points.push({ date: d, balance: bal });
+    for (let d = today; d <= end; d = addDays(d, 1)) {
+      const k = keyOf(d);
+      bal += daySum.get(k) || 0;
+      points.push({ date: k, balance: bal });
     }
     return points;
-  }, [enhanced, currentBalance]);
+  }, [enhanced, currentBalance, timeRange]);
 
   // monthlyData removed with charts
 
