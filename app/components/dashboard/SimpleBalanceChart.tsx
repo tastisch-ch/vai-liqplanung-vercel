@@ -18,7 +18,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
 
   if (isLoading) {
     return (
-      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-emerald-200 animate-pulse">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
         <div className="h-8 bg-gray-200 rounded w-1/2 mb-6"></div>
         <div className="h-48 bg-gray-200 rounded"></div>
@@ -28,7 +28,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
 
   if (!points || points.length === 0) {
     return (
-      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-emerald-200">
+      <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
         <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
         <p className="text-2xl font-semibold text-gray-900">Keine Daten</p>
       </div>
@@ -48,7 +48,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   const currentBalance = points[0]?.balance || 0;
 
   return (
-    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:border-emerald-200">
+    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
       <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       
