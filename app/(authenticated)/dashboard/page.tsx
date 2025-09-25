@@ -77,7 +77,8 @@ export default function DashboardPage() {
       ? Math.max(0, (firstNegative.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) / 30
       : Infinity;
     const openIncoming = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
-    const openOutgoing = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Outgoing');
+    // Outgoing summary should include all future Outgoing (incl. Fixkosten), regardless of is_invoice
+    const openOutgoing = enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= horizon);
     return {
       net30,
       runwayMonths,
