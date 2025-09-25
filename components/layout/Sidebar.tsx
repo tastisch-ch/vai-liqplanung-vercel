@@ -60,10 +60,7 @@ export default function Sidebar() {
     { name: 'Datenimport', path: '/datenimport', icon: 'import', description: 'CSV/Excel importieren' },
   ];
   
-  // Admin links
-  const adminLinks: NavLink[] = [
-    { name: 'Admin Panel', path: '/admin', icon: 'settings', description: 'Systemverwaltung' },
-  ];
+  // Admin links removed
 
   // Kontostand functionality
   const [startBalance, setStartBalance] = useState(0);
@@ -318,15 +315,7 @@ export default function Sidebar() {
             {renderLinks(navLinks)}
           </div>
           
-          {/* Admin Section */}
-          {isAdmin && (
-            <div>
-              {!collapsed && (
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
-              )}
-              {renderLinks(adminLinks)}
-            </div>
-          )}
+          {/* Admin Section removed */}
         </div>
       </div>
       {/* Sign out + collapse at bottom (stacked) */}
