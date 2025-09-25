@@ -66,16 +66,16 @@ export default function DashboardPage() {
     const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000);
     const next30 = enhanced.filter(t => t.date >= today && t.date <= horizon);
     const net30 = next30.reduce((s, t) => s + signed(t.amount, t.direction), 0);
-    const last3Start = subMonths(startOfMonth(today), 3);
-    const last3 = enhanced.filter(t => t.date >= last3Start && t.date < startOfMonth(today));
-    const byMonth = new Map<string, number>();
-    last3.forEach(t => { const key = `${t.date.getFullYear()}-${t.date.getMonth() + 1}`; byMonth.set(key, (byMonth.get(key) || 0) + signed(t.amount, t.direction)); });
-    const months = Array.from(byMonth.values());
-    const burn = Math.max(0, -months.reduce((a, b) => a + Math.min(0, b), 0) / Math.max(1, months.length));
-    const runwayMonths = burn > 0 ? currentBalance / burn : Infinity;
     const eom = endOfMonth(today);
     const eomForecast = enhanced.filter(t => t.date >= today && t.date <= eom).reduce((s, t) => s + signed(t.amount, t.direction), currentBalance);
-    const firstNegative = enhanced.filter(t => t.date >= today).sort((a, b) => a.date.getTime() - b.date.getTime()).find(t => (t.kontostand ?? 0) < 0)?.date || null;
+    // Forecast-based runway: days until first negative balance from enhanced (cumulative kontostand)
+    const firstNegative = enhanced
+      .filter(t => t.date >= today)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .find(t => (t.kontostand ?? 0) < 0)?.date || null;
+    const runwayMonths = firstNegative
+      ? Math.max(0, (firstNegative.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) / 30
+      : Infinity;
     const openIncoming = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
     const openOutgoing = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Outgoing');
     return {
