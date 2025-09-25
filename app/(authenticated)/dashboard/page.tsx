@@ -15,6 +15,7 @@ import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChar
 // Removed charts after balance chart for now
 // Lists removed for now
 import { Alerts } from '@/app/components/dashboard/Alerts';
+import { OverdueIncomingInvoices } from '@/app/components/dashboard/OverdueIncomingInvoices';
 
 export default function DashboardPage() {
   const auth = useAuth();
@@ -124,6 +125,8 @@ export default function DashboardPage() {
   // monthlyData removed with charts
 
   const today = startOfDay(new Date());
+  const overdueIncoming = useMemo(() => enhanced
+    .filter(t => t.direction === 'Incoming' && (t as any).is_invoice && t.date < today), [enhanced]);
   const lmStart = startOfMonth(subMonths(today, 1));
   const lmEnd = endOfMonth(subMonths(today, 1));
   // breakdown removed with charts
@@ -168,7 +171,10 @@ export default function DashboardPage() {
 
       {/* Charts after balance chart temporarily removed */}
       
-      {/* Lists temporarily removed */}
+      {/* Overdue incoming invoices */}
+      <div className="grid grid-cols-1 gap-6">
+        <OverdueIncomingInvoices items={overdueIncoming} />
+      </div>
     </div>
   );
 } 
