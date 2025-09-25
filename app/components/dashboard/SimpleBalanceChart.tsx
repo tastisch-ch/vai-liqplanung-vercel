@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RiArrowRightUpLine, RiCloseLine } from '@remixicon/react';
-import { AreaChart, Card } from '@tremor/react';
+import { AreaChart } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
 
 interface Point { date: string; balance: number }
@@ -58,13 +58,9 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   const hasNegativeBalance = points.some(p => p.balance < 0);
 
   return (
-    <Card className="sm:mx-auto sm:max-w-lg">
-      <h3 className="text-tremor-default text-tremor-content dark:text-dark-tremor-content">
-        Kontostand-Prognose
-      </h3>
-      <p className="text-2xl font-semibold text-tremor-content-strong dark:text-dark-tremor-content-strong">
-        {formatCHF(currentBalance)}
-      </p>
+    <div className="bg-white rounded-lg shadow p-4">
+      <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
+      <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       
       <AreaChart
         data={chartData}
@@ -146,6 +142,6 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
           </p>
         </div>
       ) : null}
-    </Card>
+    </div>
   );
 }
