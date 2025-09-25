@@ -133,11 +133,13 @@ export default function Sidebar() {
                 : 'text-gray-700 hover:bg-gray-100'}
             `}
           >
-            <span className="mr-3 text-gray-600">{renderIcon(link.icon)}</span>
-            <div>
-              <div>{link.name}</div>
-              <div className="text-xs text-gray-500 group-hover:text-gray-700">{link.description}</div>
-            </div>
+            <span className="mr-3 text-gray-600 flex-shrink-0">{renderIcon(link.icon)}</span>
+            {!collapsed && (
+              <div className="min-w-0">
+                <div className="truncate">{link.name}</div>
+                <div className="text-xs text-gray-500 group-hover:text-gray-700">{link.description}</div>
+              </div>
+            )}
           </Link>
         </li>
       ))}
@@ -162,23 +164,35 @@ export default function Sidebar() {
   }
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
-      {/* Account Settings Section */}
+    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300`}>
+      {/* Sidebar Header with logo + collapse */}
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg className="h-6 w-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          {!collapsed && <span className="font-semibold text-gray-800">Liq-Planung</span>}
+        </div>
+        <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Sidebar einklappen/ausklappen">
+          {collapsed ? (
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          ) : (
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          )}
+        </button>
+      </div>
+
+      {/* Account Section integrated */}
       {isAuthenticated && user && (
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mr-3">
+            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mr-3">
               {user.email?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user.email}
-              </p>
-              <p className="text-xs text-gray-500">
-                {isAdmin ? 'Administrator' : 'Standard User'}
-                {isReadOnly && ' (Nur Lesezugriff)'}
-              </p>
-            </div>
+            {!collapsed && (
+              <div className="overflow-hidden">
+                <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+                <p className="text-xs text-gray-500">{isAdmin ? 'Administrator' : 'Standard User'}{isReadOnly && ' (Nur Lesezugriff)'}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -270,23 +284,34 @@ export default function Sidebar() {
         <div className="space-y-8">
           {/* Main Navigation */}
           <div>
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Navigation
-            </h3>
+            {!collapsed && (
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Navigation</h3>
+            )}
             {renderLinks(navLinks)}
           </div>
           
           {/* Admin Section */}
           {isAdmin && (
             <div>
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Administration
-              </h3>
+              {!collapsed && (
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Administration</h3>
+              )}
               {renderLinks(adminLinks)}
             </div>
           )}
         </div>
       </div>
+      {/* Sign out */}
+      {isAuthenticated && (
+        <div className="p-4 border-t border-gray-200">
+          <button onClick={() => auth.signOut()} className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between'} text-sm text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md`}>
+            <span className="flex items-center gap-2">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              {!collapsed && <span>Abmelden</span>}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 } 
