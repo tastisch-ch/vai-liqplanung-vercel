@@ -215,7 +215,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-[calc(100vh-1.5rem)] flex flex-col transition-all duration-300`}>
+    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-[calc(100vh-1.5rem)] flex flex-col`}>
       {/* Sidebar Header with logo + collapse */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-center">
         <div className="flex items-center gap-3">
@@ -273,7 +273,7 @@ export default function Sidebar() {
             )}
           </div>
           {!collapsed && (
-            <div className={`transition-opacity duration-300 ease-out ${balanceOpacity ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`transition-opacity duration-300 ease-out ${balanceOpacity ? 'opacity-100' : 'opacity-0'}`} style={{width: '100%'}}>
             {isBalanceEditing ? (
               <div className="mb-2">
                 <input
