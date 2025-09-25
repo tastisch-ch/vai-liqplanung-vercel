@@ -17,25 +17,8 @@ import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
 // Dashboard KPI and chart intentionally not used on Planung
-import {
-  Grid,
-  Flex,
-  TabGroup,
-  TabList,
-  Tab,
-  DateRangePicker,
-  MultiSelect,
-  MultiSelectItem,
-  TextInput,
-  Table,
-  TableHead,
-  TableRow,
-  TableHeaderCell,
-  TableBody,
-  TableCell,
-  Select,
-  SelectItem,
-} from "@tremor/react";
+import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@tremor/react";
+import PlanningFilters from "@/components/planning/PlanningFilters";
 import { Card, Title, Text, Divider } from "@tremor/react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/lib/supabase/client';
@@ -443,97 +426,36 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      {/* Filters with Tremor Blocks */}
-      <Card className="p-6">
-        <Flex className="mb-4 items-center">
-          <div className="grow">
-            <Title className="text-gray-900">Filter</Title>
-            <Text className="text-gray-500">Zeitraum, Suche und Kategorien einschränken</Text>
-          </div>
-          <Button onClick={() => setIsFormOpen(true)} className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">Neue Transaktion</Button>
-        </Flex>
-        <Grid numItemsSm={1} numItemsLg={3} className="gap-4">
-          <div>
-            <TabGroup index={["monthly","quarterly","yearly"].indexOf(activeTab)} onIndexChange={(i)=>handleTabChange(["monthly","quarterly","yearly"][i] as string)}>
-              <TabList>
-                <Tab>3 Monate</Tab>
-                <Tab>9 Monate</Tab>
-                <Tab>1 Jahr</Tab>
-              </TabList>
-            </TabGroup>
-          </div>
-          <div>
-            <DateRangePicker
-              className="w-full"
-              value={{ from: startDate as any, to: endDate as any }}
-              onValueChange={(v: { from?: Date|string; to?: Date|string }) => {
-                if (v?.from) setStartDate(new Date(v.from));
-                if (v?.to) setEndDate(new Date(v.to));
-              }}
-              enableSelect={false}
-              placeholder="Zeitraum wählen"
-              color="emerald"
-            />
-          </div>
-          <div>
-            <TextInput
-              className="w-full"
-              value={searchText}
-              onValueChange={setSearchText as any}
-              placeholder="Beschreibung suchen"
-              icon={SearchIcon as any}
-            />
-          </div>
-        </Grid>
-
-        <Grid numItemsSm={1} numItemsLg={3} className="gap-4 mt-4">
-          <div>
-            <MultiSelect
-              className="w-full"
-              placeholder="Kategorien filtern"
-              value={[
-                ...(showFixkosten ? ['Fixkosten'] : []),
-                ...(showLoehne ? ['Lohn'] : []),
-                ...(showStandard ? ['Standard'] : []),
-                ...(showManual ? ['Manual'] : []),
-                ...(showSimulations ? ['Simulation'] : []),
-              ]}
-              onValueChange={(vals: string[]) => {
-                setShowFixkosten(vals.includes('Fixkosten'));
-                setShowLoehne(vals.includes('Lohn'));
-                setShowStandard(vals.includes('Standard'));
-                setShowManual(vals.includes('Manual'));
-                setShowSimulations(vals.includes('Simulation'));
-              }}
-              color="emerald"
-            >
-              <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
-              <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
-              <MultiSelectItem value="Standard">Standard</MultiSelectItem>
-              <MultiSelectItem value="Manual">Manuell</MultiSelectItem>
-              <MultiSelectItem value="Simulation">Simulation</MultiSelectItem>
-            </MultiSelect>
-          </div>
-          <Flex justifyContent="start" alignItems="center" className="gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <Switch checked={showIncoming} onCheckedChange={setShowIncoming as any} />
-              Eingehend
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
-              <Switch checked={showOutgoing} onCheckedChange={setShowOutgoing as any} />
-              Ausgehend
-            </label>
-          </Flex>
-          <div>
-            <Select className="w-full" value={sortOption} onValueChange={(v: string)=>setSortOption(v)}>
-              <SelectItem value="date-asc">Datum ↑</SelectItem>
-              <SelectItem value="date-desc">Datum ↓</SelectItem>
-              <SelectItem value="amount-asc">Betrag ↑</SelectItem>
-              <SelectItem value="amount-desc">Betrag ↓</SelectItem>
-            </Select>
-          </div>
-        </Grid>
-      </Card>
+      <PlanningFilters
+        activeTab={activeTab as any}
+        onTabChange={(t)=>handleTabChange(t)}
+        startDate={startDate}
+        endDate={endDate}
+        onDateRangeChange={(from?: Date, to?: Date)=>{ if (from) setStartDate(from); if (to) setEndDate(to); }}
+        searchText={searchText}
+        onSearch={(v)=>setSearchText(v)}
+        selectedCategories={[
+          ...(showFixkosten ? ['Fixkosten'] : []),
+          ...(showLoehne ? ['Lohn'] : []),
+          ...(showStandard ? ['Standard'] : []),
+          ...(showManual ? ['Manual'] : []),
+          ...(showSimulations ? ['Simulation'] : []),
+        ]}
+        onCategoriesChange={(vals)=>{
+          setShowFixkosten(vals.includes('Fixkosten'));
+          setShowLoehne(vals.includes('Lohn'));
+          setShowStandard(vals.includes('Standard'));
+          setShowManual(vals.includes('Manual'));
+          setShowSimulations(vals.includes('Simulation'));
+        }}
+        showIncoming={showIncoming}
+        onToggleIncoming={(v)=>setShowIncoming(!!v)}
+        showOutgoing={showOutgoing}
+        onToggleOutgoing={(v)=>setShowOutgoing(!!v)}
+        sortOption={sortOption as any}
+        onSortChange={(v)=>setSortOption(v)}
+        onNewTransaction={()=>setIsFormOpen(true)}
+      />
       {/* Content area */}
       {isLoading ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-pulse">
