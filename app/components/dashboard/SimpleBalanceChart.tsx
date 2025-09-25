@@ -1,7 +1,5 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { RiArrowRightUpLine, RiCloseLine } from '@remixicon/react';
 import { LineChart } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
 
@@ -11,8 +9,6 @@ interface Props { isLoading: boolean; points: Point[] }
 const valueFormatter = (number: number) => formatCHF(number);
 
 export function SimpleBalanceChart({ isLoading, points }: Props) {
-  const [isWarningOpen, setIsWarningOpen] = useState(true);
-  const [isPositiveOpen, setIsPositiveOpen] = useState(true);
 
   if (isLoading) {
     return (
@@ -33,21 +29,17 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     );
   }
 
-  // Transform data for LineChart (memoized)
-  const chartData = useMemo(() => {
-    return points.map(p => {
-      const d = new Date(p.date);
-      const label = d.toLocaleDateString('de-CH', { month: 'short', day: 'numeric' });
-      return { date: label, Kontostand: p.balance };
-    });
-  }, [points]);
+  // Transform data for AreaChart
+  const chartData = points.map(p => {
+    const d = new Date(p.date);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const label = `${dd}.${mm}`;
+    return { date: label, 'Kontostand': p.balance };
+  });
 
-  // Derived metrics (memoized)
-  const firstBalance = useMemo(() => points[0]?.balance || 0, [points]);
-  const currentBalance = useMemo(() => points[points.length - 1]?.balance || 0, [points]);
-  const isIncreasing = useMemo(() => currentBalance > firstBalance, [currentBalance, firstBalance]);
-  const hasNegativeBalance = useMemo(() => points.some(p => p.balance < 0), [points]);
-  const firstNegativeDate = useMemo(() => points.find(p => p.balance < 0)?.date || null, [points]);
+  // Get current balance
+  const currentBalance = points[0]?.balance || 0;
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -62,8 +54,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         showLegend={false}
         valueFormatter={valueFormatter}
         showYAxis={true}
-        yAxisWidth={60}
-        showXAxis={true}
+        yAxisWidth={64}
         showGridLines={true}
         className="mt-6 hidden h-48 sm:block"
       />
@@ -79,60 +70,6 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         showYAxis={false}
         className="mt-6 h-48 sm:hidden"
       />
-
-      {isWarningOpen && hasNegativeBalance ? (
-        <div className="relative mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center space-x-2.5">
-            <RiArrowRightUpLine
-              className="size-5 shrink-0 text-red-600"
-              aria-hidden={true}
-            />
-            <h4 className="text-sm font-medium text-red-700">
-              Negativer Kontostand erwartet{firstNegativeDate ? ` ab ${new Date(firstNegativeDate).toLocaleDateString('de-CH')}` : ''}
-            </h4>
-          </div>
-          <div className="absolute right-0 top-0 pr-1 pt-1">
-            <button
-              type="button"
-              className="rounded-md p-1 text-gray-400 hover:text-gray-600"
-              onClick={() => setIsWarningOpen(false)}
-              aria-label="Close"
-            >
-              <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
-            </button>
-          </div>
-          <p className="mt-2 text-sm leading-6 text-red-800">
-            Prognose fällt unter 0. Bitte Planung prüfen.
-          </p>
-        </div>
-      ) : null}
-
-      {isPositiveOpen && isIncreasing && !hasNegativeBalance ? (
-        <div className="relative mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center space-x-2.5">
-            <RiArrowRightUpLine
-              className="size-5 shrink-0 text-emerald-600"
-              aria-hidden={true}
-            />
-            <h4 className="text-sm font-medium text-emerald-700">
-              Positive Entwicklung erwartet
-            </h4>
-          </div>
-          <div className="absolute right-0 top-0 pr-1 pt-1">
-            <button
-              type="button"
-              className="rounded-md p-1 text-gray-400 hover:text-gray-600"
-              onClick={() => setIsPositiveOpen(false)}
-              aria-label="Close"
-            >
-              <RiCloseLine className="size-5 shrink-0" aria-hidden={true} />
-            </button>
-          </div>
-          <p className="mt-2 text-sm leading-6 text-emerald-800">
-            Kontostand steigt über den Zeitraum.
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }
