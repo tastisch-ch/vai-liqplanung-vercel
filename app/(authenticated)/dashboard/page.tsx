@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   const today = startOfDay(new Date());
   const overdueIncoming = useMemo(
-    () => enhanced.filter(t => t.direction === 'Incoming' && t.date < today && t.amount > 0),
+    () => enhanced.filter(t => t.direction === 'Incoming' && (t as any).shifted === true),
     [enhanced]
   );
   const lmStart = startOfMonth(subMonths(today, 1));
