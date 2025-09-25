@@ -1,7 +1,15 @@
 'use client';
 
-import { LineChart } from '@tremor/react';
 import { formatCHF } from '@/lib/currency';
+import {
+  ResponsiveContainer,
+  LineChart as RLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RTooltip,
+} from 'recharts';
 
 interface Point { date: string; balance: number }
 interface Props { isLoading: boolean; points: Point[] }
@@ -51,31 +59,39 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 overflow-hidden">
       <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
-      
-      <LineChart
-        data={chartData}
-        index="date"
-        categories={['Kontostand']}
-        colors={['blue']}
-        showLegend={false}
-        valueFormatter={axisFormatter}
-        showYAxis={true}
-        yAxisWidth={64}
-        showGridLines={true}
-        className="mt-6 hidden h-64 sm:block"
-      />
-      
-      <LineChart
-        data={chartData}
-        index="date"
-        categories={['Kontostand']}
-        colors={['blue']}
-        showLegend={false}
-        valueFormatter={axisFormatter}
-        startEndOnly={true}
-        showYAxis={false}
-        className="mt-6 h-56 sm:hidden"
-      />
+      <div className="mt-6 hidden h-64 sm:block">
+        <ResponsiveContainer width="100%" height="100%">
+          <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
+            <YAxis width={64} tickFormatter={axisFormatter as any} tick={{ fontSize: 12 }} />
+            <RTooltip content={<CustomTooltip />} />
+            <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
+          </RLineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-6 h-56 sm:hidden">
+        <ResponsiveContainer width="100%" height="100%">
+          <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
+            <RTooltip content={<CustomTooltip />} />
+            <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
+          </RLineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload || !payload.length) return null;
+  const value = payload[0].value as number;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
+      <div className="text-xs text-gray-500 mb-1">{label}</div>
+      <div className="text-sm font-semibold text-gray-900">{formatCHF(value)}</div>
     </div>
   );
 }
