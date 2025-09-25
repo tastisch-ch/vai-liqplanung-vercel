@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
@@ -10,14 +10,13 @@ import { getUserSettings } from "@/lib/services/user-settings";
 import { getCurrentBalance } from "@/lib/services/daily-balance";
 import { EnhancedTransaction } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
-import { format, addMonths, addDays, startOfDay } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
-import { ModernKpiCards } from "@/app/components/dashboard/ModernKpiCards";
-import { SimpleBalanceChart } from "@/app/components/dashboard/SimpleBalanceChart";
+// Dashboard KPI and chart intentionally not used on Planung
 import {
   TabGroup,
   TabList,
@@ -308,62 +307,6 @@ export default function Planung() {
     setEndDate(end);
   };
 
-  // Derived KPI values (reuse dashboard logic)
-  const kpi = useMemo(() => {
-    const today = startOfDay(new Date());
-    const horizon = new Date(today.getTime() + 30 * 24 * 3600 * 1000);
-    const next30 = transactions.filter(t => t.date >= today && t.date <= horizon);
-    const signed = (amount: number, direction: 'Incoming' | 'Outgoing') => direction === 'Incoming' ? amount : -amount;
-    const net30 = next30.reduce((s, t) => s + signed(t.amount, t.direction), 0);
-    const end = endDate;
-    const eomForecast = transactions.filter(t => t.date >= today && t.date <= end).reduce((s, t) => s + signed(t.amount, t.direction), currentBalance);
-    const firstNegative = transactions
-      .filter(t => t.date >= today)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .find(t => (t.kontostand ?? 0) < 0)?.date || null;
-    const runwayMonths = firstNegative
-      ? Math.max(0, (firstNegative.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) / 30
-      : Infinity;
-    const openIncoming = transactions.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
-    const openOutgoing = transactions.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= horizon);
-    return {
-      net30,
-      runwayMonths,
-      eomForecast,
-      firstNegative,
-      openIncomingCount: openIncoming.length,
-      openIncomingSum: openIncoming.reduce((s, t) => s + t.amount, 0),
-      openOutgoingCount: openOutgoing.length,
-      openOutgoingSum: openOutgoing.reduce((s, t) => s + t.amount, 0),
-    };
-  }, [transactions, currentBalance, endDate]);
-
-  // Forecast points limited to selected date range
-  const forecastPoints = useMemo(() => {
-    const start = addDays(startDate, 0);
-    const end = endDate;
-    const keyOf = (d: Date) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
-    const daySum = new Map<string, number>();
-    for (const t of transactions) {
-      if (t.date < start || t.date > end) continue;
-      const k = keyOf(t.date);
-      const s = t.direction === 'Incoming' ? t.amount : -t.amount;
-      daySum.set(k, (daySum.get(k) || 0) + s);
-    }
-    let bal = currentBalance;
-    const points: { date: string; balance: number }[] = [];
-    for (let d = start; d <= end; d = addDays(d, 1)) {
-      const k = keyOf(d);
-      bal += daySum.get(k) || 0;
-      points.push({ date: k, balance: bal });
-    }
-    return points;
-  }, [transactions, currentBalance, startDate, endDate]);
   
   const handleEditTransaction = (transaction: EnhancedTransaction) => {
     setEditingTransaction(transaction);
@@ -485,17 +428,6 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      {/* KPI header */}
-      <ModernKpiCards
-        currentBalance={currentBalance}
-        net30={kpi.net30}
-        runwayMonths={kpi.runwayMonths}
-        eomForecast={kpi.eomForecast}
-        openIncoming={{ count: kpi.openIncomingCount, sum: kpi.openIncomingSum }}
-        openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
-        firstNegative={kpi.firstNegative}
-      />
-
       {/* Filters Card using Tremor controls inside our card shell */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -564,10 +496,6 @@ export default function Planung() {
           </div>
         </div>
       </div>
-
-      {/* Forecast chart */}
-      <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
-
       {/* Content area */}
       {isLoading ? (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-pulse">
