@@ -43,14 +43,7 @@
   color: #111827 !important;
 }
 
-/* Ensure tooltips appear above everything */
-.recharts-surface {
-  overflow: visible !important;
-}
-
-.recharts-wrapper {
-  overflow: visible !important;
-}
+/* Keep chart content clipped within container (default overflow behavior) */
 
 /* Specific styling for different chart types */
 .recharts-tooltip-item[data-key="Kontostand"] .recharts-tooltip-item-value {

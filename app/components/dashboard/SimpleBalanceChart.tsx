@@ -48,7 +48,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   const currentBalance = points[0]?.balance || 0;
 
   return (
-    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
+    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 overflow-hidden">
       <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       
