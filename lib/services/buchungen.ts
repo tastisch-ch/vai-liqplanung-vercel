@@ -84,6 +84,8 @@ export function shiftPastDueDateIfNeeded(transaction: Buchung): Buchung {
     return {
       ...transaction,
       date: tomorrow,
+      // Preserve original date for UI deltas
+      original_date: transaction.date,
       // Add a flag to indicate this date was shifted (for UI purposes if needed)
       shifted: true
     };

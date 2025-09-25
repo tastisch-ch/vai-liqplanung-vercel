@@ -35,7 +35,8 @@ export function OverdueIncomingInvoices({ items }: Props) {
         {items.slice(0, 8).map((t) => {
           const invoice = (t as any).invoice_id || extractInvoiceFromDetails(t.details);
           const customer = extractCustomerFromDetails(t.details);
-          const overdueDays = differenceInDays(new Date(), new Date(t.date));
+          const baseDate = (t as any).original_date ? new Date((t as any).original_date) : new Date(t.date);
+          const overdueDays = Math.max(0, differenceInDays(new Date(), baseDate));
           return (
             <li
               key={t.id}

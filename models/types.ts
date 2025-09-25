@@ -1,6 +1,7 @@
 export interface Buchung {
   id: string;
   date: Date;
+  original_date?: Date; // preserves original date when shifted
   details: string;
   amount: number;
   direction: 'Incoming' | 'Outgoing';
