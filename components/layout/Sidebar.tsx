@@ -38,8 +38,16 @@ export default function Sidebar() {
     logError(error, 'Error accessing auth context');
   }
 
+  // Define the type for navigation links
+  type NavLink = {
+    name: string;
+    path: string;
+    icon: 'dashboard' | 'calendar' | 'wallet' | 'users' | 'import' | 'settings';
+    description: string;
+  };
+
   // Core navigation links
-  const navLinks = [
+  const navLinks: NavLink[] = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', description: 'Übersicht' },
     { name: 'Planung', path: '/planung', icon: 'calendar', description: 'Finanzplanung' },
     { name: 'Fixkosten', path: '/fixkosten', icon: 'wallet', description: 'Fixkosten verwalten' },
@@ -48,17 +56,9 @@ export default function Sidebar() {
   ];
   
   // Admin links
-  const adminLinks = [
-    { name: 'Admin Panel', path: '/admin', icon: '⚙️', description: 'Systemverwaltung' },
+  const adminLinks: NavLink[] = [
+    { name: 'Admin Panel', path: '/admin', icon: 'settings', description: 'Systemverwaltung' },
   ];
-
-  // Define the type for navigation links
-  type NavLink = {
-    name: string;
-    path: string;
-    icon: 'dashboard' | 'calendar' | 'wallet' | 'users' | 'import';
-    description: string;
-  };
 
   // Kontostand functionality
   const [startBalance, setStartBalance] = useState(0);
@@ -156,6 +156,8 @@ export default function Sidebar() {
         return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>);
       case 'import':
         return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>);
+      case 'settings':
+        return (<svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 11 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0A1.65 1.65 0 0 0 21 11.91H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
     }
   }
 
