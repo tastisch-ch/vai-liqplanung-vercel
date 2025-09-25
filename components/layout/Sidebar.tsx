@@ -186,8 +186,8 @@ export default function Sidebar() {
       {/* Account Section integrated */}
       {isAuthenticated && user && (
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold mr-3">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : ''}`}>
+            <div className={`h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold ${collapsed ? '' : 'mr-3'}`}>
               {user.email?.charAt(0).toUpperCase() || 'U'}
             </div>
             {!collapsed && (
@@ -203,7 +203,7 @@ export default function Sidebar() {
       {/* Kontostand Section */}
       {isAuthenticated && (
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-2">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
             <h3 className="font-semibold text-gray-700 flex items-center gap-2">
               <svg className="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"/>
