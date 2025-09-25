@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { Grid, Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem } from '@tremor/react';
 import { DateRangePicker as TremorDatePicker } from '@/components/DatePicker';
+import { de } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
 
 type Props = {
@@ -68,6 +69,14 @@ export default function PlanningFilters(props: Props) {
               toDate={new Date()}
               placeholder="Zeitraum wählen"
               translations={{ cancel: 'Abbrechen', apply: 'Übernehmen', range: 'Zeiträume' }}
+              locale={de}
+              presets={[
+                { label: 'Heute', dateRange: { from: new Date(), to: new Date() } },
+                { label: 'Letzte 7 Tage', dateRange: { from: new Date(new Date().setDate(new Date().getDate() - 6)), to: new Date() } },
+                { label: 'Letzte 30 Tage', dateRange: { from: new Date(new Date().setDate(new Date().getDate() - 29)), to: new Date() } },
+                { label: 'Monat bis heute', dateRange: { from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), to: new Date() } },
+                { label: 'Jahr bis heute', dateRange: { from: new Date(new Date().getFullYear(), 0, 1), to: new Date() } },
+              ]}
             />
           </div>
         </div>
