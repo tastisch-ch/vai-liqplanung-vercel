@@ -184,6 +184,7 @@ export default function DashboardPage() {
         eomForecast={kpi.eomForecast}
         openIncoming={{ count: kpi.openIncomingCount, sum: kpi.openIncomingSum }}
         openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
+        firstNegative={kpi.firstNegative}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

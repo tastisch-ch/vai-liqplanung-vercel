@@ -9,6 +9,7 @@ interface KpisProps {
   eomForecast: number;
   openIncoming: { count: number; sum: number };
   openOutgoing: { count: number; sum: number };
+  firstNegative?: Date | null;
 }
 
 export function ModernKpiCards({ 
@@ -17,7 +18,8 @@ export function ModernKpiCards({
   runwayMonths, 
   eomForecast, 
   openIncoming, 
-  openOutgoing 
+  openOutgoing,
+  firstNegative
 }: KpisProps) {
   
   // Calculate health indicators
@@ -110,6 +112,14 @@ export function ModernKpiCards({
             }`}>
               {runwayMonths.toFixed(1)} Monate
             </p>
+            {firstNegative && (
+              <div className="mt-2 text-xs">
+                <div className="inline-flex items-center gap-2 rounded-md border px-2 py-1 bg-red-50 border-red-200 text-red-700">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10 2h4l7 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/></svg>
+                  <span>Unterdeckung ab {new Date(firstNegative).toLocaleDateString('de-CH')}</span>
+                </div>
+              </div>
+            )}
             <div className="mt-3">
               <div className="bg-gray-200 rounded-full h-2">
                 <div 
