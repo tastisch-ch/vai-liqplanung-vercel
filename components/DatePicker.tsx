@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { DayPicker, DateRange as RDateRange } from 'react-day-picker';
+import { Calendar as CalendarPrimitive } from './Calendar';
+import type { DateRange as DayPickerDateRange } from 'react-day-picker';
 import { type Locale } from 'date-fns';
 
-export type DateRange = RDateRange;
+export type DateRange = DayPickerDateRange;
 
 type Props = {
   value?: DateRange;
@@ -73,7 +74,7 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
                 ))}
               </div>
             )}
-            <DayPicker
+            <CalendarPrimitive
               mode="range"
               selected={temp}
               onSelect={(r) => setTemp(r)}
@@ -94,7 +95,7 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
                 today: 'ring-1 ring-emerald-500',
                 outside: 'text-gray-300',
               }}
-              disabled={[(date: Date)=> (toDate ? date > toDate : false) || (fromDate ? date < fromDate : false)]}
+              disabled={(date: Date)=> (toDate ? date > toDate : false) || (fromDate ? date < fromDate : false)}
             />
           </div>
           <div className="flex justify-end gap-2 pt-3">
