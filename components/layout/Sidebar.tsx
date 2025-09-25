@@ -14,6 +14,7 @@ import { de } from 'date-fns/locale';
 export default function Sidebar() {
   const pathname = usePathname();
   const [isBalanceEditing, setIsBalanceEditing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   
   // Use our logger hook
   const logError = (err: unknown, message?: string) => {
