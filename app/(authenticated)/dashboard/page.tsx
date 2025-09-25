@@ -159,8 +159,9 @@ export default function DashboardPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
-        <div className="hidden lg:block" />
+        <div className="lg:col-span-2">
+          <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
+        </div>
       </div>
 
       {/* Charts after balance chart temporarily removed */}
