@@ -1,6 +1,7 @@
 'use client';
 import { formatCHF } from '@/lib/currency';
 import { EnhancedTransaction } from '@/models/types';
+import { differenceInDays } from 'date-fns';
 
 interface Props {
   items: EnhancedTransaction[];
@@ -34,6 +35,7 @@ export function OverdueIncomingInvoices({ items }: Props) {
         {items.slice(0, 8).map((t) => {
           const invoice = (t as any).invoice_id || extractInvoiceFromDetails(t.details);
           const customer = extractCustomerFromDetails(t.details);
+          const overdueDays = differenceInDays(new Date(), new Date(t.date));
           return (
             <li
               key={t.id}
@@ -45,6 +47,7 @@ export function OverdueIncomingInvoices({ items }: Props) {
               <p className="flex w-full items-center justify-between space-x-4 truncate text-sm font-medium">
                 <span className="truncate text-gray-700">
                   {customer || t.details}
+                  <span className="ml-2 text-xs text-gray-500">({overdueDays} Tage überfällig)</span>
                 </span>
                 <span className="pr-1.5 text-gray-900 font-semibold">
                   {formatCHF(t.amount)}
