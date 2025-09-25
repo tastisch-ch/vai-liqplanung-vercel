@@ -170,10 +170,8 @@ export default function Sidebar() {
       {/* Sidebar Header with logo + collapse */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {collapsed 
-            ? (<Image src="/assets/vaios-icon.svg" alt="vaios icon" width={28} height={28} priority />)
-            : (<Image src="/assets/vaios-logo.svg" alt="vaios" width={112} height={24} priority />)
-          }
+          <Image src="/assets/vaios-icon.svg" alt="vaios icon" width={28} height={28} priority className={`${collapsed ? 'block' : 'hidden'}`} />
+          <Image src="/assets/vaios-logo.svg" alt="vaios" width={112} height={24} priority className={`${collapsed ? 'hidden' : 'block'}`} />
         </div>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Sidebar einklappen/ausklappen">
           {collapsed ? (
