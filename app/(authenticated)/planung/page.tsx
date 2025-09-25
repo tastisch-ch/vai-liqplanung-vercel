@@ -42,6 +42,16 @@ import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+// Small inline icon for Tremor TextInput
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" {...props}>
+      <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export default function Planung() {
   const { authState } = useAuth();
   const { user } = authState;
@@ -456,13 +466,23 @@ export default function Planung() {
             <DateRangePicker
               className="w-full"
               value={{ from: startDate as any, to: endDate as any }}
-              onValueChange={(v: any) => { if (v?.from) setStartDate(new Date(v.from)); if (v?.to) setEndDate(new Date(v.to)); }}
+              onValueChange={(v: { from?: Date|string; to?: Date|string }) => {
+                if (v?.from) setStartDate(new Date(v.from));
+                if (v?.to) setEndDate(new Date(v.to));
+              }}
               enableSelect={false}
               placeholder="Zeitraum wählen"
+              color="emerald"
             />
           </div>
           <div>
-            <TextInput className="w-full" value={searchText} onValueChange={setSearchText as any} placeholder="Beschreibung suchen" />
+            <TextInput
+              className="w-full"
+              value={searchText}
+              onValueChange={setSearchText as any}
+              placeholder="Beschreibung suchen"
+              icon={SearchIcon as any}
+            />
           </div>
         </Grid>
 
@@ -485,6 +505,7 @@ export default function Planung() {
                 setShowManual(vals.includes('Manual'));
                 setShowSimulations(vals.includes('Simulation'));
               }}
+              color="emerald"
             >
               <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
               <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
