@@ -16,6 +16,7 @@ import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChar
 // Lists removed for now
 import { Alerts } from '@/app/components/dashboard/Alerts';
 import { OverdueIncomingInvoices } from '@/app/components/dashboard/OverdueIncomingInvoices';
+import { CostStructureDonut } from '@/app/components/dashboard/CostStructureDonut';
 
 export default function DashboardPage() {
   const auth = useAuth();
@@ -131,7 +132,12 @@ export default function DashboardPage() {
   );
   const lmStart = startOfMonth(subMonths(today, 1));
   const lmEnd = endOfMonth(subMonths(today, 1));
-  // breakdown removed with charts
+  const costStructure = useMemo(() => {
+    const lastMonthOutgoing = enhanced.filter(t => t.date >= lmStart && t.date <= lmEnd && t.direction === 'Outgoing');
+    const map = new Map<string, number>();
+    lastMonthOutgoing.forEach(t => { const cat = t.kategorie || 'Sonstiges'; map.set(cat, (map.get(cat) || 0) + t.amount); });
+    return Array.from(map.entries()).map(([name, amount]) => ({ name, amount }));
+  }, [enhanced]);
 
   // Lists data removed for now
 
@@ -176,6 +182,7 @@ export default function DashboardPage() {
       {/* Overdue incoming invoices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <OverdueIncomingInvoices items={overdueIncoming} />
+        <CostStructureDonut data={costStructure} />
       </div>
     </div>
   );
