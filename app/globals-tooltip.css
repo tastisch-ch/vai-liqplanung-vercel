@@ -85,14 +85,29 @@
 /* Subtle grid like Tremor demos */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: #e5e7eb !important; /* gray-200 */
-  opacity: 0.7 !important;
+  stroke: #eef2f7 !important; /* lighter grid */
+  opacity: 0.9 !important;
 }
 
 /* Slightly thicker line and hide dots for a clean trend */
 .recharts-line-curve {
   stroke-width: 2.25px !important;
 }
+.recharts-line .recharts-line-curve {
+  stroke: #2563eb !important; /* blue-600 for strong contrast */
+}
 .recharts-line .recharts-dot {
   display: none !important;
+}
+
+/* Make default tooltip more minimal (not table-like) */
+.recharts-default-tooltip .recharts-tooltip-item-list {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.recharts-tooltip-item-name {
+  display: none !important; /* hide series name since we only have one */
+}
+.recharts-tooltip-item-value {
+  font-size: 16px !important;
 }
