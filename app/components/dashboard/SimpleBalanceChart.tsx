@@ -35,7 +35,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     );
   }
 
-  // Transform data for AreaChart
+  // Transform data for LineChart
   const chartData = points.map(p => {
     const d = new Date(p.date);
     const dd = String(d.getDate()).padStart(2, '0');

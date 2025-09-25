@@ -1,8 +1,6 @@
 /* Global tooltip styles for Tremor/Recharts */
 .recharts-tooltip-wrapper {
   z-index: 99999 !important;
-  pointer-events: none !important;
-  position: relative !important;
 }
 
 .recharts-default-tooltip {
