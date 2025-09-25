@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectItem } from '@tremor/react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TransactionFormData {
   date: string;
@@ -98,14 +98,18 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
           <div className="space-y-2">
             <Label htmlFor="direction">Richtung</Label>
             <Select
-              className="w-full"
               value={formData.direction}
-              onValueChange={(value: any) => 
-                setFormData({ ...formData, direction: value as 'Incoming' | 'Outgoing' })
+              onValueChange={(value: 'Incoming' | 'Outgoing') => 
+                setFormData({ ...formData, direction: value })
               }
             >
-              <SelectItem value="Incoming">Eingehend</SelectItem>
-              <SelectItem value="Outgoing">Ausgehend</SelectItem>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Richtung auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Incoming">Eingehend</SelectItem>
+                <SelectItem value="Outgoing">Ausgehend</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 

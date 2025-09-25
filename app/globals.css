@@ -51,14 +51,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Ensure Tremor popovers/dropdowns render above cards and not clipped */
-.tremor-Popover-root, .tremor-Listbox-options, .tremor-DateRangePicker-popover {
-  z-index: 60;
-}
-
-/* Make planning filter card allow overflow for popovers */
-.overflow-visible { overflow: visible !important; }
-
 /* Utility classes for Vaios brand colors */
 .bg-vaios-primary {
   background-color: var(--color-primary);

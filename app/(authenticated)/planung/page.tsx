@@ -16,61 +16,15 @@ import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
-// Dashboard KPI and chart intentionally not used on Planung
-import { Table, TableHead, TableRow, TableHeaderCell, TableBody, TableCell } from "@tremor/react";
-import PlanningFilters from "@/components/planning/PlanningFilters";
-import { Card, Title, Text, Divider } from "@tremor/react";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-// Small inline icon for Tremor TextInput
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" {...props}>
-      <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
 
 export default function Planung() {
   const { authState } = useAuth();
   const { user } = authState;
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
-  // Persisted filters
-  useEffect(() => {
-    try {
-      const lsTab = typeof window !== 'undefined' ? window.localStorage.getItem('planung:activeTab') : null;
-      if (lsTab === 'monthly' || lsTab === 'quarterly' || lsTab === 'yearly') setActiveTab(lsTab);
-      const lsIncoming = typeof window !== 'undefined' ? window.localStorage.getItem('planung:showIncoming') : null;
-      if (lsIncoming !== null) setShowIncoming(lsIncoming === '1');
-      const lsOutgoing = typeof window !== 'undefined' ? window.localStorage.getItem('planung:showOutgoing') : null;
-      if (lsOutgoing !== null) setShowOutgoing(lsOutgoing === '1');
-      const lsCategories = typeof window !== 'undefined' ? window.localStorage.getItem('planung:categories') : null;
-      if (lsCategories) {
-        try {
-          const parsed = JSON.parse(lsCategories);
-          setShowFixkosten(parsed.includes('Fixkosten'));
-          setShowLoehne(parsed.includes('Lohn'));
-          setShowStandard(parsed.includes('Standard'));
-          setShowManual(parsed.includes('Manual'));
-          setShowSimulations(parsed.includes('Simulation'));
-        } catch {}
-      }
-      const lsSearch = typeof window !== 'undefined' ? window.localStorage.getItem('planung:search') : null;
-      if (lsSearch !== null) setSearchText(lsSearch);
-      const lsStart = typeof window !== 'undefined' ? window.localStorage.getItem('planung:startDate') : null;
-      const lsEnd = typeof window !== 'undefined' ? window.localStorage.getItem('planung:endDate') : null;
-      if (lsStart && lsEnd) {
-        const s = new Date(lsStart);
-        const e = new Date(lsEnd);
-        if (!isNaN(s.getTime()) && !isNaN(e.getTime())) { setStartDate(s); setEndDate(e); }
-      }
-    } catch {}
-  }, []);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
   
@@ -167,27 +121,6 @@ export default function Planung() {
   useEffect(() => {
     fetchData();
   }, [user?.id, startDate, endDate]);
-
-  // Persist selected filters
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('planung:activeTab', activeTab);
-        window.localStorage.setItem('planung:showIncoming', showIncoming ? '1' : '0');
-        window.localStorage.setItem('planung:showOutgoing', showOutgoing ? '1' : '0');
-        const categories: string[] = [];
-        if (showFixkosten) categories.push('Fixkosten');
-        if (showLoehne) categories.push('Lohn');
-        if (showStandard) categories.push('Standard');
-        if (showManual) categories.push('Manual');
-        if (showSimulations) categories.push('Simulation');
-        window.localStorage.setItem('planung:categories', JSON.stringify(categories));
-        window.localStorage.setItem('planung:search', searchText);
-        window.localStorage.setItem('planung:startDate', startDate.toISOString());
-        window.localStorage.setItem('planung:endDate', endDate.toISOString());
-      }
-    } catch {}
-  }, [activeTab, showIncoming, showOutgoing, showFixkosten, showLoehne, showStandard, showManual, showSimulations, searchText, startDate, endDate]);
   
   // Apply filters when filter criteria change
   useEffect(() => {
@@ -304,7 +237,6 @@ export default function Planung() {
     setStartDate(start);
     setEndDate(end);
   };
-
   
   const handleEditTransaction = (transaction: EnhancedTransaction) => {
     setEditingTransaction(transaction);
@@ -426,121 +358,271 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      <PlanningFilters
-        activeTab={activeTab as any}
-        onTabChange={(t)=>handleTabChange(t)}
-        startDate={startDate}
-        endDate={endDate}
-        onDateRangeChange={(from?: Date, to?: Date)=>{ if (from) setStartDate(from); if (to) setEndDate(to); }}
-        searchText={searchText}
-        onSearch={(v)=>setSearchText(v)}
-        selectedCategories={[
-          ...(showFixkosten ? ['Fixkosten'] : []),
-          ...(showLoehne ? ['Lohn'] : []),
-          ...(showStandard ? ['Standard'] : []),
-          ...(showManual ? ['Manual'] : []),
-          ...(showSimulations ? ['Simulation'] : []),
-        ]}
-        onCategoriesChange={(vals)=>{
-          setShowFixkosten(vals.includes('Fixkosten'));
-          setShowLoehne(vals.includes('Lohn'));
-          setShowStandard(vals.includes('Standard'));
-          setShowManual(vals.includes('Manual'));
-          setShowSimulations(vals.includes('Simulation'));
-        }}
-        showIncoming={showIncoming}
-        onToggleIncoming={(v)=>setShowIncoming(!!v)}
-        showOutgoing={showOutgoing}
-        onToggleOutgoing={(v)=>setShowOutgoing(!!v)}
-        sortOption={sortOption as any}
-        onSortChange={(v)=>setSortOption(v)}
-        onNewTransaction={()=>setIsFormOpen(true)}
-      />
-      {/* Content area */}
-      {isLoading ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="space-y-2">
-            {[...Array(6)].map((_,i)=>(
-              <div key={i} className="h-10 bg-gray-100 rounded"></div>
-            ))}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="flex justify-between border-b">
+          <div className="flex">
+            <button 
+              className={`px-4 py-3 font-medium ${activeTab === 'monthly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
+              onClick={() => handleTabChange('monthly')}
+            >
+              3 Monate
+            </button>
+            <button 
+              className={`px-4 py-3 font-medium ${activeTab === 'quarterly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
+              onClick={() => handleTabChange('quarterly')}
+            >
+              9 Monate
+            </button>
+            <button 
+              className={`px-4 py-3 font-medium ${activeTab === 'yearly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
+              onClick={() => handleTabChange('yearly')}
+            >
+              1 Jahr
+            </button>
+          </div>
+          <div className="flex items-center pr-4">
+            <Button
+              onClick={() => setIsFormOpen(true)}
+              className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors"
+            >
+              Neue Transaktion
+            </Button>
           </div>
         </div>
-      ) : error ? (
-        <Card className="p-6 text-center text-red-500">{error}</Card>
-      ) : (
-        <Card className="p-6">
-          <Title className="text-gray-900 mb-2">Transaktionen</Title>
-          <Divider />
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeaderCell className="text-xs text-gray-500">Datum</TableHeaderCell>
-                <TableHeaderCell className="text-xs text-gray-500">Beschreibung</TableHeaderCell>
-                <TableHeaderCell className="text-xs text-gray-500">Kategorie</TableHeaderCell>
-                <TableHeaderCell className="text-right text-xs text-gray-500">Betrag</TableHeaderCell>
-                <TableHeaderCell className="text-right text-xs text-gray-500">Kontostand</TableHeaderCell>
-                <TableHeaderCell className="text-right text-xs text-gray-500">Aktionen</TableHeaderCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>
-                    <div className="rounded bg-gray-50 p-3 text-sm text-gray-500">Keine Transaktionen</div>
-                  </TableCell>
-                </TableRow>
-              ) : filteredTransactions.map((transaction) => {
-                const isIncome = transaction.direction === 'Incoming';
-                const amountClass = isIncome ? 'text-emerald-600' : 'text-red-600';
-                return (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="text-sm text-gray-600">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
-                    <TableCell className="text-sm text-gray-900">{transaction.details}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${
-                        transaction.kategorie === 'Lohn' ? 'bg-amber-100 text-amber-800' :
-                        transaction.kategorie === 'Fixkosten' ? 'bg-blue-100 text-blue-800' :
-                        transaction.kategorie === 'Simulation' ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          {transaction.kategorie === 'Lohn' ? (
-                            <path d="M12 1v22M5 6h14M5 12h14M5 18h14"/>
-                          ) : transaction.kategorie === 'Fixkosten' ? (
-                            <path d="M3 3h18v6H3zM3 9v12h18V9"/>
-                          ) : transaction.kategorie === 'Simulation' ? (
-                            <circle cx="12" cy="12" r="4"/>
-                          ) : (
-                            <rect x="4" y="4" width="16" height="16" rx="2"/>
-                          )}
-                        </svg>
-                        {transaction.kategorie || 'Standard'}
-                      </span>
-                    </TableCell>
-                    <TableCell className={`text-right text-sm font-semibold ${amountClass}`}>
-                      {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-semibold text-gray-900">{formatCHF(transaction.kontostand || 0)}</TableCell>
-                    <TableCell className="text-right">
-                      {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
-                        <div className="inline-flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditTransaction(transaction)} className="text-blue-600 hover:text-blue-800">
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(transaction)} className="text-red-600 hover:text-red-800">
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+        
+        {/* Filters */}
+        <div className="p-4 border-b bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Von</label>
+              <input 
+                type="date" 
+                value={startDate.toISOString().split('T')[0]} 
+                onChange={(e) => setStartDate(new Date(e.target.value))}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bis</label>
+              <input 
+                type="date" 
+                value={endDate.toISOString().split('T')[0]} 
+                onChange={(e) => setEndDate(new Date(e.target.value))}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Suche</label>
+              <input 
+                type="text" 
+                value={searchText} 
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Beschreibung..."
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-3 flex flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="fixkosten"
+                checked={showFixkosten} 
+                onChange={(e) => setShowFixkosten(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="fixkosten" className="text-sm text-gray-700">
+                Fixkosten 📌
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="lohn"
+                checked={showLoehne} 
+                onChange={(e) => setShowLoehne(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="lohn" className="text-sm text-gray-700">
+                Lohnauszahlungen 💰
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="standard"
+                checked={showStandard} 
+                onChange={(e) => setShowStandard(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="standard" className="text-sm text-gray-700">
+                Standard
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="manual"
+                checked={showManual} 
+                onChange={(e) => setShowManual(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="manual" className="text-sm text-gray-700">
+                Manuelle Transaktionen ✏️
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="simulations"
+                checked={showSimulations} 
+                onChange={(e) => setShowSimulations(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="simulations" className="text-sm text-gray-700">
+                Simulationen 🔮
+              </label>
+            </div>
+
+            {/* Direction filters */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="incoming"
+                checked={showIncoming}
+                onChange={(e) => setShowIncoming(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="incoming" className="text-sm text-gray-700">
+                Eingehend
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="outgoing"
+                checked={showOutgoing}
+                onChange={(e) => setShowOutgoing(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
+              />
+              <label htmlFor="outgoing" className="text-sm text-gray-700">
+                Ausgehend
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        {/* Content area */}
+        {isLoading ? (
+          <div className="p-4 text-center text-gray-500">
+            Lade Daten...
+          </div>
+        ) : error ? (
+          <div className="p-4 text-center text-red-500">
+            {error}
+          </div>
+        ) : filteredTransactions.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            Keine Transaktionen gefunden.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Datum
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Beschreibung
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kategorie
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Betrag
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kontostand
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Aktionen
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTransactions.map((transaction) => {
+                  const isIncome = transaction.direction === 'Incoming';
+                  const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
+                  
+                  return (
+                    <tr 
+                      key={transaction.id}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {transaction.details}
+                        {transaction.kategorie === 'Simulation' && <span className="ml-2">🔮</span>}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {transaction.kategorie === 'Lohn' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            💰 Lohn
+                          </span>
+                        ) : transaction.kategorie === 'Fixkosten' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            📌 Fixkosten
+                          </span>
+                        ) : transaction.kategorie === 'Simulation' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            🔮 Simulation
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            Standard
+                          </span>
+                        )}
+                      </td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
+                        {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
+                        {formatCHF(transaction.kontostand || 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              ✏️
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(transaction)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

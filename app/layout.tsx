@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./globals-tooltip.css";
-import "react-day-picker/dist/style.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
 const geistSans = Geist({
