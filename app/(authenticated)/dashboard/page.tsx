@@ -11,7 +11,7 @@ import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixko
 import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
 import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
 import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
-import { SmartForecastChart } from '@/app/components/dashboard/SmartForecastChart';
+import { ExecutiveForecastDashboard } from '@/app/components/dashboard/ExecutiveForecastDashboard';
 import { ModernCashflowChart } from '@/app/components/dashboard/ModernCashflowChart';
 import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
 import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
@@ -188,7 +188,7 @@ export default function DashboardPage() {
         openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
       />
 
-      <SmartForecastChart isLoading={isLoading} points={forecastPoints} />
+      <ExecutiveForecastDashboard isLoading={isLoading} points={forecastPoints} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ModernCashflowChart data={monthlyData} />
