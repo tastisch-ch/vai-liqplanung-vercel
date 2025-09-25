@@ -70,6 +70,16 @@ export default function Sidebar() {
     description: string;
   };
 
+  // Smooth fade-in of balance content when expanding
+  const [balanceOpacity, setBalanceOpacity] = useState(0);
+  useEffect(() => {
+    if (!collapsed) {
+      setBalanceOpacity(0);
+      const r = requestAnimationFrame(() => setBalanceOpacity(1));
+      return () => cancelAnimationFrame(r);
+    }
+  }, [collapsed]);
+
   // Core navigation links
   const navLinks: NavLink[] = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', description: 'Übersicht' },
@@ -263,7 +273,8 @@ export default function Sidebar() {
             )}
           </div>
           {!collapsed && (
-            isBalanceEditing ? (
+            <div className={`transition-opacity duration-300 ease-out ${balanceOpacity ? 'opacity-100' : 'opacity-0'}`}>
+            {isBalanceEditing ? (
               <div className="mb-2">
                 <input
                   type="text"
@@ -318,7 +329,8 @@ export default function Sidebar() {
                   </>
                 )}
               </div>
-            )
+            )}
+            </div>
           )}
         </div>
       )}
