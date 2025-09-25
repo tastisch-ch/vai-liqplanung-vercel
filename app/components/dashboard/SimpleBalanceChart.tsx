@@ -7,6 +7,12 @@ interface Point { date: string; balance: number }
 interface Props { isLoading: boolean; points: Point[] }
 
 const valueFormatter = (number: number) => formatCHF(number);
+const axisFormatter = (n: number) =>
+  new Intl.NumberFormat('de-CH', {
+    style: 'currency',
+    currency: 'CHF',
+    maximumFractionDigits: 0,
+  }).format(n);
 
 export function SimpleBalanceChart({ isLoading, points }: Props) {
 
@@ -52,11 +58,11 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         categories={['Kontostand']}
         colors={['blue']}
         showLegend={false}
-        valueFormatter={valueFormatter}
+        valueFormatter={axisFormatter}
         showYAxis={true}
         yAxisWidth={64}
         showGridLines={true}
-        className="mt-6 hidden h-48 sm:block"
+        className="mt-6 hidden h-64 sm:block"
       />
       
       <LineChart
@@ -65,10 +71,10 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         categories={['Kontostand']}
         colors={['blue']}
         showLegend={false}
-        valueFormatter={valueFormatter}
+        valueFormatter={axisFormatter}
         startEndOnly={true}
         showYAxis={false}
-        className="mt-6 h-48 sm:hidden"
+        className="mt-6 h-56 sm:hidden"
       />
     </div>
   );
