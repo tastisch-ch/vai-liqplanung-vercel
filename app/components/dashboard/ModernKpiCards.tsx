@@ -22,7 +22,8 @@ export function ModernKpiCards({
   
   // Calculate health indicators
   const balanceHealth = currentBalance > 10000 ? "healthy" : currentBalance > 0 ? "warning" : "critical";
-  const runwayHealth = runwayMonths > 6 ? "healthy" : runwayMonths > 3 ? "warning" : "critical";
+  // New thresholds: healthy >= 3, critical < 2, else warning
+  const runwayHealth = runwayMonths >= 3 ? "healthy" : runwayMonths < 2 ? "critical" : "warning";
   const eomTrend = eomForecast >= currentBalance;
   
   const runwayProgress = Math.min((runwayMonths / 12) * 100, 100);
