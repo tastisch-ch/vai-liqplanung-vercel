@@ -18,6 +18,8 @@ import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
 // Dashboard KPI and chart intentionally not used on Planung
 import {
+  Grid,
+  Flex,
   TabGroup,
   TabList,
   Tab,
@@ -31,6 +33,8 @@ import {
   TableHeaderCell,
   TableBody,
   TableCell,
+  Select,
+  SelectItem,
 } from "@tremor/react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/lib/supabase/client';
@@ -429,7 +433,7 @@ export default function Planung() {
   return (
     <div className="space-y-6">
       {/* Filters Card using Tremor controls inside our card shell */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6 relative">
         <div className="flex items-center justify-between mb-4">
           <div className="inline-flex items-center gap-2">
             <span className="p-2 rounded-lg bg-blue-100">
@@ -439,8 +443,8 @@ export default function Planung() {
           </div>
           <Button onClick={() => setIsFormOpen(true)} className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">Neue Transaktion</Button>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="md:col-span-1">
+        <Grid numItemsSm={1} numItemsLg={3} className="gap-4">
+          <div>
             <TabGroup index={["monthly","quarterly","yearly"].indexOf(activeTab)} onIndexChange={(i)=>handleTabChange(["monthly","quarterly","yearly"][i] as string)}>
               <TabList>
                 <Tab>3 Monate</Tab>
@@ -449,42 +453,48 @@ export default function Planung() {
               </TabList>
             </TabGroup>
           </div>
-          <div className="md:col-span-1">
+          <div>
             <DateRangePicker
+              className="w-full"
               value={{ from: startDate as any, to: endDate as any }}
               onValueChange={(v: any) => { if (v?.from) setStartDate(new Date(v.from)); if (v?.to) setEndDate(new Date(v.to)); }}
               enableSelect={false}
+              placeholder="Zeitraum wählen"
             />
           </div>
-          <div className="md:col-span-1">
-            <TextInput value={searchText} onValueChange={setSearchText as any} placeholder="Beschreibung..." />
+          <div>
+            <TextInput className="w-full" value={searchText} onValueChange={setSearchText as any} placeholder="Beschreibung suchen" />
           </div>
-        </div>
+        </Grid>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <MultiSelect
-            value={[
-              ...(showFixkosten ? ['Fixkosten'] : []),
-              ...(showLoehne ? ['Lohn'] : []),
-              ...(showStandard ? ['Standard'] : []),
-              ...(showManual ? ['Manual'] : []),
-              ...(showSimulations ? ['Simulation'] : []),
-            ]}
-            onValueChange={(vals: string[]) => {
-              setShowFixkosten(vals.includes('Fixkosten'));
-              setShowLoehne(vals.includes('Lohn'));
-              setShowStandard(vals.includes('Standard'));
-              setShowManual(vals.includes('Manual'));
-              setShowSimulations(vals.includes('Simulation'));
-            }}
-          >
-            <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
-            <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
-            <MultiSelectItem value="Standard">Standard</MultiSelectItem>
-            <MultiSelectItem value="Manual">Manuell</MultiSelectItem>
-            <MultiSelectItem value="Simulation">Simulation</MultiSelectItem>
-          </MultiSelect>
-          <div className="flex items-center gap-6">
+        <Grid numItemsSm={1} numItemsLg={3} className="gap-4 mt-4">
+          <div>
+            <MultiSelect
+              className="w-full"
+              placeholder="Kategorien filtern"
+              value={[
+                ...(showFixkosten ? ['Fixkosten'] : []),
+                ...(showLoehne ? ['Lohn'] : []),
+                ...(showStandard ? ['Standard'] : []),
+                ...(showManual ? ['Manual'] : []),
+                ...(showSimulations ? ['Simulation'] : []),
+              ]}
+              onValueChange={(vals: string[]) => {
+                setShowFixkosten(vals.includes('Fixkosten'));
+                setShowLoehne(vals.includes('Lohn'));
+                setShowStandard(vals.includes('Standard'));
+                setShowManual(vals.includes('Manual'));
+                setShowSimulations(vals.includes('Simulation'));
+              }}
+            >
+              <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
+              <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
+              <MultiSelectItem value="Standard">Standard</MultiSelectItem>
+              <MultiSelectItem value="Manual">Manuell</MultiSelectItem>
+              <MultiSelectItem value="Simulation">Simulation</MultiSelectItem>
+            </MultiSelect>
+          </div>
+          <Flex justifyContent="start" alignItems="center" className="gap-6">
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <Switch checked={showIncoming} onCheckedChange={setShowIncoming as any} />
               Eingehend
@@ -493,8 +503,16 @@ export default function Planung() {
               <Switch checked={showOutgoing} onCheckedChange={setShowOutgoing as any} />
               Ausgehend
             </label>
+          </Flex>
+          <div>
+            <Select className="w-full" value={sortOption} onValueChange={(v: string)=>setSortOption(v)}>
+              <SelectItem value="date-asc">Datum ↑</SelectItem>
+              <SelectItem value="date-desc">Datum ↓</SelectItem>
+              <SelectItem value="amount-asc">Betrag ↑</SelectItem>
+              <SelectItem value="amount-desc">Betrag ↓</SelectItem>
+            </Select>
           </div>
-        </div>
+        </Grid>
       </div>
       {/* Content area */}
       {isLoading ? (
