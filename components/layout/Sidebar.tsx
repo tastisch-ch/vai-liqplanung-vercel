@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { formatCHF, parseCHF } from '@/lib/currency';
 import logger from '@/lib/logger';
@@ -14,6 +15,7 @@ import Image from 'next/image';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isBalanceEditing, setIsBalanceEditing] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   
@@ -119,6 +121,18 @@ export default function Sidebar() {
       logError(error, 'Error updating global kontostand');
     } finally {
       setIsLoadingBalance(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await auth.signOut();
+      router.push('/login');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 300);
+    } catch (e) {
+      logger.logError(e, 'Error during sign out', { component: 'Sidebar' });
     }
   };
 
@@ -300,7 +314,7 @@ export default function Sidebar() {
       {/* Sign out + collapse at bottom (stacked) */}
       <div className="mt-auto p-4 border-t border-gray-200">
         {isAuthenticated && (
-          <button onClick={() => auth.signOut()} className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between'} text-sm text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md`}>
+          <button onClick={handleSignOut} className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between'} text-sm text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md`}>
             <span className="flex items-center gap-2">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
               {!collapsed && <span>Abmelden</span>}
