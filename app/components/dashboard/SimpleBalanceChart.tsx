@@ -69,7 +69,15 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
           <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
-            <YAxis width={64} tickFormatter={axisFormatter as any} tick={{ fontSize: 12 }} domain={[domainMin, domainMax]} />
+            <YAxis
+              width={64}
+              tickFormatter={axisFormatter as any}
+              tick={{ fontSize: 12 }}
+              domain={[domainMin, domainMax]}
+              scale="linear"
+              allowDecimals={false}
+              tickCount={5}
+            />
             <RTooltip content={<CustomTooltip data={chartData} />} />
             <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
           </RLineChart>
