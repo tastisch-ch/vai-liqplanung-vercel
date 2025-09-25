@@ -11,8 +11,8 @@ import { loadFixkosten, convertFixkostenToBuchungen } from '@/lib/services/fixko
 import { loadLohnkosten, convertLohnkostenToBuchungen } from '@/lib/services/lohnkosten';
 import { loadFixkostenOverrides } from '@/lib/services/fixkosten-overrides';
 import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
-import { ForecastChartTremor } from '@/app/components/dashboard/ForecastChartTremor';
-import { MonthlyCashflowTremor } from '@/app/components/dashboard/MonthlyCashflowTremor';
+import { ModernForecastChart } from '@/app/components/dashboard/ModernForecastChart';
+import { ModernCashflowChart } from '@/app/components/dashboard/ModernCashflowChart';
 import { CostBreakdown } from '@/app/components/dashboard/CostBreakdown';
 import { UpcomingPayments } from '@/app/components/dashboard/UpcomingPayments';
 import { OverdueInvoices } from '@/app/components/dashboard/OverdueInvoices';
@@ -188,10 +188,10 @@ export default function DashboardPage() {
         openOutgoing={{ count: kpi.openOutgoingCount, sum: kpi.openOutgoingSum }}
       />
 
-      <ForecastChartTremor isLoading={isLoading} points={forecastPoints} />
+      <ModernForecastChart isLoading={isLoading} points={forecastPoints} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MonthlyCashflowTremor data={monthlyData} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ModernCashflowChart data={monthlyData} />
         <CostBreakdown data={breakdown} />
       </div>
       
