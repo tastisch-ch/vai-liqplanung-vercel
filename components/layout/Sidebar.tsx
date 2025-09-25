@@ -169,10 +169,16 @@ export default function Sidebar() {
     <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 h-full flex flex-col transition-all duration-300`}>
       {/* Sidebar Header with logo + collapse */}
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className={`${collapsed ? 'w-7' : 'w-28'} transition-all duration-300`}> 
+        <div className="flex items-center gap-2">
+          {collapsed ? (
+            <svg className="h-7 w-7 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8"/>
+              <path d="M8 12h8"/>
+            </svg>
+          ) : (
             <Image src="/assets/vaios-logo.svg" alt="vaios" width={112} height={24} priority />
-          </div>
+          )}
         </div>
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Sidebar einklappen/ausklappen">
           {collapsed ? (
