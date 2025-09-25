@@ -168,18 +168,11 @@ export default function Sidebar() {
   return (
     <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-screen flex flex-col transition-all duration-300`}>
       {/* Sidebar Header with logo + collapse */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200 flex items-center">
         <div className="flex items-center gap-2">
           <Image src="/assets/vaios-icon.svg" alt="vaios icon" width={28} height={28} priority className={`${collapsed ? 'block' : 'hidden'}`} />
           <Image src="/assets/vaios-logo.svg" alt="vaios" width={112} height={24} priority className={`${collapsed ? 'hidden' : 'block'}`} />
         </div>
-        <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Sidebar einklappen/ausklappen">
-          {collapsed ? (
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          ) : (
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          )}
-        </button>
       </div>
 
       {/* Account Section integrated */}
