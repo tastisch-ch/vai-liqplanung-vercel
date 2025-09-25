@@ -66,71 +66,68 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 p-6 relative z-30 overflow-visible">
-      <Flex className="mb-4 items-center">
-        <div className="inline-flex items-center gap-2">
-          <span className="p-2 rounded-lg bg-blue-100">
-            <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h18M3 10h18M3 16h18"/></svg>
-          </span>
-          <span className="text-sm text-gray-600">Filter</span>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 relative z-30 overflow-visible">
+      <div className="grid grid-cols-1 gap-4 border-b border-gray-200 p-6 sm:grid-cols-2 md:grid-cols-4">
+        <div className="w-full">
+          <label className="text-tremor-default font-medium text-gray-900">Zeitraum</label>
+          <div className="mt-2 relative z-40">
+            <DateRangePicker
+              className="w-full border-tremor-border dark:border-dark-tremor-border"
+              value={{ from: startDate as any, to: endDate as any }}
+              onValueChange={(v: { from?: Date|string; to?: Date|string }) => {
+                if (v?.from) onDateRangeChange(new Date(v.from), endDate);
+                if (v?.to) onDateRangeChange(startDate, new Date(v.to));
+              }}
+              enableSelect={false}
+              placeholder="Zeitraum wählen"
+              color="emerald"
+            />
+          </div>
         </div>
-        <div className="ml-auto">
-          <button onClick={onNewTransaction} className="inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 px-3 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">
-            Neue Transaktion
-          </button>
+        <div className="w-full">
+          <label className="text-tremor-default font-medium text-gray-900">Kategorien</label>
+          <div className="mt-2 relative z-40">
+            <MultiSelect
+              className="w-full"
+              placeholder="Kategorien filtern"
+              value={selectedCategories}
+              onValueChange={(vals: string[]) => onCategoriesChange(vals)}
+              color="emerald"
+            >
+              <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
+              <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
+              <MultiSelectItem value="Standard">Standard</MultiSelectItem>
+              <MultiSelectItem value="Manual">Manuell</MultiSelectItem>
+              <MultiSelectItem value="Simulation">Simulation</MultiSelectItem>
+            </MultiSelect>
+          </div>
         </div>
-      </Flex>
+        <div className="w-full">
+          <label className="text-tremor-default font-medium text-gray-900">Beschreibung</label>
+          <div className="mt-2 relative z-30">
+            <TextInput
+              className="w-full"
+              value={searchText}
+              onValueChange={onSearch as any}
+              placeholder="Beschreibung suchen"
+              icon={SearchIcon as any}
+            />
+          </div>
+        </div>
+        <div className="w-full">
+          <label className="text-tremor-default font-medium text-gray-900">Sortierung</label>
+          <div className="mt-2">
+            <Select className="w-full" value={sortOption} onValueChange={(v: any)=>onSortChange(v)}>
+              <SelectItem value="date-asc">Datum ↑</SelectItem>
+              <SelectItem value="date-desc">Datum ↓</SelectItem>
+              <SelectItem value="amount-asc">Betrag ↑</SelectItem>
+              <SelectItem value="amount-desc">Betrag ↓</SelectItem>
+            </Select>
+          </div>
+        </div>
+      </div>
 
-      <Grid numItemsSm={1} numItemsLg={3} className="gap-4">
-        <div>
-          <TabGroup index={["monthly","quarterly","yearly"].indexOf(activeTab)} onIndexChange={(i)=>onTabChange(["monthly","quarterly","yearly"][i] as Props['activeTab'])}>
-            <TabList>
-              <Tab>3 Monate</Tab>
-              <Tab>9 Monate</Tab>
-              <Tab>1 Jahr</Tab>
-            </TabList>
-          </TabGroup>
-        </div>
-        <div className="relative z-40">
-          <DateRangePicker
-            className="w-full"
-            value={{ from: startDate as any, to: endDate as any }}
-            onValueChange={(v: { from?: Date|string; to?: Date|string }) => {
-              if (v?.from) onDateRangeChange(new Date(v.from), endDate);
-              if (v?.to) onDateRangeChange(startDate, new Date(v.to));
-            }}
-            enableSelect={false}
-            placeholder="Zeitraum wählen"
-            color="emerald"
-          />
-        </div>
-        <div className="relative z-30">
-          <TextInput
-            className="w-full"
-            value={searchText}
-            onValueChange={onSearch as any}
-            placeholder="Beschreibung suchen"
-            icon={SearchIcon as any}
-          />
-        </div>
-      </Grid>
-
-      <Grid numItemsSm={1} numItemsLg={3} className="gap-4 mt-4">
-        <div className="relative z-40">
-          <MultiSelect
-            className="w-full"
-            placeholder="Kategorien filtern"
-            value={selectedCategories}
-            onValueChange={(vals: string[]) => onCategoriesChange(vals)}
-            color="emerald"
-          >
-            <MultiSelectItem value="Fixkosten">Fixkosten</MultiSelectItem>
-            <MultiSelectItem value="Lohn">Lohn</MultiSelectItem>
-            <MultiSelectItem value="Standard">Standard</MultiSelectItem>
-            <MultiSelectItem value="Manual">Manuell</MultiSelectItem>
-            <MultiSelectItem value="Simulation">Simulation</MultiSelectItem>
-          </MultiSelect>
-        </div>
+      <div className="p-6 pt-4">
         <Flex justifyContent="start" alignItems="center" className="gap-6">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <Switch checked={showIncoming} onCheckedChange={onToggleIncoming as any} />
@@ -140,16 +137,15 @@ export default function PlanningFilters(props: Props) {
             <Switch checked={showOutgoing} onCheckedChange={onToggleOutgoing as any} />
             Ausgehend
           </label>
+          <div className="ml-auto">
+            <button onClick={onNewTransaction} className="inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 px-3 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">
+              Neue Transaktion
+            </button>
+          </div>
         </Flex>
-        <div>
-          <Select className="w-full" value={sortOption} onValueChange={(v: any)=>onSortChange(v)}>
-            <SelectItem value="date-asc">Datum ↑</SelectItem>
-            <SelectItem value="date-desc">Datum ↓</SelectItem>
-            <SelectItem value="amount-asc">Betrag ↑</SelectItem>
-            <SelectItem value="amount-desc">Betrag ↓</SelectItem>
-          </Select>
-        </div>
-      </Grid>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 -mb-1 h-10 rounded-b-2xl bg-gradient-to-t from-white via-white to-transparent" />
     </div>
   );
 }
