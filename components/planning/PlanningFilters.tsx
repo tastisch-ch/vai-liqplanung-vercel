@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Grid, Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem } from '@tremor/react';
+import { Grid, Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem, Switch as TremorSwitch, Button } from '@tremor/react';
 import { DateRangePicker as TremorDatePicker } from '@/components/DatePicker';
 import { de } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
@@ -126,17 +126,15 @@ export default function PlanningFilters(props: Props) {
       <div className="p-6 pt-4">
         <Flex justifyContent="start" alignItems="center" className="gap-6">
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <Switch checked={showIncoming} onCheckedChange={onToggleIncoming as any} />
+            <TremorSwitch checked={showIncoming} onChange={onToggleIncoming as any} />
             Eingehend
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <Switch checked={showOutgoing} onCheckedChange={onToggleOutgoing as any} />
+            <TremorSwitch checked={showOutgoing} onChange={onToggleOutgoing as any} />
             Ausgehend
           </label>
           <div className="ml-auto">
-            <button onClick={onNewTransaction} className="inline-flex items-center justify-center text-sm font-medium ring-offset-background h-9 px-3 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors">
-              Neue Transaktion
-            </button>
+            <Button onClick={onNewTransaction}>Neue Transaktion</Button>
           </div>
         </Flex>
       </div>
