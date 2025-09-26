@@ -451,12 +451,12 @@ export default function Planung() {
             <Table className="mt-4 hidden md:table">
               <TableHead className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95">
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
-                  <TableHeaderCell>Datum</TableHeaderCell>
-                  <TableHeaderCell>Beschreibung</TableHeaderCell>
-                  <TableHeaderCell>Kategorie</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Kontostand</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95">Datum</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95">Beschreibung</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95">Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right">Betrag</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right">Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right">Aktionen</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
