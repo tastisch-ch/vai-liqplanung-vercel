@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Card } from '@tremor/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,16 +73,17 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-            {initialData ? 'Transaktion bearbeiten' : 'Neue Transaktion'}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
-            Bitte Felder ausfüllen. Simulation ist optional.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[560px] p-0 overflow-hidden">
+        <Card className="shadow-none border-0 !p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+              {initialData ? 'Transaktion bearbeiten' : 'Neue Transaktion'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+              Bitte Felder ausfüllen. Simulation ist optional.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date">Datum</Label>
             <Input
@@ -147,15 +149,16 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
             <Label htmlFor="simulation">Als Simulation markieren</Label>
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Abbrechen
-            </Button>
-            <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
-              {initialData ? 'Speichern' : 'Transaktion hinzufügen'}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Abbrechen
+              </Button>
+              <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
+                {initialData ? 'Speichern' : 'Transaktion hinzufügen'}
+              </Button>
+            </div>
+          </form>
+        </Card>
       </DialogContent>
     </Dialog>
   );
