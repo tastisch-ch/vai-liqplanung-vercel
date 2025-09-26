@@ -11,11 +11,9 @@ import { RiAddLine, RiSubtractLine, RiPushpin2Line, RiUser3Line, RiMagicLine, Ri
 import { SearchInput } from '@/components/SearchInput';
 
 export default function PlanningFilters() {
-  // Default: 6 Monate ab morgen
-  const tomorrow = React.useMemo(() => {
-    const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(0,0,0,0); return t;
-  }, []);
-  const defaultRange: DateRange = React.useMemo(() => ({ from: tomorrow, to: addMonths(tomorrow, 6) }), [tomorrow]);
+  // Default: 6 Monate ab heute (Planung soll heutige Transaktionen zeigen)
+  const today = React.useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
+  const defaultRange: DateRange = React.useMemo(() => ({ from: today, to: addMonths(today, 6) }), [today]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(defaultRange);
   // emit custom event so page can pick up range changes
   React.useEffect(() => {
@@ -24,10 +22,10 @@ export default function PlanningFilters() {
     window.dispatchEvent(ev);
   }, [dateRange]);
   const presets = React.useMemo(() => ([
-    { label: '6 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 6) } },
-    { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
-    { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
-  ]), [tomorrow]);
+    { label: '6 Monate', dateRange: { from: today, to: addMonths(today, 6) } },
+    { label: '9 Monate', dateRange: { from: today, to: addMonths(today, 9) } },
+    { label: '12 Monate', dateRange: { from: today, to: addMonths(today, 12) } },
+  ]), [today]);
   const categoryOptions = React.useMemo(() => ['Fixkosten','Lohn','Standard','Manual','Simulation'] as const, []);
   const [categories, setCategories] = React.useState<string[]>([...categoryOptions]);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
