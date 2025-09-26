@@ -52,7 +52,16 @@ export default function PlanningFilters() {
           <div className="mt-2">
             <DropdownMenu open={isCatOpen} onOpenChange={handleCatOpenChange}>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">Kategorien wählen</Button>
+                <button
+                  type="button"
+                  className={
+                    `peer inline-flex items-center gap-x-2 rounded-md border px-3 py-2 text-sm shadow-xs outline-hidden transition-all ` +
+                    `bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 ` +
+                    `hover:bg-gray-50 dark:hover:bg-gray-900/60`
+                  }
+                >
+                  Kategorien wählen
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
