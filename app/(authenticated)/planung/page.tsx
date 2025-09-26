@@ -127,11 +127,11 @@ export default function Planung() {
     }
   };
 
-  // Hydrate filters from sessionStorage on mount so table reflects persisted filters immediately
+  // Hydrate filters from localStorage on mount so table reflects persisted filters immediately
   useEffect(() => {
     try {
       if (typeof window === 'undefined') return;
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw) as {
         dateRange?: { from?: string; to?: string };
@@ -189,7 +189,7 @@ export default function Planung() {
     }
   }, []);
 
-  // Listen for categories filtering
+  // Listen for categories filtering (also re-apply after hydration)
   useEffect(() => {
     const handler = (e: any) => {
       const selected: string[] = e.detail || [];
@@ -206,7 +206,7 @@ export default function Planung() {
     }
   }, []);
 
-  // Listen for direction toggles (incoming/outgoing)
+  // Listen for direction toggles (incoming/outgoing) (also re-apply after hydration)
   useEffect(() => {
     const handler = (e: any) => {
       const selected: string[] = e.detail || [];

@@ -36,11 +36,11 @@ export default function PlanningFilters() {
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
   const [query, setQuery] = React.useState('');
 
-  // Hydrate from sessionStorage on mount
+  // Hydrate from localStorage on mount
   React.useEffect(() => {
     try {
       if (typeof window === 'undefined') return;
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw) as {
           dateRange?: { from?: string; to?: string };
@@ -78,7 +78,7 @@ export default function PlanningFilters() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist to sessionStorage whenever filters change (after init)
+  // Persist to localStorage whenever filters change (after init)
   React.useEffect(() => {
     if (!initializedRef.current) return;
     try {
@@ -92,7 +92,7 @@ export default function PlanningFilters() {
         directions,
         query,
       };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (_) {
       // ignore
     }
@@ -118,7 +118,7 @@ export default function PlanningFilters() {
     setQuery('');
     window.dispatchEvent(new CustomEvent('planning:search', { detail: '' }));
     try {
-      if (typeof window !== 'undefined') sessionStorage.removeItem(STORAGE_KEY);
+      if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY);
     } catch (_) { /* ignore */ }
   };
   const renderCategoryIcon = (k: string) => {
