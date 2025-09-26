@@ -1,6 +1,21 @@
 /* Tremor-like overrides for react-day-picker when used with className="rdp-tremor" */
-.rdp-tremor .rdp-months { display: flex; gap: 1rem; }
-.rdp-tremor .rdp-head_cell { font-size: 0.75rem; color: #6b7280; }
+.rdp-tremor .rdp { color: #111827; font-size: 14px; }
+.rdp-tremor .rdp-months { display: flex; gap: 1.5rem; }
+.rdp-tremor .rdp-month { padding: 0 .5rem; }
+
+/* Caption */
+.rdp-tremor .rdp-caption { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.rdp-tremor .rdp-caption_label { font-weight: 600; color: #111827; }
+
+/* Navigation buttons */
+.rdp-tremor .rdp-nav { display: flex; gap: .5rem; }
+.rdp-tremor .rdp-nav_button { width: 32px; height: 32px; border: 1px solid #e5e7eb; border-radius: 9999px; background: #ffffff; color: #374151; display: inline-flex; align-items: center; justify-content: center; }
+.rdp-tremor .rdp-nav_button:hover { background: #f3f4f6; }
+
+/* Head cells */
+.rdp-tremor .rdp-head_cell { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+
+/* Day cells */
 .rdp-tremor .rdp-day { border-radius: 0.375rem; }
 .rdp-tremor .rdp-day:hover { background: #f3f4f6; }
 .rdp-tremor .rdp-day_selected, .rdp-tremor .rdp-day_start, .rdp-tremor .rdp-day_end { background: #d1fae5; color: #065f46; }
