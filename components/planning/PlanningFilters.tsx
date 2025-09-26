@@ -6,6 +6,8 @@ import { DateRangePicker, type DateRange } from '@/components/DatePicker';
 import { addMonths } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
+import { RiArrowDownCircleLine, RiArrowUpCircleLine } from '@remixicon/react';
 
 export default function PlanningFilters() {
   // Default: 6 Monate ab morgen
@@ -27,6 +29,7 @@ export default function PlanningFilters() {
   ]), [tomorrow]);
   const [categories, setCategories] = React.useState<string[]>(['Fixkosten','Lohn','Standard','Manual','Simulation']);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
+  const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
   // handler: keep menu open while toggling; dispatch filter once when closing
   const handleCatOpenChange = (open: boolean) => {
     if (!open) {
@@ -68,6 +71,25 @@ export default function PlanningFilters() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Richtung</label>
+          <div className="mt-2">
+            <ToggleGroup type="multiple" value={directions} onValueChange={(v) => {
+              setDirections(v);
+              const ev = new CustomEvent('planning:direction', { detail: v });
+              window.dispatchEvent(ev);
+            }}>
+              <ToggleGroupItem value="incoming" aria-label="Einnahmen">
+                <RiArrowDownCircleLine className="size-4 shrink-0 text-emerald-600" />
+                <span className="hidden sm:inline">Einnahmen</span>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="outgoing" aria-label="Ausgaben">
+                <RiArrowUpCircleLine className="size-4 shrink-0 text-red-600" />
+                <span className="hidden sm:inline">Ausgaben</span>
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
         </div>
       </div>
