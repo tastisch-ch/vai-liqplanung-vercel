@@ -1,21 +1,19 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
-import { Tabs } from '@/components/ui/tabs';
+import { TabNavigation, TabNavigationLink } from '@/components/ui/tab-navigation';
 
 export default function PlanningFilters() {
   return (
     <Card className="mx-auto">
       <div className="p-4 sm:p-6">
-        <Tabs
-          tabs={[
-            { label: '6 Monate', value: '6m' },
-            { label: '9 Monate', value: '9m' },
-            { label: '12 Monate', value: '12m' },
-          ]}
-          value={'6m'}
-          onChange={() => {}}
-        />
+        <TabNavigation>
+          <TabNavigationLink href="#" active>
+            6 Monate
+          </TabNavigationLink>
+          <TabNavigationLink href="#">9 Monate</TabNavigationLink>
+          <TabNavigationLink href="#">12 Monate</TabNavigationLink>
+        </TabNavigation>
       </div>
     </Card>
   );
