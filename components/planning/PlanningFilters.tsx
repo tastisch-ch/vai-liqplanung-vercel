@@ -32,40 +32,37 @@ export default function PlanningFilters() {
   }, [categories]);
   return (
     <Card className="mx-auto">
-      <div className="p-6 pt-0">
-        <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
-        <div className="mt-2 w-60">
-          <DateRangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            className="w-60"
-            presets={presets}
-          />
+      <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
+        <div>
+          <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
+          <div className="mt-2 w-60">
+            <DateRangePicker value={dateRange} onChange={setDateRange} className="w-60" presets={presets} />
+          </div>
         </div>
-      </div>
-      <div className="p-6 pt-0">
-        <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
-        <div className="mt-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary">Kategorien wählen</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Filter</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {['Fixkosten','Lohn','Standard','Manual','Simulation'].map((k) => (
-                <DropdownMenuCheckboxItem
-                  key={k}
-                  checked={categories.includes(k)}
-                  onCheckedChange={(v) => {
-                    setCategories((prev) => v ? Array.from(new Set([...prev,k])) : prev.filter(x=>x!==k));
-                  }}
-                >
-                  {k}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div>
+          <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
+          <div className="mt-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary">Kategorien wählen</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Filter</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {['Fixkosten','Lohn','Standard','Manual','Simulation'].map((k) => (
+                  <DropdownMenuCheckboxItem
+                    key={k}
+                    checked={categories.includes(k)}
+                    onCheckedChange={(v) => {
+                      setCategories((prev) => v ? Array.from(new Set([...prev,k])) : prev.filter(x=>x!==k));
+                    }}
+                  >
+                    {k}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </Card>
