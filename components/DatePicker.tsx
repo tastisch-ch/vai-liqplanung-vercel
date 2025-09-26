@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Calendar as CalendarPrimitive } from './Calendar';
+import { Button } from '@/components/ui/button';
 import type { DateRange as DayPickerDateRange } from 'react-day-picker';
 import { type Locale } from 'date-fns';
 
@@ -108,8 +109,12 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
             />
           </div>
           <div className="flex justify-end gap-2 pt-3">
-            <button className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50" onClick={()=> { setTemp(value); setOpen(false); }}>{translations?.cancel ?? 'Cancel'}</button>
-            <button className="px-3 py-1.5 text-sm rounded-md bg-gray-900 text-white hover:bg-black" onClick={()=> { onChange?.(temp); setOpen(false); }}>{translations?.apply ?? 'Apply'}</button>
+            <Button variant="outline" onClick={()=> { setTemp(value); setOpen(false); }}>
+              {translations?.cancel ?? 'Cancel'}
+            </Button>
+            <Button onClick={()=> { onChange?.(temp); setOpen(false); }}>
+              {translations?.apply ?? 'Apply'}
+            </Button>
           </div>
         </div>
       )}
