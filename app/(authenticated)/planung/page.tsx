@@ -17,7 +17,6 @@ import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
 import PlanningFilters from "@/components/planning/PlanningFilters";
-import PlanningTabs from "@/components/planning/PlanningTabs";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -360,7 +359,7 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      <PlanningTabs activeTab={activeTab as any} onTabChange={handleTabChange as any} />
+      {/* Tabs removed for clean rebuild */}
       <PlanningFilters />
         
         {/* Content area */}
