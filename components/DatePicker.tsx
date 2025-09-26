@@ -52,15 +52,24 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
         name={name}
         type="button"
         onClick={() => !disabled && setOpen((s) => !s)}
-        className={`w-full outline-hidden text-left whitespace-nowrap truncate rounded-tremor-default transition duration-100 border pr-8 py-2 shadow-tremor-input pl-3 relative bg-tremor-background dark:bg-dark-tremor-background hover:bg-tremor-background-muted dark:hover:bg-dark-tremor-background-muted text-tremor-content-emphasis dark:text-dark-tremor-content-emphasis border-tremor-border dark:border-dark-tremor-border ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${hasError ? 'ring-2 ring-red-200 border-red-500' : 'focus:ring-2 focus:border-tremor-brand-subtle focus:ring-tremor-brand-muted dark:focus:border-dark-tremor-brand-subtle dark:focus:ring-dark-tremor-brand-muted'}`}
+        className={
+          `peer flex w-full cursor-pointer appearance-none items-center gap-x-2 truncate rounded-md border px-3 py-2 shadow-xs outline-hidden transition-all sm:text-sm ` +
+          // colors like Tremor demo
+          `bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-900 dark:text-gray-50 ` +
+          `placeholder-gray-400 dark:placeholder-gray-500 ` +
+          // hover/focus/disabled
+          `hover:bg-gray-50 dark:hover:bg-gray-950/50 ` +
+          `${disabled ? 'pointer-events-none bg-gray-100 text-gray-400 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-500' : ''} ` +
+          `${hasError ? 'ring-2 ring-red-200 border-red-500' : 'focus:ring-2 focus:ring-gray-200 focus:border-gray-400 dark:focus:ring-gray-700/30'}`
+        }
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={disabled}
       >
-        <svg className="flex-none shrink-0 h-5 w-5 -ml-0.5 mr-2 inline text-tremor-content-subtle dark:text-dark-tremor-content-subtle" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/></svg>
+        <svg className="flex-none shrink-0 h-5 w-5 -ml-0.5 mr-2 inline text-gray-400 dark:text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/></svg>
         <span className="truncate align-middle">{display}</span>
         <span className="absolute inset-y-0 right-0 flex items-center mr-3">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-tremor-content-subtle dark:text-dark-tremor-content-subtle"><path d="M12 13.171 16.95 8.222 18.364 9.636 12 16l-6.364-6.364L7.05 8.222z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-gray-400 dark:text-gray-500"><path d="M12 13.171 16.95 8.222 18.364 9.636 12 16l-6.364-6.364L7.05 8.222z"/></svg>
         </span>
       </button>
       {open && (
