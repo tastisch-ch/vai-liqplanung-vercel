@@ -55,7 +55,7 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="relative rounded-tremor-default border border-tremor-border bg-tremor-background shadow-tremor-input dark:border-dark-tremor-border dark:bg-dark-tremor-background dark:shadow-dark-tremor-input z-30 overflow-visible">
+    <div className="relative rounded-tremor-default border border-tremor-border bg-tremor-background shadow-tremor-input dark:border-dark-tremor-border dark:bg-dark-tremor-background dark:shadow-dark-tremor-input z-30 overflow-visible pb-20 md:h-52">
       <div className="border-b border-tremor-border p-4 sm:p-6 dark:border-dark-tremor-border">
         <TabGroup index={(['monthly','quarterly','yearly'] as const).indexOf(activeTab)} onIndexChange={(i)=> onTabChange((['monthly','quarterly','yearly'] as const)[i])}>
           <TabList className="w-full overflow-x-auto">
@@ -134,11 +134,11 @@ export default function PlanningFilters(props: Props) {
 
       <div className="p-6 pt-4">
         <Flex justifyContent="start" alignItems="center" className="gap-6">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-tremor-default text-tremor-content dark:text-dark-tremor-content">
             <TremorSwitch checked={showIncoming} onChange={onToggleIncoming as any} />
             Eingehend
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-tremor-default text-tremor-content dark:text-dark-tremor-content">
             <TremorSwitch checked={showOutgoing} onChange={onToggleOutgoing as any} />
             Ausgehend
           </label>
