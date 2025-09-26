@@ -10,12 +10,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@internationalized/date": "^3.9.0",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-navigation-menu": "^1.2.14",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-switch": "^1.2.5",
+    "@react-aria/datepicker": "^3.15.1",
+    "@react-stately/datepicker": "^3.15.1",
     "@remixicon/react": "^4.6.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.6.1",
