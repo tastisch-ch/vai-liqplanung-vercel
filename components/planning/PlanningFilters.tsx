@@ -58,6 +58,7 @@ export default function PlanningFilters() {
                   <DropdownMenuCheckboxItem
                     key={k}
                     checked={categories.includes(k)}
+                    onSelect={(e) => e.preventDefault()}
                     onCheckedChange={(v) => {
                       setCategories((prev) => v ? Array.from(new Set([...prev,k])) : prev.filter(x=>x!==k));
                     }}
