@@ -44,7 +44,7 @@ export default function PlanningFilters() {
           <div className="mt-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary">Kategorien wählen</Button>
+                <Button variant="secondary" className="border-gray-300 text-gray-700 hover:bg-gray-50">Kategorien wählen</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
