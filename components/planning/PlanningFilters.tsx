@@ -39,13 +39,13 @@ export default function PlanningFilters() {
     <Card className="mx-auto">
       <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
         <div>
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
           <div className="mt-2 w-60">
             <DateRangePicker value={dateRange} onChange={setDateRange} className="w-60" presets={presets} />
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
           <div className="mt-2">
             <DropdownMenu open={isCatOpen} onOpenChange={handleCatOpenChange}>
               <DropdownMenuTrigger asChild>
