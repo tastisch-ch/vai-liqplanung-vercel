@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
 import logger from '@/lib/logger';
+import { RiEyeLine, RiEyeOffLine } from '@remixicon/react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,8 @@ export default function LoginPage() {
   const [showDebug, setShowDebug] = useState(false);
   const [isTestLoginLoading, setIsTestLoginLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   
   const router = useRouter();
   const { signIn, authState } = useAuth();
@@ -72,10 +75,16 @@ export default function LoginPage() {
   
   // If redirecting, show a loading state
   if (redirecting) {
+    // simple progressive loader
+    if (progress < 100) {
+      setTimeout(() => setProgress((p) => Math.min(100, p + 12)), 120);
+    }
     return (
-      <div className="max-w-md mx-auto text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-xl font-medium text-gray-700">Redirecting to dashboard...</p>
+      <div className="max-w-md mx-auto py-12">
+        <div className="mb-4 text-center text-gray-700">Weiterleiten …</div>
+        <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+          <div className="h-full bg-[#CEFF65] transition-all" style={{ width: `${progress}%` }} />
+        </div>
       </div>
     );
   }
@@ -162,7 +171,7 @@ export default function LoginPage() {
   
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Login</h1>
+      <h1 className="text-xl font-semibold mb-4 text-gray-900">Login</h1>
       
       {error && (
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
@@ -194,7 +203,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 h-11 text-base border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400"
           />
         </div>
         
@@ -202,23 +211,32 @@ export default function LoginPage() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Passwort
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full pr-10 px-4 h-11 text-base border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400"
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+              className="absolute inset-y-0 right-2 inline-flex items-center text-gray-500 hover:text-gray-700"
+              onClick={() => setShowPassword((s) => !s)}
+              tabIndex={-1}
+            >
+              {showPassword ? <RiEyeOffLine className="h-5 w-5" /> : <RiEyeLine className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         
         <div>
           <button
             type="submit"
             disabled={loading}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              loading ? 'opacity-75 cursor-not-allowed' : ''
-            }`}
+            className={`w-full h-11 flex justify-center items-center rounded-md shadow-xs text-sm font-medium bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65] ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
             {loading ? 'Anmelden...' : 'Anmelden'}
           </button>
@@ -273,17 +291,7 @@ export default function LoginPage() {
         </div>
       )}
       
-      <div className="mt-4 text-center">
-        <p className="text-sm text-gray-600 mb-2">
-          Noch kein Konto? Bitte kontaktieren Sie den Administrator.
-        </p>
-        
-        <p className="text-sm">
-          <Link href="/env-check" className="text-blue-600 hover:text-blue-800">
-            Environment & Connection Check
-          </Link>
-        </p>
-      </div>
+      <div className="mt-4 text-center text-sm text-gray-600">Noch kein Konto? Bitte kontaktieren Sie den Administrator.</div>
     </div>
   );
 } 
