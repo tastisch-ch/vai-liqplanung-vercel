@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@tremor/react/dist/esm/tremor.css";
 import "./globals-tooltip.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
