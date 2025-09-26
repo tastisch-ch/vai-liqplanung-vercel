@@ -472,14 +472,14 @@ export default function Planung() {
               </Button>
             </div>
             <Table className="mt-4 hidden md:table">
-              <TableHead className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>
+              <TableHead className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top, 0px)" }}>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Datum</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Beschreibung</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Kategorie</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Betrag</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Kontostand</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Aktionen</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top, 0px)" }}>Datum</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top, 0px)" }}>Beschreibung</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top, 0px)" }}>Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top, 0px)" }}>Betrag</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top, 0px)" }}>Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top, 0px)" }}>Aktionen</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
