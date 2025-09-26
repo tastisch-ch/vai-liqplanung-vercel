@@ -16,9 +16,7 @@ export default function PlanningFilters() {
   const tomorrow = React.useMemo(() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(0,0,0,0); return d; }, []);
   const defaultRange: DateRange = React.useMemo(() => ({ from: tomorrow, to: addMonths(tomorrow, 6) }), [tomorrow]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(defaultRange);
-  const STORAGE_KEY = React.useMemo(() => 'planning:filters:v1', []);
-  const initializedRef = React.useRef(false);
-  const hydratedRef = React.useRef(false);
+  
   // emit custom event so page can pick up range changes
   React.useEffect(() => {
     if (!dateRange?.from || !dateRange?.to) return;
@@ -36,69 +34,7 @@ export default function PlanningFilters() {
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
   const [query, setQuery] = React.useState('');
 
-  // Hydrate from localStorage (fallback to sessionStorage for backward compat) on mount
-  React.useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return;
-      let raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw) as {
-          dateRange?: { from?: string; to?: string };
-          categories?: string[];
-          directions?: string[];
-          query?: string;
-        };
-        if (data.dateRange?.from && data.dateRange?.to) {
-          const from = new Date(data.dateRange.from);
-          const to = new Date(data.dateRange.to);
-          if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-            setDateRange({ from, to });
-          }
-        }
-        if (Array.isArray(data.categories) && data.categories.length > 0) {
-          setCategories(data.categories);
-        }
-        if (Array.isArray(data.directions) && data.directions.length > 0) {
-          setDirections(data.directions);
-        }
-        if (typeof data.query === 'string') {
-          setQuery(data.query);
-        }
-        // Dispatch initial events for state that doesn't auto-dispatch
-        window.dispatchEvent(new CustomEvent('planning:categories', { detail: data.categories ?? categoryOptions }));
-        window.dispatchEvent(new CustomEvent('planning:direction', { detail: data.directions ?? ['incoming','outgoing'] }));
-        window.dispatchEvent(new CustomEvent('planning:search', { detail: data.query ?? '' }));
-        hydratedRef.current = true;
-      }
-    } catch (_) {
-      // ignore
-    } finally {
-      initializedRef.current = true;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist to localStorage whenever filters change (after init) and cleanup legacy sessionStorage
-  React.useEffect(() => {
-    if (!initializedRef.current) return;
-    try {
-      if (typeof window === 'undefined') return;
-      const payload = {
-        dateRange: dateRange?.from && dateRange?.to ? {
-          from: dateRange.from.toISOString(),
-          to: dateRange.to.toISOString(),
-        } : undefined,
-        categories,
-        directions,
-        query,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
-    } catch (_) {
-      // ignore
-    }
-  }, [STORAGE_KEY, dateRange, categories, directions, query]);
+  
   const categoriesLabel = React.useMemo(() => {
     const total = categoryOptions.length;
     const count = categories.length;
@@ -119,9 +55,7 @@ export default function PlanningFilters() {
     window.dispatchEvent(new CustomEvent('planning:direction', { detail: both }));
     setQuery('');
     window.dispatchEvent(new CustomEvent('planning:search', { detail: '' }));
-    try {
-      if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY);
-    } catch (_) { /* ignore */ }
+    
   };
   const renderCategoryIcon = (k: string) => {
     switch (k) {

@@ -65,10 +65,7 @@ export default function Planung() {
   
   // Add simulation state
   const [showSimulations, setShowSimulations] = useState(true);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Persisted filters storage key (kept in sync with PlanningFilters)
-  const STORAGE_KEY = 'planning:filters:v1';
+  
 
   // Add confirmation dialog state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -124,52 +121,9 @@ export default function Planung() {
     }
   };
 
-  // Hydrate filters from localStorage (fallback to legacy sessionStorage) on mount so table reflects persisted filters immediately
   useEffect(() => {
-    try {
-      if (typeof window === 'undefined') return;
-      let raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) raw = sessionStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw) as {
-        dateRange?: { from?: string; to?: string };
-        categories?: string[];
-        directions?: string[];
-        query?: string;
-      };
-      if (data.dateRange?.from && data.dateRange?.to) {
-        const from = new Date(data.dateRange.from);
-        const to = new Date(data.dateRange.to);
-        if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
-          setStartDate(from);
-          setEndDate(to);
-        }
-      }
-      if (Array.isArray(data.categories)) {
-        setShowFixkosten(data.categories.includes('Fixkosten'));
-        setShowLoehne(data.categories.includes('Lohn'));
-        setShowStandard(data.categories.includes('Standard'));
-        setShowManual(data.categories.includes('Manual'));
-        setShowSimulations(data.categories.includes('Simulation'));
-      }
-      if (Array.isArray(data.directions)) {
-        setShowIncoming(data.directions.includes('incoming'));
-        setShowOutgoing(data.directions.includes('outgoing'));
-      }
-      if (typeof data.query === 'string') {
-        setSearchText(data.query);
-      }
-    } catch (_) {
-      // ignore hydration errors
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
     fetchData();
-  }, [hydrated, user?.id, startDate, endDate]);
+  }, [user?.id, startDate, endDate]);
 
   // (Sticky header intentionally disabled)
 
@@ -187,7 +141,7 @@ export default function Planung() {
     }
   }, []);
 
-  // Listen for categories filtering (also re-apply after hydration)
+  // Listen for categories filtering
   useEffect(() => {
     const handler = (e: any) => {
       const selected: string[] = e.detail || [];
@@ -200,19 +154,11 @@ export default function Planung() {
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('planning:categories', handler as EventListener);
-      // also trigger once with stored or default to ensure initial application when listener is ready
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (Array.isArray(data?.categories)) handler({ detail: data.categories });
-        }
-      } catch {}
       return () => window.removeEventListener('planning:categories', handler as EventListener);
     }
   }, []);
 
-  // Listen for direction toggles (incoming/outgoing) (also re-apply after hydration)
+  // Listen for direction toggles (incoming/outgoing)
   useEffect(() => {
     const handler = (e: any) => {
       const selected: string[] = e.detail || [];
@@ -221,14 +167,6 @@ export default function Planung() {
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('planning:direction', handler as EventListener);
-      // initial trigger with persisted values
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (Array.isArray(data?.directions)) handler({ detail: data.directions });
-        }
-      } catch {}
       return () => window.removeEventListener('planning:direction', handler as EventListener);
     }
   }, []);
@@ -245,12 +183,10 @@ export default function Planung() {
     }
   }, []);
   
-  // Apply filters when filter criteria change (only after hydration to avoid double work)
+  // Apply filters when filter criteria change
   useEffect(() => {
-    if (!hydrated) return;
-    // Use current balance at application time to compute running balance on the filtered subset
     applyFiltersWithBalance(transactions, currentBalance);
-  }, [hydrated, searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions, currentBalance]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions, currentBalance]);
   
   // Filter function with explicit balance parameter
   const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
