@@ -1,7 +1,7 @@
 'use client';
 
 import ClientOnly from "@/components/auth/ClientOnly";
-import PublicNav from "@/components/layout/PublicNav";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -10,16 +10,13 @@ export default function AuthLayout({
 }) {
   return (
     <ClientOnly>
-      <div className="min-h-screen flex flex-col">
-        <PublicNav />
-        <main className="flex-grow container mx-auto px-4 py-6">
+      <div className="min-h-screen grid place-items-center px-4 py-8">
+        <main className="w-full max-w-md">
+          <div className="flex justify-center mb-8">
+            <Image src="/assets/vaios-logo.svg" alt="vaios Logo" width={140} height={40} priority />
+          </div>
           {children}
         </main>
-        <footer className="bg-white border-t border-gray-200 py-4">
-          <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-            © {new Date().getFullYear()} vaios - Alle Rechte vorbehalten
-          </div>
-        </footer>
       </div>
     </ClientOnly>
   );
