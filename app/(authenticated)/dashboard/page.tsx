@@ -1,5 +1,5 @@
+"use client";
 import PageHeader from "@/components/layout/PageHeader";
-'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { addMonths, addDays, endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
