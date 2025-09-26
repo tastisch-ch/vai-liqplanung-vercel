@@ -18,6 +18,7 @@ import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
 import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
+import PageHeader from "@/components/layout/PageHeader";
 import { RiAddLine, RiMagicLine, RiCoinsLine, RiPushpin2Line, RiUser3Line, RiEdit2Line, RiDeleteBin6Line, RiPencilLine } from "@remixicon/react";
 import PlanningFilters from "@/components/planning/PlanningFilters";
 import { supabase } from '@/lib/supabase/client';
@@ -418,6 +419,7 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
       <PlanningFilters />
         
         {/* Content area */}

@@ -1,3 +1,4 @@
+import PageHeader from "@/components/layout/PageHeader";
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -158,8 +159,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+      <PageHeader title="Dashboard" subtitle="Aktuelle Kennzahlen und Forecast" actions={
         <div className="flex items-center gap-3">
           <label className="text-sm text-gray-600">Zeitraum</label>
           <select value={timeRange} onChange={e => setTimeRange(Number(e.target.value))} className="border border-gray-300 rounded-md px-3 py-2">
@@ -173,7 +173,7 @@ export default function DashboardPage() {
             Simulationen einbeziehen
           </label>
         </div>
-      </div>
+      } />
       
       {/* Banner removed: undercoverage info now lives in Reichweite KPI */}
 
