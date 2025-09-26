@@ -7,8 +7,7 @@ import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
 import { cx, focusRing } from "@/lib/utils"
 
 const toggleStyles = [
-  "group inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-md border px-2 text-sm font-medium shadow-xs transition-all duration-100 ease-in-out",
-  "border-gray-300 dark:border-gray-800",
+  "group inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-md px-2 text-sm font-medium shadow-xs transition-all duration-100 ease-in-out",
   "text-gray-700 dark:text-gray-300",
   "bg-white dark:bg-gray-950",
   "hover:bg-gray-50 dark:hover:bg-gray-900/60",
