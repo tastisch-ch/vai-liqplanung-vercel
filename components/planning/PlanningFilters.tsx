@@ -126,8 +126,10 @@ export default function PlanningFilters() {
                     }}
                     className="flex items-center gap-2"
                   >
-                    {renderCategoryIcon(k)}
-                    <span>{k}</span>
+                    <span className="inline-flex items-center gap-2">
+                      {renderCategoryIcon(k)}
+                      <span>{k}</span>
+                    </span>
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
