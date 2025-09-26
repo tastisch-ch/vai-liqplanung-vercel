@@ -30,9 +30,10 @@ interface TransactionFormProps {
 }
 
 const defaultFormData: TransactionFormData = {
-  // Default to today; Planung zeigt ab heute
+  // Default to tomorrow; Planung startet ab morgen
   date: (() => {
     const d = new Date();
+    d.setDate(d.getDate() + 1);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');

@@ -40,8 +40,10 @@ export default function Planung() {
   
   // Filter states
   const [startDate, setStartDate] = useState<Date>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    return new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
   });
   
   const [endDate, setEndDate] = useState<Date>(() => {
@@ -270,18 +272,24 @@ export default function Planung() {
     
     switch (tab) {
       case 'monthly':
-        // Today + 3 months
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // Tomorrow + 3 months (excluding today)
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        start = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
         end = addMonths(start, 3);
         break;
       case 'quarterly':
-        // Today + 9 months
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // Tomorrow + 9 months (excluding today)
+        const tomorrowQ = new Date(now);
+        tomorrowQ.setDate(now.getDate() + 1);
+        start = new Date(tomorrowQ.getFullYear(), tomorrowQ.getMonth(), tomorrowQ.getDate());
         end = addMonths(start, 9);
         break;
       case 'yearly':
-        // Today + 1 year
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // Tomorrow + 1 year (excluding today)
+        const tomorrowY = new Date(now);
+        tomorrowY.setDate(now.getDate() + 1);
+        start = new Date(tomorrowY.getFullYear(), tomorrowY.getMonth(), tomorrowY.getDate());
         end = addMonths(start, 12);
         break;
     }
