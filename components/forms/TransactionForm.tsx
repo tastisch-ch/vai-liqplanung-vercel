@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import * as Popover from '@radix-ui/react-popover';
 import { Calendar } from '@/components/Calendar';
-import { format } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RiCalendar2Line, RiAddLine, RiSubtractLine } from '@remixicon/react';
 
@@ -83,6 +83,33 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
       return null;
     }
   })();
+  const [dateOpen, setDateOpen] = useState(false);
+  const [dateText, setDateText] = useState<string>(parsedDate ? format(parsedDate, 'dd.MM.yyyy') : '');
+  const [dateError, setDateError] = useState(false);
+
+  useEffect(() => {
+    const d = (() => {
+      try { return formData.date ? new Date(formData.date) : null; } catch { return null; }
+    })();
+    setDateText(d ? format(d, 'dd.MM.yyyy') : '');
+    setDateError(false);
+  }, [formData.date, isOpen]);
+
+  const commitDateText = () => {
+    const tryFormats = ['dd.MM.yyyy', 'd.M.yyyy', 'd.M.yy', 'yyyy-MM-dd'];
+    let parsed: Date | null = null;
+    for (const f of tryFormats) {
+      const p = parse(dateText, f, new Date());
+      if (isValid(p)) { parsed = p; break; }
+    }
+    if (!parsed) { setDateError(true); return; }
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    setFormData({ ...formData, date: `${y}-${m}-${day}` });
+    setDateText(format(parsed, 'dd.MM.yyyy'));
+    setDateError(false);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -99,19 +126,23 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
           <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2 mt-3">
             <Label htmlFor="date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Datum</Label>
-            <Popover.Root>
-              <Popover.Trigger asChild>
-                <button
-                  id="date"
-                  type="button"
-                  className="inline-flex w-full items-center gap-2 rounded-md border border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-950 h-11 px-3 text-left shadow-xs hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:outline-hidden focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30"
-                >
-                  <RiCalendar2Line className="h-4 w-4 text-gray-500" />
-                  <span className="truncate text-base text-gray-900 dark:text-gray-50">
-                    {parsedDate ? format(parsedDate, 'dd.MM.yyyy') : 'Datum wählen'}
-                  </span>
-                </button>
-              </Popover.Trigger>
+            <Popover.Root open={dateOpen} onOpenChange={setDateOpen}>
+              <div className="relative">
+                <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Popover.Trigger asChild>
+                  <Input
+                    id="date"
+                    type="text"
+                    placeholder="dd.mm.yyyy"
+                    value={dateText}
+                    onChange={(e) => { setDateText(e.target.value); setDateError(false); }}
+                    onFocus={() => setDateOpen(true)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitDateText(); setDateOpen(false); } }}
+                    onBlur={() => commitDateText()}
+                    className={`h-11 text-base pl-9 ${dateError ? 'ring-2 ring-red-200 border-red-500' : ''}`}
+                  />
+                </Popover.Trigger>
+              </div>
               <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
                 <Calendar
                   mode="single"
@@ -124,6 +155,9 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
                     const m = String(d.getMonth() + 1).padStart(2, '0');
                     const day = String(d.getDate()).padStart(2, '0');
                     setFormData({ ...formData, date: `${y}-${m}-${day}` });
+                    setDateText(format(d, 'dd.MM.yyyy'));
+                    setDateError(false);
+                    setDateOpen(false);
                   }}
                   className="rdp-tremor"
                 />
