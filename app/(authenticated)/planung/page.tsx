@@ -115,9 +115,6 @@ export default function Planung() {
       // Enhance transactions with running balance
       const enhancedTx = await enhanceTransactions(allTransactions);
       setTransactions(enhancedTx);
-      
-      // Apply filters with current balance immediately available
-      applyFiltersWithBalance(enhancedTx, currentBalanceValue);
     } catch (err) {
       setError('Fehler beim Laden der Daten. Bitte versuchen Sie es später erneut.');
       setTransactions([]);
@@ -234,8 +231,9 @@ export default function Planung() {
   // Apply filters when filter criteria change (only after hydration to avoid double work)
   useEffect(() => {
     if (!hydrated) return;
-    applyFilters(transactions);
-  }, [hydrated, searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions]);
+    // Use current balance at application time to compute running balance on the filtered subset
+    applyFiltersWithBalance(transactions, currentBalance);
+  }, [hydrated, searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions, currentBalance]);
   
   // Filter function with explicit balance parameter
   const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
