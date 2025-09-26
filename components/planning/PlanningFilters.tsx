@@ -7,7 +7,7 @@ import { addMonths } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
-import { RiAddLine, RiSubtractLine, RiPushpin2Line, RiUser3Line, RiMagicLine, RiEdit2Line, RiCoinsLine } from '@remixicon/react';
+import { RiAddLine, RiSubtractLine, RiPushpin2Line, RiUser3Line, RiMagicLine, RiEdit2Line, RiCoinsLine, RiRefreshLine } from '@remixicon/react';
 import { SearchInput } from '@/components/SearchInput';
 
 export default function PlanningFilters() {
@@ -39,6 +39,19 @@ export default function PlanningFilters() {
     return `${count} ausgewählt`;
   }, [categories, categoryOptions]);
   const labelForCategory = (k: string) => (k === 'Manual' ? 'Manuell' : k);
+  const resetFilters = () => {
+    const newRange = { from: tomorrow, to: addMonths(tomorrow, 6) } as DateRange;
+    setDateRange(newRange);
+    const allCats = [...categoryOptions];
+    setCategories(allCats);
+    setIsCatOpen(false);
+    window.dispatchEvent(new CustomEvent('planning:categories', { detail: allCats }));
+    const both = ['incoming','outgoing'];
+    setDirections(both);
+    window.dispatchEvent(new CustomEvent('planning:direction', { detail: both }));
+    setQuery('');
+    window.dispatchEvent(new CustomEvent('planning:search', { detail: '' }));
+  };
   const renderCategoryIcon = (k: string) => {
     switch (k) {
       case 'Fixkosten':
@@ -93,7 +106,7 @@ export default function PlanningFilters() {
                 <button
                   type="button"
                   className={
-                    `peer inline-flex items-center gap-x-2 rounded-md border h-9 px-3 text-sm shadow-xs outline-hidden transition-all ` +
+                    `peer inline-flex items-center gap-x-2 rounded-md border h-9 px-3 text-sm shadow-xs outline-hidden transition-all w-60 ` +
                     `bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 ` +
                     `hover:bg-gray-50 dark:hover:bg-gray-900/60`
                   }
@@ -101,7 +114,7 @@ export default function PlanningFilters() {
                   {categoriesLabel}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="w-60">
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
@@ -158,6 +171,15 @@ export default function PlanningFilters() {
                 <RiSubtractLine className="size-4 shrink-0" />
               </ToggleGroupItem>
             </ToggleGroup>
+          </div>
+        </div>
+        <div className="sm:ml-auto">
+          <label className="sr-only">Reset</label>
+          <div className="mt-2">
+            <Button variant="outline" className="h-9 inline-flex items-center gap-2" onClick={resetFilters}>
+              <RiRefreshLine className="h-4 w-4" />
+              Filter zurücksetzen
+            </Button>
           </div>
         </div>
       </div>
