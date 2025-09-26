@@ -56,15 +56,7 @@ export default function PlanningFilters(props: Props) {
 
   return (
     <div className="relative rounded-tremor-default border border-tremor-border bg-tremor-background shadow-tremor-input dark:border-dark-tremor-border dark:bg-dark-tremor-background dark:shadow-dark-tremor-input z-30 overflow-visible pb-20 md:h-52">
-      <div className="border-b border-tremor-border p-4 sm:p-6 dark:border-dark-tremor-border">
-        <TabGroup index={(['monthly','quarterly','yearly'] as const).indexOf(activeTab)} onIndexChange={(i)=> onTabChange((['monthly','quarterly','yearly'] as const)[i])}>
-          <TabList className="w-full overflow-x-auto">
-            <Tab>3 Monate</Tab>
-            <Tab>9 Monate</Tab>
-            <Tab>1 Jahr</Tab>
-          </TabList>
-        </TabGroup>
-      </div>
+      {/* Tabs moved to PlanningTabs to rebuild step-by-step */}
 
       <div className="grid grid-cols-1 gap-4 border-b border-tremor-border p-4 sm:p-6 sm:grid-cols-2 md:grid-cols-4 dark:border-dark-tremor-border">
         <div className="w-full">
