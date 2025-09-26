@@ -437,7 +437,6 @@ export default function Planung() {
           </div>
         ) : (
           <>
-          <div className="relative max-h-[70vh] overflow-auto rounded-md">
           <TableRoot>
             <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10 px-1">
               <div>
@@ -513,7 +512,6 @@ export default function Planung() {
               </TableBody>
             </Table>
           </TableRoot>
-          </div>
           {/* Mobile compact list */}
           <div className="md:hidden space-y-2 mt-4">
             {filteredTransactions.map((tx) => {
