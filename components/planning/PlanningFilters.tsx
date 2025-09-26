@@ -85,7 +85,7 @@ export default function PlanningFilters() {
         <div>
           <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Richtung</label>
           <div className="mt-2">
-            <ToggleGroup type="multiple" value={directions} onValueChange={(v) => {
+            <ToggleGroup type="multiple" className="gap-2" value={directions} onValueChange={(v) => {
               setDirections(v);
               const ev = new CustomEvent('planning:direction', { detail: v });
               window.dispatchEvent(ev);
