@@ -36,11 +36,12 @@ export default function PlanningFilters() {
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
   const [query, setQuery] = React.useState('');
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage (fallback to sessionStorage for backward compat) on mount
   React.useEffect(() => {
     try {
       if (typeof window === 'undefined') return;
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) raw = sessionStorage.getItem(STORAGE_KEY);
       if (raw) {
         const data = JSON.parse(raw) as {
           dateRange?: { from?: string; to?: string };
@@ -78,7 +79,7 @@ export default function PlanningFilters() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Persist to localStorage whenever filters change (after init)
+  // Persist to localStorage whenever filters change (after init) and cleanup legacy sessionStorage
   React.useEffect(() => {
     if (!initializedRef.current) return;
     try {
@@ -93,6 +94,7 @@ export default function PlanningFilters() {
         query,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
     } catch (_) {
       // ignore
     }

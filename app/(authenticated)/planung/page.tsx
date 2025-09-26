@@ -124,11 +124,12 @@ export default function Planung() {
     }
   };
 
-  // Hydrate filters from localStorage on mount so table reflects persisted filters immediately
+  // Hydrate filters from localStorage (fallback to legacy sessionStorage) on mount so table reflects persisted filters immediately
   useEffect(() => {
     try {
       if (typeof window === 'undefined') return;
-      const raw = localStorage.getItem(STORAGE_KEY);
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) raw = sessionStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw) as {
         dateRange?: { from?: string; to?: string };
@@ -199,6 +200,14 @@ export default function Planung() {
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('planning:categories', handler as EventListener);
+      // also trigger once with stored or default to ensure initial application when listener is ready
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data?.categories)) handler({ detail: data.categories });
+        }
+      } catch {}
       return () => window.removeEventListener('planning:categories', handler as EventListener);
     }
   }, []);
@@ -212,6 +221,14 @@ export default function Planung() {
     };
     if (typeof window !== 'undefined') {
       window.addEventListener('planning:direction', handler as EventListener);
+      // initial trigger with persisted values
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data?.directions)) handler({ detail: data.directions });
+        }
+      } catch {}
       return () => window.removeEventListener('planning:direction', handler as EventListener);
     }
   }, []);
