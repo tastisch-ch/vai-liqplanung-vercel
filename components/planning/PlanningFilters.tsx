@@ -28,10 +28,18 @@ export default function PlanningFilters() {
     { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
     { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
   ]), [tomorrow]);
-  const [categories, setCategories] = React.useState<string[]>(['Fixkosten','Lohn','Standard','Manual','Simulation']);
+  const categoryOptions = React.useMemo(() => ['Fixkosten','Lohn','Standard','Manual','Simulation'] as const, []);
+  const [categories, setCategories] = React.useState<string[]>([...categoryOptions]);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
   const [query, setQuery] = React.useState('');
+  const categoriesLabel = React.useMemo(() => {
+    const total = categoryOptions.length;
+    const count = categories.length;
+    if (count === total) return 'Alle Kategorien';
+    if (count === 0) return 'Keine Kategorie';
+    return `${count} ausgewählt`;
+  }, [categories, categoryOptions]);
   // handler: keep menu open while toggling; dispatch filter once when closing
   const handleCatOpenChange = (open: boolean) => {
     if (!open) {
@@ -77,24 +85,24 @@ export default function PlanningFilters() {
                     `hover:bg-gray-50 dark:hover:bg-gray-900/60`
                   }
                 >
-                  Kategorien wählen
+                  {categoriesLabel}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
-                  checked={categories.length === 5}
+                  checked={categories.length === categoryOptions.length}
                   onSelect={(e)=> e.preventDefault()}
                   onCheckedChange={(v)=> {
-                    if (v) setCategories(['Fixkosten','Lohn','Standard','Manual','Simulation']);
+                    if (v) setCategories([...categoryOptions]);
                     else setCategories([]);
                   }}
                 >
                   Alle
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
-                {['Fixkosten','Lohn','Standard','Manual','Simulation'].map((k) => (
+                {categoryOptions.map((k) => (
                   <DropdownMenuCheckboxItem
                     key={k}
                     checked={categories.includes(k)}
