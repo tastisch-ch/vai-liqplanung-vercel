@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
@@ -30,8 +30,6 @@ export default function Planung() {
   const { user } = authState;
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
-  const headerRef = useRef<HTMLDivElement | null>(null);
-  const [stickyTop, setStickyTop] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
   
@@ -129,16 +127,7 @@ export default function Planung() {
     fetchData();
   }, [user?.id, startDate, endDate]);
 
-  // Measure header + filters height for sticky offset
-  useEffect(() => {
-    const update = () => {
-      const h = headerRef.current?.getBoundingClientRect().height || 0;
-      setStickyTop(h);
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+  // (Sticky header reverted for cleanliness)
 
   // Listen for date range changes from PlanningFilters
   useEffect(() => {
@@ -432,10 +421,8 @@ export default function Planung() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div ref={headerRef}>
-        <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
-        <PlanningFilters />
-      </div>
+      <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
+      <PlanningFilters />
         
         {/* Content area */}
         {isLoading ? (
@@ -464,14 +451,14 @@ export default function Planung() {
               </Button>
             </div>
             <Table className="mt-4 hidden md:table">
-              <TableHead className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: stickyTop }}>
+              <TableHead>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: stickyTop }}>Datum</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: stickyTop }}>Beschreibung</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: stickyTop }}>Kategorie</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: stickyTop }}>Betrag</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: stickyTop }}>Kontostand</TableHeaderCell>
-                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: stickyTop }}>Aktionen</TableHeaderCell>
+                  <TableHeaderCell>Datum</TableHeaderCell>
+                  <TableHeaderCell>Beschreibung</TableHeaderCell>
+                  <TableHeaderCell>Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
