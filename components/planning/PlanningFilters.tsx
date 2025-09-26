@@ -42,15 +42,15 @@ export default function PlanningFilters() {
   };
   return (
     <Card className="mx-auto">
-      <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6 flex-wrap">
+      <div className="p-6 pt-0 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-6 flex-wrap">
         <div>
-          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
-          <div className="mt-2 w-60">
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Zeitraum</label>
+          <div className="mt-2 w-60 h-9">
             <DateRangePicker value={dateRange} onChange={setDateRange} className="w-60" presets={presets} />
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Suche</label>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Suche</label>
           <div className="mt-2">
             <SearchInput
               value={query}
@@ -60,18 +60,19 @@ export default function PlanningFilters() {
                 window.dispatchEvent(ev);
               }}
               placeholder="Volltext"
+              debounceMs={300}
             />
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Kategorien</label>
           <div className="mt-2">
             <DropdownMenu open={isCatOpen} onOpenChange={handleCatOpenChange}>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   className={
-                    `peer inline-flex items-center gap-x-2 rounded-md border px-3 py-2 text-sm shadow-xs outline-hidden transition-all ` +
+                    `peer inline-flex items-center gap-x-2 rounded-md border h-9 px-3 text-sm shadow-xs outline-hidden transition-all ` +
                     `bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 ` +
                     `hover:bg-gray-50 dark:hover:bg-gray-900/60`
                   }
@@ -81,6 +82,17 @@ export default function PlanningFilters() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={categories.length === 5}
+                  onSelect={(e)=> e.preventDefault()}
+                  onCheckedChange={(v)=> {
+                    if (v) setCategories(['Fixkosten','Lohn','Standard','Manual','Simulation']);
+                    else setCategories([]);
+                  }}
+                >
+                  Alle
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
                 {['Fixkosten','Lohn','Standard','Manual','Simulation'].map((k) => (
                   <DropdownMenuCheckboxItem
@@ -99,7 +111,7 @@ export default function PlanningFilters() {
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Richtung</label>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Richtung</label>
           <div className="mt-2">
             <ToggleGroup type="multiple" className="gap-2" value={directions} onValueChange={(v) => {
               setDirections(v);

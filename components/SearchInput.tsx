@@ -11,13 +11,22 @@ type Props = {
   className?: string;
   name?: string;
   id?: string;
+  debounceMs?: number;
 };
 
 // Tremor-style Search Input (icon-left, neutral gray)
-export function SearchInput({ value, onChange, placeholder = "Suche...", className, name, id }: Props) {
+export function SearchInput({ value, onChange, placeholder = "Suche...", className, name, id, debounceMs = 300 }: Props) {
   const [internal, setInternal] = React.useState<string>(value ?? "");
 
   React.useEffect(() => { setInternal(value ?? ""); }, [value]);
+
+  // Debounce onChange
+  React.useEffect(() => {
+    const t = window.setTimeout(() => {
+      onChange?.(internal);
+    }, debounceMs);
+    return () => window.clearTimeout(t);
+  }, [internal, debounceMs, onChange]);
 
   return (
     <div className={cx("relative", className)}>
@@ -27,14 +36,10 @@ export function SearchInput({ value, onChange, placeholder = "Suche...", classNa
         name={name}
         type="text"
         value={internal}
-        onChange={(e) => {
-          const v = e.target.value;
-          setInternal(v);
-          onChange?.(v);
-        }}
+        onChange={(e) => setInternal(e.target.value)}
         placeholder={placeholder}
         className={
-          "peer w-60 sm:w-72 appearance-none rounded-md border px-3 py-2 pl-9 text-sm outline-hidden transition-all " +
+          "peer w-60 sm:w-72 appearance-none rounded-md border h-9 px-3 pl-9 text-sm outline-hidden transition-all " +
           "bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-500 " +
           "hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 focus:border-gray-400 dark:focus:ring-gray-700/30"
         }
