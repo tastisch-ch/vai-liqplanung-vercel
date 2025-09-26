@@ -474,7 +474,7 @@ export default function Planung() {
                     </span>
                   ) : transaction.modified ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <RiEdit2Line className="h-3.5 w-3.5" /> Manual
+                      <RiEdit2Line className="h-3.5 w-3.5" /> Manuell
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">

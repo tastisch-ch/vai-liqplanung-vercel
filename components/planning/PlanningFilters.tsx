@@ -38,6 +38,7 @@ export default function PlanningFilters() {
     if (count === 0) return 'Keine Kategorie';
     return `${count} ausgewählt`;
   }, [categories, categoryOptions]);
+  const labelForCategory = (k: string) => (k === 'Manual' ? 'Manuell' : k);
   const renderCategoryIcon = (k: string) => {
     switch (k) {
       case 'Fixkosten':
@@ -126,7 +127,7 @@ export default function PlanningFilters() {
                   >
                     <span className="inline-flex items-center gap-2">
                       {renderCategoryIcon(k)}
-                      <span>{k}</span>
+                      <span>{labelForCategory(k)}</span>
                     </span>
                   </DropdownMenuCheckboxItem>
                 ))}
