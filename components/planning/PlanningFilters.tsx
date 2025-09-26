@@ -33,7 +33,6 @@ export default function PlanningFilters({ value, onChange }: Props) {
           <DateRangePicker
             value={dateRange}
             onChange={setDateRange}
-            toDate={new Date()}
             className="w-60"
           />
         </div>
