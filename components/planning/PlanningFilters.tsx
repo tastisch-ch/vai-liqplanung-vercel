@@ -7,7 +7,7 @@ import { addMonths } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
-import { RiArrowDownCircleLine, RiArrowUpCircleLine } from '@remixicon/react';
+import { RiAddLine, RiSubtractLine } from '@remixicon/react';
 
 export default function PlanningFilters() {
   // Default: 6 Monate ab morgen
@@ -81,11 +81,19 @@ export default function PlanningFilters() {
               const ev = new CustomEvent('planning:direction', { detail: v });
               window.dispatchEvent(ev);
             }}>
-              <ToggleGroupItem value="incoming" aria-label="Einnahmen" className="data-[state=on]:bg-[#CEFF65] data-[state=on]:text-[#02403D]">
-                <RiArrowDownCircleLine className="size-4 shrink-0" />
+              <ToggleGroupItem
+                value="incoming"
+                aria-label="Einnahmen"
+                className="data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-700 data-[state=on]:border-emerald-200"
+              >
+                <RiAddLine className="size-4 shrink-0" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="outgoing" aria-label="Ausgaben" className="data-[state=on]:bg-[#CEFF65] data-[state=on]:text-[#02403D]">
-                <RiArrowUpCircleLine className="size-4 shrink-0" />
+              <ToggleGroupItem
+                value="outgoing"
+                aria-label="Ausgaben"
+                className="data-[state=on]:bg-rose-100 data-[state=on]:text-rose-700 data-[state=on]:border-rose-200"
+              >
+                <RiSubtractLine className="size-4 shrink-0" />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
