@@ -26,10 +26,14 @@ export default function PlanningFilters() {
     { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
   ]), [tomorrow]);
   const [categories, setCategories] = React.useState<string[]>(['Fixkosten','Lohn','Standard','Manual','Simulation']);
+  const [isCatOpen, setIsCatOpen] = React.useState(false);
+  // dispatch only on close to avoid excessive filtering while toggling
   React.useEffect(() => {
-    const ev = new CustomEvent('planning:categories', { detail: categories });
-    window.dispatchEvent(ev);
-  }, [categories]);
+    if (!isCatOpen) {
+      const ev = new CustomEvent('planning:categories', { detail: categories });
+      window.dispatchEvent(ev);
+    }
+  }, [isCatOpen]);
   return (
     <Card className="mx-auto">
       <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
@@ -42,7 +46,7 @@ export default function PlanningFilters() {
         <div>
           <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
           <div className="mt-2">
-            <DropdownMenu>
+            <DropdownMenu open={isCatOpen} onOpenChange={setIsCatOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" className="border-gray-300 text-gray-700 hover:bg-gray-50">Kategorien wählen</Button>
               </DropdownMenuTrigger>
