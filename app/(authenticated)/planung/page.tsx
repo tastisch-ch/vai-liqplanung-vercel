@@ -359,8 +359,14 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      {/* Tabs removed for clean rebuild */}
-      <PlanningFilters />
+      <PlanningFilters
+        value={activeTab as '6m' | '9m' | '12m'}
+        onChange={(v) => {
+          // map selection to previous ranges
+          setActiveTab(v === '6m' ? 'monthly' : v === '9m' ? 'quarterly' : 'yearly');
+          handleTabChange(v === '6m' ? 'monthly' : v === '9m' ? 'quarterly' : 'yearly');
+        }}
+      />
         
         {/* Content area */}
         {isLoading ? (
