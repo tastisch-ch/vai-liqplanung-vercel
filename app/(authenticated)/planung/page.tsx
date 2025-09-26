@@ -136,6 +136,23 @@ export default function Planung() {
       return () => window.removeEventListener('planning:date-range', handler as EventListener);
     }
   }, []);
+
+  // Listen for categories filtering
+  useEffect(() => {
+    const handler = (e: any) => {
+      const selected: string[] = e.detail || [];
+      // apply immediate filtering by toggling category flags
+      setShowFixkosten(selected.includes('Fixkosten'));
+      setShowLoehne(selected.includes('Lohn'));
+      setShowStandard(selected.includes('Standard'));
+      setShowManual(selected.includes('Manual'));
+      setShowSimulations(selected.includes('Simulation'));
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('planning:categories', handler as EventListener);
+      return () => window.removeEventListener('planning:categories', handler as EventListener);
+    }
+  }, []);
   
   // Apply filters when filter criteria change
   useEffect(() => {
