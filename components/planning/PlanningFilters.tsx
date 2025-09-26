@@ -1,7 +1,9 @@
 'use client';
 
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { TabNavigation, TabNavigationLink } from '@/components/ui/tab-navigation';
+import { DateRangePicker, type DateRange } from '@/components/DatePicker';
 
 type Props = {
   value: '6m' | '9m' | '12m';
@@ -9,6 +11,7 @@ type Props = {
 };
 
 export default function PlanningFilters({ value, onChange }: Props) {
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   return (
     <Card className="mx-auto">
       <div className="p-4 sm:p-6">
@@ -23,6 +26,17 @@ export default function PlanningFilters({ value, onChange }: Props) {
             12 Monate
           </TabNavigationLink>
         </TabNavigation>
+      </div>
+      <div className="p-6 pt-0">
+        <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
+        <div className="mt-2 w-full sm:max-w-md">
+          <DateRangePicker
+            value={dateRange}
+            onChange={setDateRange}
+            toDate={new Date()}
+            className="w-full"
+          />
+        </div>
       </div>
     </Card>
   );
