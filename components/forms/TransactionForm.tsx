@@ -96,9 +96,9 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
               Bitte Felder ausfüllen. Simulation ist optional.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="date">Datum</Label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2 mt-3">
+            <Label htmlFor="date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Datum</Label>
             <Popover.Root>
               <Popover.Trigger asChild>
                 <button
@@ -133,7 +133,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Betrag</Label>
+              <Label htmlFor="amount" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Betrag</Label>
               <Input
                 id="amount"
                 type="number"
@@ -146,7 +146,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
             </div>
 
             <div className="space-y-2">
-              <Label>Richtung</Label>
+              <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Richtung</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -179,7 +179,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="details">Details</Label>
+            <Label htmlFor="details" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Details</Label>
             <Input
               id="details"
               value={formData.details}
@@ -197,7 +197,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
                 setFormData({ ...formData, is_simulation: checked })
               }
             />
-            <Label htmlFor="simulation">Als Simulation markieren</Label>
+            <Label htmlFor="simulation" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Als Simulation markieren</Label>
           </div>
 
             <div className="flex justify-end space-x-2">
