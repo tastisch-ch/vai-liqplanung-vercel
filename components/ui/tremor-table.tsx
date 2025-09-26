@@ -6,13 +6,8 @@ const TableRoot = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, forwardedRef) => (
-  <div ref={forwardedRef}>
-    <div
-      className={cx("w-full overflow-auto whitespace-nowrap", className)}
-      {...props}
-    >
-      {children}
-    </div>
+  <div ref={forwardedRef} className={cx("w-full overflow-x-auto", className)} {...props}>
+    {children}
   </div>
 ))
 
