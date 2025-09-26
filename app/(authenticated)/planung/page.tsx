@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/services/buchungen";
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
@@ -30,6 +30,8 @@ export default function Planung() {
   const { user } = authState;
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('monthly');
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<EnhancedTransaction | null>(null);
   
@@ -126,6 +128,23 @@ export default function Planung() {
   useEffect(() => {
     fetchData();
   }, [user?.id, startDate, endDate]);
+
+  // Sticky thead against page scroll: keep top equal to header (title + filters) height
+  useEffect(() => {
+    if (!containerRef.current || !headerRef.current) return;
+    const setVar = () => {
+      const h = headerRef.current ? headerRef.current.getBoundingClientRect().height : 0;
+      containerRef.current!.style.setProperty('--sticky-top', `${h}px`);
+    };
+    setVar();
+    const ro = new ResizeObserver(setVar);
+    ro.observe(headerRef.current);
+    window.addEventListener('resize', setVar);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', setVar);
+    };
+  }, []);
 
   // (Sticky header reverted for cleanliness)
 
@@ -420,9 +439,11 @@ export default function Planung() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
-      <PlanningFilters />
+    <div ref={containerRef} className="container mx-auto p-4 space-y-6">
+      <div ref={headerRef}>
+        <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
+        <PlanningFilters />
+        </div>
         
         {/* Content area */}
         {isLoading ? (
@@ -451,14 +472,14 @@ export default function Planung() {
               </Button>
             </div>
             <Table className="mt-4 hidden md:table">
-              <TableHead>
+              <TableHead className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
-                  <TableHeaderCell>Datum</TableHeaderCell>
-                  <TableHeaderCell>Beschreibung</TableHeaderCell>
-                  <TableHeaderCell>Kategorie</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Kontostand</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Datum</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Beschreibung</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95" style={{ top: "var(--sticky-top)" }}>Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Betrag</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="sticky z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 text-right" style={{ top: "var(--sticky-top)" }}>Aktionen</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -468,23 +489,23 @@ export default function Planung() {
                   const categoryBadge = transaction.kategorie === 'Lohn' ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                       <RiUser3Line className="h-3.5 w-3.5" /> Lohn
-                    </span>
-                  ) : transaction.kategorie === 'Fixkosten' ? (
+                          </span>
+                        ) : transaction.kategorie === 'Fixkosten' ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
                       <RiPushpin2Line className="h-3.5 w-3.5 text-sky-700" /> Fixkosten
-                    </span>
-                  ) : transaction.kategorie === 'Simulation' ? (
+                          </span>
+                        ) : transaction.kategorie === 'Simulation' ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
                       <RiMagicLine className="h-3.5 w-3.5 text-violet-700" /> Simulation
                     </span>
                   ) : transaction.modified ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                       <RiEdit2Line className="h-3.5 w-3.5 text-orange-700" /> Manuell
-                    </span>
-                  ) : (
+                          </span>
+                        ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800">
                       <RiCoinsLine className="h-3.5 w-3.5 text-stone-700" /> Standard
-                    </span>
+                          </span>
                   );
                   return (
                     <TableRow key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
