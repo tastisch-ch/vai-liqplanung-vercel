@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem, Switch as TremorSwitch, Button } from '@tremor/react';
+import { Card, Flex, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem, Switch as TremorSwitch, Button } from '@tremor/react';
 import { DateRangePicker as TremorDatePicker } from '@/components/DatePicker';
 import { de } from 'date-fns/locale';
 
@@ -55,15 +55,13 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="relative rounded-tremor-default border border-tremor-border bg-tremor-background shadow-tremor-input dark:border-dark-tremor-border dark:bg-dark-tremor-background dark:shadow-dark-tremor-input z-30 overflow-visible pb-20 md:h-52">
-      {/* Tabs moved to PlanningTabs to rebuild step-by-step */}
-
-      <div className="grid grid-cols-1 gap-4 border-b border-tremor-border p-4 sm:p-6 sm:grid-cols-2 md:grid-cols-4 dark:border-dark-tremor-border">
+    <Card className="relative z-30 overflow-visible">
+      <div className="grid grid-cols-1 gap-4 border-b border-tremor-border p-6 sm:grid-cols-2 md:grid-cols-4 dark:border-dark-tremor-border">
         <div className="w-full">
           <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Zeitraum</label>
           <div className="mt-2 relative z-40">
             <TremorDatePicker
-              className="w-full border-tremor-border dark:border-dark-tremor-border"
+              className="w-full border-tremor-border dark:border-dark-tremor-border rounded-tremor-default"
               value={{ from: startDate, to: endDate }}
               onChange={(r)=> onDateRangeChange(r?.from, r?.to)}
               enableYearNavigation
@@ -85,7 +83,7 @@ export default function PlanningFilters(props: Props) {
           <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Kategorien</label>
           <div className="mt-2 relative z-40">
             <MultiSelect
-              className="w-full border-tremor-border dark:border-dark-tremor-border"
+              className="w-full border-tremor-border dark:border-dark-tremor-border rounded-tremor-default"
               placeholder="Kategorien filtern"
               value={selectedCategories}
               onValueChange={(vals: string[]) => onCategoriesChange(vals)}
@@ -103,7 +101,7 @@ export default function PlanningFilters(props: Props) {
           <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Beschreibung</label>
           <div className="mt-2 relative z-30">
             <TextInput
-              className="w-full border-tremor-border dark:border-dark-tremor-border"
+              className="w-full border-tremor-border dark:border-dark-tremor-border rounded-tremor-default"
               value={searchText}
               onValueChange={onSearch as any}
               placeholder="Beschreibung suchen"
@@ -114,7 +112,7 @@ export default function PlanningFilters(props: Props) {
         <div className="w-full">
           <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Sortierung</label>
           <div className="mt-2">
-            <Select className="w-full" value={sortOption} onValueChange={(v: any)=>onSortChange(v)}>
+            <Select className="w-full rounded-tremor-default" value={sortOption} onValueChange={(v: any)=>onSortChange(v)}>
               <SelectItem value="date-asc">Datum ↑</SelectItem>
               <SelectItem value="date-desc">Datum ↓</SelectItem>
               <SelectItem value="amount-asc">Betrag ↑</SelectItem>
@@ -135,12 +133,12 @@ export default function PlanningFilters(props: Props) {
             Ausgehend
           </label>
           <div className="ml-auto">
-            <Button onClick={onNewTransaction}>Neue Transaktion</Button>
+            <Button onClick={onNewTransaction} color="blue">Neue Transaktion</Button>
           </div>
         </Flex>
       </div>
       <div className="absolute inset-x-0 bottom-0 -mb-1 h-14 rounded-b-tremor-default bg-gradient-to-t from-tremor-background via-tremor-background to-transparent dark:from-gray-950 dark:via-gray-950 dark:to-transparent" />
-    </div>
+    </Card>
   );
 }
 
