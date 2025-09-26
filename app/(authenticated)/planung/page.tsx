@@ -418,7 +418,7 @@ export default function Planung() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-4 space-y-6">
       <PageHeader title="Planung" subtitle="Übersicht und Filter für Transaktionen" />
       <PlanningFilters />
         
