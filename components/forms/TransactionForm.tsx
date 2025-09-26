@@ -145,8 +145,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
                     placeholder="dd.mm.yyyy"
                     value={dateText}
                     onChange={(e) => { setDateText(e.target.value); setDateError(false); }}
-                    onClick={() => { setDateText(''); setDateError(false); }}
-                    onFocus={() => setDateOpen(true)}
+                    onClick={() => { setDateText(''); setDateError(false); setDateOpen(true); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitDateText(); setDateOpen(false); } }}
                     onBlur={() => commitDateText()}
                     className={`h-11 text-base pl-9 ${dateError ? 'ring-2 ring-red-200 border-red-500' : ''}`}
