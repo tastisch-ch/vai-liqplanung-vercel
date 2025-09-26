@@ -90,7 +90,7 @@ export interface DesignSettings {
 }
 
 // Transaction types for visual styling
-export type TransactionCategory = 'Standard' | 'Fixkosten' | 'Lohn' | 'Simulation';
+export type TransactionCategory = 'Standard' | 'Fixkosten' | 'Lohn' | 'Simulation' | 'Manuell';
 
 // Transaction marker types
 export interface TransactionMarker {

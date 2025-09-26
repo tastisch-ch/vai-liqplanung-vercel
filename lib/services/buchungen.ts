@@ -325,7 +325,7 @@ export async function enhanceTransactions(
     // Keep the original kategorie if it exists, ensuring it's a valid TransactionCategory
     const kategorie = (tx.kategorie || 'Standard') as TransactionCategory;
     
-    // Generate hints icons
+    // Generate hints icons (legacy emoji hints kept for now)
     let hinweis = '';
     if (tx.modified) hinweis += '✏️ ';
     if (kategorie === 'Fixkosten') hinweis += '📌 ';
@@ -363,7 +363,7 @@ export async function enhanceTransactions(
     // Keep the original kategorie if it exists, ensuring it's a valid TransactionCategory
     const kategorie = (tx.kategorie || 'Standard') as TransactionCategory;
     
-    // Generate hints icons
+    // Generate hints icons (legacy emoji hints kept for now)
     let hinweis = '';
     if (tx.modified) hinweis += '✏️ ';
     if (kategorie === 'Fixkosten') hinweis += '📌 ';
