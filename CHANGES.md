@@ -22,7 +22,7 @@
   - #DEE2E3 (Light gray)
 - Added utility classes and button styles in globals.css
 - Created Tailwind configuration for Vaios colors
-- Updated AuthNav component with brand colors
+- Removed AuthNav and ConditionalNav; navigation is now fully handled by `components/layout/Sidebar.tsx`.
 
 ## 4. Export Functionality
 - Created comprehensive export module with multiple formats:
