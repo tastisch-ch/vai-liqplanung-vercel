@@ -11,6 +11,7 @@ import { getCurrentBalance } from "@/lib/services/daily-balance";
 import { EnhancedTransaction } from "@/models/types";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
+import { cx } from "@/lib/utils";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
