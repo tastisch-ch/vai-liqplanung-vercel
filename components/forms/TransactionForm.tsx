@@ -8,6 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import * as Popover from '@radix-ui/react-popover';
+import { Calendar } from '@/components/Calendar';
+import { format } from 'date-fns';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { RiCalendar2Line, RiAddLine, RiSubtractLine } from '@remixicon/react';
 
 interface TransactionFormData {
   date: string;
@@ -71,6 +76,14 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
     onClose();
   };
 
+  const parsedDate = (() => {
+    try {
+      return formData.date ? new Date(formData.date) : null;
+    } catch {
+      return null;
+    }
+  })();
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[560px] p-0 overflow-hidden">
@@ -83,48 +96,86 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
               Bitte Felder ausfüllen. Simulation ist optional.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="date">Datum</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-              className="h-11 text-base px-4"
-            />
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  id="date"
+                  type="button"
+                  className="inline-flex w-full items-center gap-2 rounded-md border border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-950 h-11 px-3 text-left shadow-xs hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:outline-hidden focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30"
+                >
+                  <RiCalendar2Line className="h-4 w-4 text-gray-500" />
+                  <span className="truncate text-base text-gray-900 dark:text-gray-50">
+                    {parsedDate ? format(parsedDate, 'dd.MM.yyyy') : 'Datum wählen'}
+                  </span>
+                </button>
+              </Popover.Trigger>
+              <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                <Calendar
+                  mode="single"
+                  numberOfMonths={1}
+                  weekStartsOn={1}
+                  selected={parsedDate ?? undefined}
+                  onSelect={(d: Date | undefined) => {
+                    if (!d) return;
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    setFormData({ ...formData, date: `${y}-${m}-${day}` });
+                  }}
+                  className="rdp-tremor"
+                />
+              </Popover.Content>
+            </Popover.Root>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="amount">Betrag</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              required
-              className="h-11 text-base px-4"
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Betrag</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                required
+                className="h-11 text-base px-4"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="direction">Richtung</Label>
-            <Select
-              value={formData.direction}
-              onValueChange={(value: 'Incoming' | 'Outgoing') => 
-                setFormData({ ...formData, direction: value })
-              }
-            >
-              <SelectTrigger className="w-full h-11 text-base">
-                <SelectValue placeholder="Richtung auswählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Incoming">Eingehend</SelectItem>
-                <SelectItem value="Outgoing">Ausgehend</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Richtung</Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={`peer inline-flex items-center gap-x-2 rounded-md border h-11 px-3 text-base shadow-xs outline-hidden transition-all w-full bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60`}
+                  >
+                    {formData.direction === 'Incoming' ? (
+                      <>
+                        <RiAddLine className="h-4 w-4 text-emerald-600" />
+                        <span>Eingehend</span>
+                      </>
+                    ) : (
+                      <>
+                        <RiSubtractLine className="h-4 w-4 text-rose-600" />
+                        <span>Ausgehend</span>
+                      </>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuItem onClick={() => setFormData({ ...formData, direction: 'Incoming' })}>
+                    <RiAddLine className="mr-2 h-4 w-4 text-emerald-600" /> Eingehend
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFormData({ ...formData, direction: 'Outgoing' })}>
+                    <RiSubtractLine className="mr-2 h-4 w-4 text-rose-600" /> Ausgehend
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           <div className="space-y-2">
