@@ -27,13 +27,14 @@ export default function PlanningFilters() {
   ]), [tomorrow]);
   const [categories, setCategories] = React.useState<string[]>(['Fixkosten','Lohn','Standard','Manual','Simulation']);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
-  // dispatch only on close to avoid excessive filtering while toggling
-  React.useEffect(() => {
-    if (!isCatOpen) {
+  // handler: keep menu open while toggling; dispatch filter once when closing
+  const handleCatOpenChange = (open: boolean) => {
+    if (!open) {
       const ev = new CustomEvent('planning:categories', { detail: categories });
       window.dispatchEvent(ev);
     }
-  }, [isCatOpen]);
+    setIsCatOpen(open);
+  };
   return (
     <Card className="mx-auto">
       <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
@@ -46,9 +47,9 @@ export default function PlanningFilters() {
         <div>
           <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Kategorien</label>
           <div className="mt-2">
-            <DropdownMenu open={isCatOpen} onOpenChange={setIsCatOpen}>
+            <DropdownMenu open={isCatOpen} onOpenChange={handleCatOpenChange}>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" className="border-gray-300 text-gray-700 hover:bg-gray-50">Kategorien wählen</Button>
+                <Button className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">Kategorien wählen</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Filter</DropdownMenuLabel>
