@@ -28,7 +28,6 @@ export function Calendar({ className, ...props }: CalendarProps) {
         row: 'flex w-full mt-1',
         cell: 'relative p-0 text-center text-sm',
         day: 'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 dark:hover:bg-gray-900',
-        day_button: 'h-9 w-9 rounded-md focus:outline-none',
         day_selected:
           'bg-emerald-100 text-emerald-900 hover:bg-emerald-200 focus:bg-emerald-200',
         day_range_middle: 'bg-emerald-50 text-emerald-900',
