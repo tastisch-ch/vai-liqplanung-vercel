@@ -16,6 +16,7 @@ import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
+import PlanningFilters from "@/components/planning/PlanningFilters";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -358,160 +359,36 @@ export default function Planung() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="flex justify-between border-b">
-          <div className="flex">
-            <button 
-              className={`px-4 py-3 font-medium ${activeTab === 'monthly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleTabChange('monthly')}
-            >
-              3 Monate
-            </button>
-            <button 
-              className={`px-4 py-3 font-medium ${activeTab === 'quarterly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleTabChange('quarterly')}
-            >
-              9 Monate
-            </button>
-            <button 
-              className={`px-4 py-3 font-medium ${activeTab === 'yearly' ? 'text-vaios-primary border-b-2 border-vaios-primary' : 'text-gray-600'}`}
-              onClick={() => handleTabChange('yearly')}
-            >
-              1 Jahr
-            </button>
-          </div>
-          <div className="flex items-center pr-4">
-            <Button
-              onClick={() => setIsFormOpen(true)}
-              className="px-4 py-2 bg-vaios-primary text-white rounded-md hover:bg-vaios-primary/90 transition-colors"
-            >
-              Neue Transaktion
-            </Button>
-          </div>
-        </div>
-        
-        {/* Filters */}
-        <div className="p-4 border-b bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Von</label>
-              <input 
-                type="date" 
-                value={startDate.toISOString().split('T')[0]} 
-                onChange={(e) => setStartDate(new Date(e.target.value))}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bis</label>
-              <input 
-                type="date" 
-                value={endDate.toISOString().split('T')[0]} 
-                onChange={(e) => setEndDate(new Date(e.target.value))}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Suche</label>
-              <input 
-                type="text" 
-                value={searchText} 
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Beschreibung..."
-                className="w-full p-2 border rounded"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-3 flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="fixkosten"
-                checked={showFixkosten} 
-                onChange={(e) => setShowFixkosten(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="fixkosten" className="text-sm text-gray-700">
-                Fixkosten 📌
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="lohn"
-                checked={showLoehne} 
-                onChange={(e) => setShowLoehne(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="lohn" className="text-sm text-gray-700">
-                Lohnauszahlungen 💰
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="standard"
-                checked={showStandard} 
-                onChange={(e) => setShowStandard(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="standard" className="text-sm text-gray-700">
-                Standard
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="manual"
-                checked={showManual} 
-                onChange={(e) => setShowManual(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="manual" className="text-sm text-gray-700">
-                Manuelle Transaktionen ✏️
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="simulations"
-                checked={showSimulations} 
-                onChange={(e) => setShowSimulations(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="simulations" className="text-sm text-gray-700">
-                Simulationen 🔮
-              </label>
-            </div>
-
-            {/* Direction filters */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="incoming"
-                checked={showIncoming}
-                onChange={(e) => setShowIncoming(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="incoming" className="text-sm text-gray-700">
-                Eingehend
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="outgoing"
-                checked={showOutgoing}
-                onChange={(e) => setShowOutgoing(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-vaios-primary focus:ring-vaios-primary"
-              />
-              <label htmlFor="outgoing" className="text-sm text-gray-700">
-                Ausgehend
-              </label>
-            </div>
-          </div>
-        </div>
+      <PlanningFilters
+        activeTab={activeTab as any}
+        onTabChange={handleTabChange as any}
+        startDate={startDate}
+        endDate={endDate}
+        onDateRangeChange={(from?: Date, to?: Date)=> { if (from) setStartDate(from); if (to) setEndDate(to); }}
+        searchText={searchText}
+        onSearch={(v)=> setSearchText(v)}
+        selectedCategories={[
+          ...(showFixkosten ? ['Fixkosten'] : []),
+          ...(showLoehne ? ['Lohn'] : []),
+          ...(showStandard ? ['Standard'] : []),
+          ...(showManual ? ['Manual'] : []),
+          ...(showSimulations ? ['Simulation'] : []),
+        ]}
+        onCategoriesChange={(vals)=> {
+          setShowFixkosten(vals.includes('Fixkosten'));
+          setShowLoehne(vals.includes('Lohn'));
+          setShowStandard(vals.includes('Standard'));
+          setShowManual(vals.includes('Manual'));
+          setShowSimulations(vals.includes('Simulation'));
+        }}
+        showIncoming={showIncoming}
+        onToggleIncoming={(v)=> setShowIncoming(v)}
+        showOutgoing={showOutgoing}
+        onToggleOutgoing={(v)=> setShowOutgoing(v)}
+        sortOption={sortOption as any}
+        onSortChange={(v)=> setSortOption(v)}
+        onNewTransaction={()=> setIsFormOpen(true)}
+      />
         
         {/* Content area */}
         {isLoading ? (
@@ -622,7 +499,6 @@ export default function Planung() {
             </table>
           </div>
         )}
-      </div>
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
@@ -653,11 +529,11 @@ export default function Planung() {
         }}
         onSubmit={handleSubmitTransaction}
         initialData={editingTransaction ? {
-          date: editingTransaction.date.toISOString().split('T')[0],
-          amount: editingTransaction.amount,
-          direction: editingTransaction.direction,
-          details: editingTransaction.details,
-          is_simulation: editingTransaction.kategorie === 'Simulation'
+          date: editingTransaction!.date.toISOString().split('T')[0],
+          amount: editingTransaction!.amount,
+          direction: editingTransaction!.direction,
+          details: editingTransaction!.details,
+          is_simulation: editingTransaction!.kategorie === 'Simulation'
         } : undefined}
       />
     </div>

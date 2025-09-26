@@ -1,10 +1,9 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Grid, Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem, Switch as TremorSwitch, Button } from '@tremor/react';
+import { Flex, TabGroup, TabList, Tab, MultiSelect, MultiSelectItem, TextInput, Select, SelectItem, Switch as TremorSwitch, Button } from '@tremor/react';
 import { DateRangePicker as TremorDatePicker } from '@/components/DatePicker';
 import { de } from 'date-fns/locale';
-import { Switch } from '@/components/ui/switch';
 
 type Props = {
   activeTab: 'monthly' | 'quarterly' | 'yearly';
@@ -56,8 +55,18 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl hover:border-emerald-200 relative z-30 overflow-visible">
-      <div className="grid grid-cols-1 gap-4 border-b border-gray-200 p-6 sm:grid-cols-2 md:grid-cols-4">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg relative z-30 overflow-visible">
+      <div className="border-b border-gray-200 p-4 sm:p-6">
+        <TabGroup index={(['monthly','quarterly','yearly'] as const).indexOf(activeTab)} onIndexChange={(i)=> onTabChange((['monthly','quarterly','yearly'] as const)[i])}>
+          <TabList className="w-full overflow-x-auto">
+            <Tab>3 Monate</Tab>
+            <Tab>9 Monate</Tab>
+            <Tab>1 Jahr</Tab>
+          </TabList>
+        </TabGroup>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 border-b border-gray-200 p-4 sm:p-6 sm:grid-cols-2 md:grid-cols-4">
         <div className="w-full">
           <label className="text-tremor-default font-medium text-gray-900">Zeitraum</label>
           <div className="mt-2 relative z-40">
