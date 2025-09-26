@@ -76,7 +76,7 @@ export default function PlanningFilters() {
   };
   return (
     <Card className="mx-auto">
-      <div className="p-6 pt-0 grid grid-cols-1 sm:flex sm:flex-row sm:items-end gap-3 sm:gap-6">
+      <div className="p-4 pt-0 sm:p-6 grid grid-cols-1 sm:flex sm:flex-row sm:items-end gap-2 sm:gap-6">
         <div>
           <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Zeitraum</label>
           <div className="mt-2 w-full sm:w-60 h-9">
