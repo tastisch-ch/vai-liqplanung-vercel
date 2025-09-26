@@ -434,6 +434,7 @@ export default function Planung() {
             Keine Transaktionen gefunden.
           </div>
         ) : (
+          <>
           <TableRoot>
             <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10 px-1">
               <div>
@@ -545,6 +546,7 @@ export default function Planung() {
               );
             })}
           </div>
+          </>
         )}
 
       {/* Delete confirmation dialog */}
