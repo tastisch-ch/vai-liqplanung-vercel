@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Calendar as CalendarPrimitive } from './Calendar';
 import { Button } from '@/components/ui/button';
+import * as PopoverPrimitives from '@radix-ui/react-popover';
 import type { DateRange as DayPickerDateRange } from 'react-day-picker';
 import { type Locale } from 'date-fns';
 
@@ -49,6 +50,8 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
 
   return (
     <div ref={ref} className={className} id={id}>
+      <PopoverPrimitives.Root open={open} onOpenChange={setOpen}>
+      <PopoverPrimitives.Trigger asChild>
       <button
         name={name}
         type="button"
@@ -73,8 +76,9 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-gray-400 dark:text-gray-500"><path d="M12 13.171 16.95 8.222 18.364 9.636 12 16l-6.364-6.364L7.05 8.222z"/></svg>
         </span>
       </button>
+      </PopoverPrimitives.Trigger>
       {open && (
-        <div className="absolute z-50 mt-2 rounded-tremor-default border border-tremor-border bg-white p-3 shadow-lg dark:border-dark-tremor-border dark:bg-dark-tremor-background">
+        <PopoverPrimitives.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
           <div className="flex gap-4">
             {presets && presets.length > 0 && (
               <div className="w-40 flex flex-col gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
@@ -116,8 +120,9 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
               {translations?.apply ?? 'Apply'}
             </Button>
           </div>
-        </div>
+        </PopoverPrimitives.Content>
       )}
+      </PopoverPrimitives.Root>
     </div>
   );
 }
