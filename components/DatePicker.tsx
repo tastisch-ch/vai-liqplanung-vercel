@@ -52,7 +52,7 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
         name={name}
         type="button"
         onClick={() => !disabled && setOpen((s) => !s)}
-        className={`w-full outline-none text-left whitespace-nowrap truncate rounded-tremor-default transition duration-100 border pr-8 py-2 shadow-tremor-input pl-3 relative bg-tremor-background dark:bg-dark-tremor-background hover:bg-tremor-background-muted dark:hover:bg-dark-tremor-background-muted text-tremor-content-emphasis dark:text-dark-tremor-content-emphasis border-tremor-border dark:border-dark-tremor-border ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${hasError ? 'ring-2 ring-red-200 border-red-500' : 'focus:ring-2 focus:border-tremor-brand-subtle focus:ring-tremor-brand-muted dark:focus:border-dark-tremor-brand-subtle dark:focus:ring-dark-tremor-brand-muted'}`}
+        className={`w-full outline-hidden text-left whitespace-nowrap truncate rounded-tremor-default transition duration-100 border pr-8 py-2 shadow-tremor-input pl-3 relative bg-tremor-background dark:bg-dark-tremor-background hover:bg-tremor-background-muted dark:hover:bg-dark-tremor-background-muted text-tremor-content-emphasis dark:text-dark-tremor-content-emphasis border-tremor-border dark:border-dark-tremor-border ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${hasError ? 'ring-2 ring-red-200 border-red-500' : 'focus:ring-2 focus:border-tremor-brand-subtle focus:ring-tremor-brand-muted dark:focus:border-dark-tremor-brand-subtle dark:focus:ring-dark-tremor-brand-muted'}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={disabled}

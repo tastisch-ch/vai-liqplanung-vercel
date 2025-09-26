@@ -29,12 +29,12 @@ export default function PlanningFilters({ value, onChange }: Props) {
       </div>
       <div className="p-6 pt-0">
         <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
-        <div className="mt-2 w-full sm:max-w-md">
+        <div className="mt-2 w-60">
           <DateRangePicker
             value={dateRange}
             onChange={setDateRange}
             toDate={new Date()}
-            className="w-full"
+            className="w-60"
           />
         </div>
       </div>
