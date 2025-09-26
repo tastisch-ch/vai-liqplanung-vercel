@@ -72,11 +72,13 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>{initialData ? 'Transaktion bearbeiten' : 'Neue Transaktion'}</DialogTitle>
-          <DialogDescription>
-            Geben Sie die Details für die {initialData ? 'zu bearbeitende' : 'neue'} Transaktion ein. Alle Felder sind erforderlich, außer der Simulationsstatus.
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">
+            {initialData ? 'Transaktion bearbeiten' : 'Neue Transaktion'}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+            Bitte Felder ausfüllen. Simulation ist optional.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,6 +90,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
+              className="h-11 text-base px-4"
             />
           </div>
           
@@ -100,6 +103,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               required
+              className="h-11 text-base px-4"
             />
           </div>
 
@@ -111,7 +115,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
                 setFormData({ ...formData, direction: value })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full h-11 text-base">
                 <SelectValue placeholder="Richtung auswählen" />
               </SelectTrigger>
               <SelectContent>
@@ -128,6 +132,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
               value={formData.details}
               onChange={(e) => setFormData({ ...formData, details: e.target.value })}
               required
+              className="h-11 text-base px-4"
             />
           </div>
 
@@ -146,7 +151,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
             <Button type="button" variant="outline" onClick={handleClose}>
               Abbrechen
             </Button>
-            <Button type="submit" className="bg-vaios-primary text-white hover:bg-vaios-primary/90">
+            <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
               {initialData ? 'Speichern' : 'Transaktion hinzufügen'}
             </Button>
           </div>
