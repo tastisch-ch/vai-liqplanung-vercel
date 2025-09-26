@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { RiCheckLine } from "@remixicon/react";
 import { cx } from "@/lib/utils";
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
@@ -64,6 +65,9 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
     )}
     {...props}
   >
+    <DropdownMenuPrimitive.ItemIndicator className="mr-2 inline-flex h-4 w-4 items-center justify-center">
+      <RiCheckLine className="h-4 w-4 text-blue-500" aria-hidden="true" />
+    </DropdownMenuPrimitive.ItemIndicator>
     <span className="flex-1 text-gray-900 dark:text-gray-50">{children}</span>
     {hint ? (
       <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-gray-900 dark:text-gray-400">
