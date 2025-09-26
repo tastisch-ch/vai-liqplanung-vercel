@@ -96,6 +96,15 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
   }, [formData.date, isOpen]);
 
   const commitDateText = () => {
+    // If empty: restore previous value to avoid accidental invalid state
+    if (dateText.trim() === '') {
+      const d = parsedDate;
+      if (d) {
+        setDateText(format(d, 'dd.MM.yyyy'));
+        setDateError(false);
+      }
+      return;
+    }
     const tryFormats = ['dd.MM.yyyy', 'd.M.yyyy', 'd.M.yy', 'yyyy-MM-dd'];
     let parsed: Date | null = null;
     for (const f of tryFormats) {
@@ -136,6 +145,7 @@ export function TransactionForm({ isOpen, onClose, onSubmit, initialData }: Tran
                     placeholder="dd.mm.yyyy"
                     value={dateText}
                     onChange={(e) => { setDateText(e.target.value); setDateError(false); }}
+                    onClick={() => { setDateText(''); setDateError(false); }}
                     onFocus={() => setDateOpen(true)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitDateText(); setDateOpen(false); } }}
                     onBlur={() => commitDateText()}
