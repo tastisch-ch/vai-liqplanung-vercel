@@ -7,7 +7,7 @@ import { addMonths } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
-import { RiAddLine, RiSubtractLine } from '@remixicon/react';
+import { RiAddLine, RiSubtractLine, RiPushpin2Line, RiUser3Line, RiMagicLine, RiEdit2Line, RiCoinsLine } from '@remixicon/react';
 import { SearchInput } from '@/components/SearchInput';
 
 export default function PlanningFilters() {
@@ -40,6 +40,20 @@ export default function PlanningFilters() {
     if (count === 0) return 'Keine Kategorie';
     return `${count} ausgewählt`;
   }, [categories, categoryOptions]);
+  const renderCategoryIcon = (k: string) => {
+    switch (k) {
+      case 'Fixkosten':
+        return <RiPushpin2Line className="h-4 w-4 text-blue-600" />;
+      case 'Lohn':
+        return <RiUser3Line className="h-4 w-4 text-amber-600" />;
+      case 'Simulation':
+        return <RiMagicLine className="h-4 w-4 text-purple-600" />;
+      case 'Manual':
+        return <RiEdit2Line className="h-4 w-4 text-gray-600" />;
+      default:
+        return <RiCoinsLine className="h-4 w-4 text-slate-600" />;
+    }
+  };
   // handler: keep menu open while toggling; dispatch filter once when closing
   const handleCatOpenChange = (open: boolean) => {
     if (!open) {
@@ -110,8 +124,10 @@ export default function PlanningFilters() {
                     onCheckedChange={(v) => {
                       setCategories((prev) => v ? Array.from(new Set([...prev,k])) : prev.filter(x=>x!==k));
                     }}
+                    className="flex items-center gap-2"
                   >
-                    {k}
+                    {renderCategoryIcon(k)}
+                    <span>{k}</span>
                   </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>

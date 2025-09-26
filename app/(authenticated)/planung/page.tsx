@@ -440,7 +440,7 @@ export default function Planung() {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-50">Transaktionen</h3>
                 <p className="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Gefilterte Liste im gewählten Zeitraum.</p>
               </div>
-              <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }} className="mt-4 sm:mt-0 inline-flex items-center gap-2">
+              <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }} className="mt-4 sm:mt-0 inline-flex items-center gap-2 bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
                 <RiAddLine className="h-4 w-4" />
                 Transaktion
               </Button>
@@ -487,7 +487,8 @@ export default function Planung() {
                       <TableCell className="text-gray-900 max-w-[32rem] truncate" title={transaction.details}>{transaction.details}</TableCell>
                       <TableCell className="text-gray-600">{categoryBadge}</TableCell>
                       <TableCell className={cx("text-right tabular-nums font-medium", amountClass)}>
-                        {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
+                        <span className="mr-1">{isIncome ? '+' : '-'}</span>
+                        {formatCHF(Math.abs(transaction.amount))}
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-medium text-gray-900">{formatCHF(transaction.kontostand || 0)}</TableCell>
                       <TableCell className="text-right">
