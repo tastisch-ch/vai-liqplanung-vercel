@@ -166,6 +166,18 @@ export default function Planung() {
       return () => window.removeEventListener('planning:direction', handler as EventListener);
     }
   }, []);
+
+  // Listen for full-text search
+  useEffect(() => {
+    const handler = (e: any) => {
+      const q: string = e.detail ?? '';
+      setSearchText(q);
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('planning:search', handler as EventListener);
+      return () => window.removeEventListener('planning:search', handler as EventListener);
+    }
+  }, []);
   
   // Apply filters when filter criteria change
   useEffect(() => {

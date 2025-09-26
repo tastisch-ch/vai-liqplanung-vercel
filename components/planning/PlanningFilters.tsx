@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuChe
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
 import { RiAddLine, RiSubtractLine } from '@remixicon/react';
+import { SearchInput } from '@/components/SearchInput';
 
 export default function PlanningFilters() {
   // Default: 6 Monate ab morgen
@@ -30,6 +31,7 @@ export default function PlanningFilters() {
   const [categories, setCategories] = React.useState<string[]>(['Fixkosten','Lohn','Standard','Manual','Simulation']);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
+  const [query, setQuery] = React.useState('');
   // handler: keep menu open while toggling; dispatch filter once when closing
   const handleCatOpenChange = (open: boolean) => {
     if (!open) {
@@ -40,11 +42,25 @@ export default function PlanningFilters() {
   };
   return (
     <Card className="mx-auto">
-      <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
+      <div className="p-6 pt-0 flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6 flex-wrap">
         <div>
           <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
           <div className="mt-2 w-60">
             <DateRangePicker value={dateRange} onChange={setDateRange} className="w-60" presets={presets} />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-gray-900 dark:text-gray-50">Suche</label>
+          <div className="mt-2">
+            <SearchInput
+              value={query}
+              onChange={(v) => {
+                setQuery(v);
+                const ev = new CustomEvent('planning:search', { detail: v });
+                window.dispatchEvent(ev);
+              }}
+              placeholder="Volltext"
+            />
           </div>
         </div>
         <div>
