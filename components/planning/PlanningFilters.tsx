@@ -6,6 +6,7 @@ import { DateRangePicker, type DateRange } from '@/components/DatePicker';
 import { addMonths } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { ToggleGroup, ToggleGroupItem } from '@/components/Toggle';
 import { RiAddLine, RiSubtractLine, RiPushpin2Line, RiUser3Line, RiMagicLine, RiEdit2Line, RiCoinsLine, RiRefreshLine } from '@remixicon/react';
 import { SearchInput } from '@/components/SearchInput';
@@ -174,12 +175,19 @@ export default function PlanningFilters() {
           </div>
         </div>
         <div className="sm:ml-auto">
-          <label className="sr-only">Reset</label>
           <div className="mt-2">
-            <Button variant="outline" className="h-9 inline-flex items-center gap-2 w-full sm:w-auto" onClick={resetFilters}>
-              <RiRefreshLine className="h-4 w-4" />
-              Filter zurücksetzen
-            </Button>
+            <Tooltip.Provider delayDuration={100}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <Button variant="outline" className="h-9 w-9 p-0 inline-flex items-center justify-center" onClick={resetFilters} aria-label="Filter zurücksetzen">
+                    <RiRefreshLine className="h-4 w-4" />
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content sideOffset={6} className="rounded-md border bg-white px-2 py-1 text-xs shadow-md text-gray-700">
+                  Filter zurücksetzen
+                </Tooltip.Content>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           </div>
         </div>
       </div>
