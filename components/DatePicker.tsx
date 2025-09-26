@@ -122,9 +122,7 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
               toDate={toDate}
               weekStartsOn={1}
               numberOfMonths={2}
-              captionLayout={enableYearNavigation ? 'dropdown' : 'buttons'}
-              fromYear={fromDate?.getFullYear() ?? 2010}
-              toYear={(toDate ?? new Date()).getFullYear() + 1}
+              enableYearNavigation={enableYearNavigation}
               locale={locale}
               className="rdp-tremor"
               modifiersClassNames={{
