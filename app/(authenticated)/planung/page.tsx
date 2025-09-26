@@ -148,7 +148,7 @@ export default function Planung() {
       setShowFixkosten(selected.includes('Fixkosten'));
       setShowLoehne(selected.includes('Lohn'));
       setShowStandard(selected.includes('Standard'));
-      setShowManual(selected.includes('Manuell'));
+      setShowManual(selected.includes('Manual'));
       setShowSimulations(selected.includes('Simulation'));
     };
     if (typeof window !== 'undefined') {
@@ -198,7 +198,7 @@ export default function Planung() {
       if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;
       if (tx.kategorie?.toLowerCase() === 'lohn') return showLoehne;
       if (tx.kategorie?.toLowerCase() === 'simulation') return showSimulations;
-      if (tx.modified) return showManual; // Filter manuell erfasste Transaktionen
+      if (tx.modified) return showManual; // Filter manual entries
       return showStandard; // All other categories are considered Standard
     });
 
@@ -364,7 +364,7 @@ export default function Planung() {
             direction: data.direction,
             details: data.details,
             is_simulation: data.is_simulation,
-            kategorie: data.is_simulation ? 'Simulation' : 'Manuell',
+            kategorie: data.is_simulation ? 'Simulation' : 'Manual',
             modified: true,
             updated_at: new Date().toISOString(),
           })
@@ -389,7 +389,7 @@ export default function Planung() {
               direction: data.direction,
               details: data.details,
               is_simulation: data.is_simulation,
-              kategorie: data.is_simulation ? 'Simulation' : 'Manuell',
+              kategorie: data.is_simulation ? 'Simulation' : 'Manual',
               user_id: user.id,
               modified: true,
             },
@@ -474,7 +474,7 @@ export default function Planung() {
                     </span>
                   ) : transaction.modified ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <RiEdit2Line className="h-3.5 w-3.5" /> Manuell
+                      <RiEdit2Line className="h-3.5 w-3.5" /> Manual
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">

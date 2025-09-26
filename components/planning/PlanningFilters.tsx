@@ -28,7 +28,7 @@ export default function PlanningFilters() {
     { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
     { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
   ]), [tomorrow]);
-  const categoryOptions = React.useMemo(() => ['Fixkosten','Lohn','Standard','Manuell','Simulation'] as const, []);
+  const categoryOptions = React.useMemo(() => ['Fixkosten','Lohn','Standard','Manual','Simulation'] as const, []);
   const [categories, setCategories] = React.useState<string[]>([...categoryOptions]);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
   const [directions, setDirections] = React.useState<string[]>(['incoming','outgoing']);
@@ -48,7 +48,7 @@ export default function PlanningFilters() {
         return <RiUser3Line className="h-4 w-4 text-amber-600" />;
       case 'Simulation':
         return <RiMagicLine className="h-4 w-4 text-purple-600" />;
-      case 'Manuell':
+      case 'Manual':
         return <RiEdit2Line className="h-4 w-4 text-gray-600" />;
       default:
         return <RiCoinsLine className="h-4 w-4 text-slate-600" />;
