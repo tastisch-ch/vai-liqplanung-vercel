@@ -470,16 +470,16 @@ export default function Planung() {
                       <RiUser3Line className="h-3.5 w-3.5" /> Lohn
                     </span>
                   ) : transaction.kategorie === 'Fixkosten' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
-                      <RiPushpin2Line className="h-3.5 w-3.5 text-cyan-700" /> Fixkosten
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
+                      <RiPushpin2Line className="h-3.5 w-3.5 text-sky-700" /> Fixkosten
                     </span>
                   ) : transaction.kategorie === 'Simulation' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-fuchsia-100 text-fuchsia-800">
-                      <RiMagicLine className="h-3.5 w-3.5 text-fuchsia-700" /> Simulation
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
+                      <RiMagicLine className="h-3.5 w-3.5 text-violet-700" /> Simulation
                     </span>
                   ) : transaction.modified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      <RiEdit2Line className="h-3.5 w-3.5 text-indigo-700" /> Manuell
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      <RiEdit2Line className="h-3.5 w-3.5 text-orange-700" /> Manuell
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800">
