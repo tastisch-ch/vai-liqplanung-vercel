@@ -469,16 +469,16 @@ export default function Planung() {
                       <RiUser3Line className="h-3.5 w-3.5" /> Lohn
                     </span>
                   ) : transaction.kategorie === 'Fixkosten' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      <RiPushpin2Line className="h-3.5 w-3.5" /> Fixkosten
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
+                      <RiPushpin2Line className="h-3.5 w-3.5 text-cyan-700" /> Fixkosten
                     </span>
                   ) : transaction.kategorie === 'Simulation' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      <RiMagicLine className="h-3.5 w-3.5" /> Simulation
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-fuchsia-100 text-fuchsia-800">
+                      <RiMagicLine className="h-3.5 w-3.5 text-fuchsia-700" /> Simulation
                     </span>
                   ) : transaction.modified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <RiEdit2Line className="h-3.5 w-3.5" /> Manuell
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800">
+                      <RiEdit2Line className="h-3.5 w-3.5 text-zinc-700" /> Manuell
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">

@@ -56,13 +56,13 @@ export default function PlanningFilters() {
   const renderCategoryIcon = (k: string) => {
     switch (k) {
       case 'Fixkosten':
-        return <RiPushpin2Line className="h-4 w-4 text-blue-600" />;
+        return <RiPushpin2Line className="h-4 w-4 text-cyan-600" />;
       case 'Lohn':
         return <RiUser3Line className="h-4 w-4 text-amber-600" />;
       case 'Simulation':
-        return <RiMagicLine className="h-4 w-4 text-purple-600" />;
+        return <RiMagicLine className="h-4 w-4 text-fuchsia-600" />;
       case 'Manual':
-        return <RiEdit2Line className="h-4 w-4 text-gray-600" />;
+        return <RiEdit2Line className="h-4 w-4 text-zinc-600" />;
       default:
         return <RiCoinsLine className="h-4 w-4 text-slate-600" />;
     }
