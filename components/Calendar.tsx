@@ -30,6 +30,10 @@ export function Calendar({ className, ...props }: CalendarProps) {
         day: 'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 dark:hover:bg-gray-900',
         day_selected:
           'bg-emerald-100 text-emerald-900 hover:bg-emerald-200 focus:bg-emerald-200',
+        day_range_start:
+          'bg-emerald-200 text-emerald-900 hover:bg-emerald-200 focus:bg-emerald-200',
+        day_range_end:
+          'bg-emerald-200 text-emerald-900 hover:bg-emerald-200 focus:bg-emerald-200',
         day_range_middle: 'bg-emerald-50 text-emerald-900',
         day_today: 'outline outline-1 outline-emerald-500',
         day_outside: 'text-gray-300 opacity-60',
