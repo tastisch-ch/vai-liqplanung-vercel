@@ -23,7 +23,7 @@ const Toggle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TogglePrimitive.Root
     ref={ref}
-    className={cx(toggleStyles, className)}
+    className={cx(...toggleStyles, className)}
     {...props}
   />
 ))
@@ -53,7 +53,7 @@ const ToggleGroupItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <ToggleGroupPrimitive.Item
     ref={ref}
-    className={cx(toggleStyles, className)}
+    className={cx(...toggleStyles, className)}
     {...props}
   >
     {children}
