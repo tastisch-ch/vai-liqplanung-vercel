@@ -1,19 +1,21 @@
 'use client';
 
-import { TabGroup, TabList, Tab } from '@tremor/react';
 import { Card } from '@/components/ui/card';
+import { Tabs } from '@/components/ui/tabs';
 
 export default function PlanningFilters() {
   return (
     <Card className="mx-auto">
       <div className="p-4 sm:p-6">
-        <TabGroup index={0}>
-          <TabList className="w-full overflow-x-auto border-b border-gray-200 dark:border-gray-800">
-            <Tab>6 Monate</Tab>
-            <Tab>9 Monate</Tab>
-            <Tab>12 Monate</Tab>
-          </TabList>
-        </TabGroup>
+        <Tabs
+          tabs={[
+            { label: '6 Monate', value: '6m' },
+            { label: '9 Monate', value: '9m' },
+            { label: '12 Monate', value: '12m' },
+          ]}
+          value={'6m'}
+          onChange={() => {}}
+        />
       </div>
     </Card>
   );
