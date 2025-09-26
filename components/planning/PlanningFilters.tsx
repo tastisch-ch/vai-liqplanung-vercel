@@ -12,6 +12,12 @@ export default function PlanningFilters() {
   }, []);
   const defaultRange: DateRange = React.useMemo(() => ({ from: tomorrow, to: addMonths(tomorrow, 6) }), [tomorrow]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(defaultRange);
+  // emit custom event so page can pick up range changes
+  React.useEffect(() => {
+    if (!dateRange?.from || !dateRange?.to) return;
+    const ev = new CustomEvent('planning:date-range', { detail: dateRange });
+    window.dispatchEvent(ev);
+  }, [dateRange]);
   const presets = React.useMemo(() => ([
     { label: '6 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 6) } },
     { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },

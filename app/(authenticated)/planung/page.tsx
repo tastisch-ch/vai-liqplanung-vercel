@@ -122,6 +122,20 @@ export default function Planung() {
   useEffect(() => {
     fetchData();
   }, [user?.id, startDate, endDate]);
+
+  // Listen for date range changes from PlanningFilters
+  useEffect(() => {
+    const handler = (e: any) => {
+      const { from, to } = e.detail || {};
+      if (!from || !to) return;
+      setStartDate(new Date(from));
+      setEndDate(new Date(to));
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('planning:date-range', handler as EventListener);
+      return () => window.removeEventListener('planning:date-range', handler as EventListener);
+    }
+  }, []);
   
   // Apply filters when filter criteria change
   useEffect(() => {
