@@ -153,6 +153,19 @@ export default function Planung() {
       return () => window.removeEventListener('planning:categories', handler as EventListener);
     }
   }, []);
+
+  // Listen for direction toggles (incoming/outgoing)
+  useEffect(() => {
+    const handler = (e: any) => {
+      const selected: string[] = e.detail || [];
+      setShowIncoming(selected.includes('incoming'));
+      setShowOutgoing(selected.includes('outgoing'));
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('planning:direction', handler as EventListener);
+      return () => window.removeEventListener('planning:direction', handler as EventListener);
+    }
+  }, []);
   
   // Apply filters when filter criteria change
   useEffect(() => {

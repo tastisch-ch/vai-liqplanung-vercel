@@ -81,13 +81,11 @@ export default function PlanningFilters() {
               const ev = new CustomEvent('planning:direction', { detail: v });
               window.dispatchEvent(ev);
             }}>
-              <ToggleGroupItem value="incoming" aria-label="Einnahmen">
-                <RiArrowDownCircleLine className="size-4 shrink-0 text-emerald-600" />
-                <span className="hidden sm:inline">Einnahmen</span>
+              <ToggleGroupItem value="incoming" aria-label="Einnahmen" className="data-[state=on]:bg-[#CEFF65] data-[state=on]:text-[#02403D]">
+                <RiArrowDownCircleLine className="size-4 shrink-0" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="outgoing" aria-label="Ausgaben">
-                <RiArrowUpCircleLine className="size-4 shrink-0 text-red-600" />
-                <span className="hidden sm:inline">Ausgaben</span>
+              <ToggleGroupItem value="outgoing" aria-label="Ausgaben" className="data-[state=on]:bg-[#CEFF65] data-[state=on]:text-[#02403D]">
+                <RiArrowUpCircleLine className="size-4 shrink-0" />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
