@@ -16,6 +16,8 @@ import { useNotification } from "@/components/ui/Notification";
 import { loadFixkostenOverrides } from "@/lib/services/fixkosten-overrides";
 import { TransactionForm } from "@/components/forms/TransactionForm";
 import { Button } from "@/components/ui/button";
+import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
+import { RiAddLine, RiMagicLine, RiCoinsLine, RiPushpin2Line, RiUser3Line, RiEdit2Line, RiDeleteBin6Line, RiPencilLine } from "@remixicon/react";
 import PlanningFilters from "@/components/planning/PlanningFilters";
 import { supabase } from '@/lib/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -431,100 +433,80 @@ export default function Planung() {
             Keine Transaktionen gefunden.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Datum
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Beschreibung
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kategorie
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Betrag
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kontostand
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aktionen
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          <TableRoot>
+            <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10 px-1">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-50">Transaktionen</h3>
+                <p className="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">Gefilterte Liste im gewählten Zeitraum.</p>
+              </div>
+              <Button onClick={() => { setEditingTransaction(null); setIsFormOpen(true); }} className="mt-4 sm:mt-0 inline-flex items-center gap-2">
+                <RiAddLine className="h-4 w-4" />
+                Transaktion
+              </Button>
+            </div>
+            <Table className="mt-4">
+              <TableHead>
+                <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                  <TableHeaderCell>Datum</TableHeaderCell>
+                  <TableHeaderCell>Beschreibung</TableHeaderCell>
+                  <TableHeaderCell>Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {filteredTransactions.map((transaction) => {
                   const isIncome = transaction.direction === 'Incoming';
-                  const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
-                  
+                  const amountClass = isIncome ? 'text-emerald-600' : 'text-rose-600';
+                  const categoryBadge = transaction.kategorie === 'Lohn' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      <RiUser3Line className="h-3.5 w-3.5" /> Lohn
+                    </span>
+                  ) : transaction.kategorie === 'Fixkosten' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <RiPushpin2Line className="h-3.5 w-3.5" /> Fixkosten
+                    </span>
+                  ) : transaction.kategorie === 'Simulation' ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <RiMagicLine className="h-3.5 w-3.5" /> Simulation
+                    </span>
+                  ) : transaction.modified ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <RiEdit2Line className="h-3.5 w-3.5" /> Manual
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <RiCoinsLine className="h-3.5 w-3.5" /> Standard
+                    </span>
+                  );
                   return (
-                    <tr 
-                      key={transaction.id}
-                      className="hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {transaction.details}
-                        {transaction.kategorie === 'Simulation' && <span className="ml-2">🔮</span>}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {transaction.kategorie === 'Lohn' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            💰 Lohn
-                          </span>
-                        ) : transaction.kategorie === 'Fixkosten' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            📌 Fixkosten
-                          </span>
-                        ) : transaction.kategorie === 'Simulation' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            🔮 Simulation
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Standard
-                          </span>
-                        )}
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${amountClass}`}>
+                    <TableRow key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                      <TableCell className="text-gray-500">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
+                      <TableCell className="text-gray-900 max-w-[32rem] truncate" title={transaction.details}>{transaction.details}</TableCell>
+                      <TableCell className="text-gray-600">{categoryBadge}</TableCell>
+                      <TableCell className={cx("text-right tabular-nums font-medium", amountClass)}>
                         {isIncome ? '+' : '-'}{formatCHF(Math.abs(transaction.amount))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
-                        {formatCHF(transaction.kontostand || 0)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium text-gray-900">{formatCHF(transaction.kontostand || 0)}</TableCell>
+                      <TableCell className="text-right">
                         {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditTransaction(transaction)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              ✏️
+                          <div className="inline-flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditTransaction(transaction)} className="text-gray-600 hover:text-gray-900">
+                              <RiPencilLine className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(transaction)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              🗑️
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(transaction)} className="text-rose-600 hover:text-rose-700">
+                              <RiDeleteBin6Line className="h-4 w-4" />
                             </Button>
                           </div>
                         )}
-                      </td>
-                    </tr>
-                  );
+                      </TableCell>
+                    </TableRow>
+                  )
                 })}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableRoot>
         )}
 
       {/* Delete confirmation dialog */}
