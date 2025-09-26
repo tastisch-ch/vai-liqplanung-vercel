@@ -28,7 +28,7 @@ export default function RootLayout({
     <html lang="de">
       <body className={`min-h-screen bg-gray-50 antialiased ${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
-          <main className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
+          <main>
             {children}
           </main>
         </AuthProvider>
