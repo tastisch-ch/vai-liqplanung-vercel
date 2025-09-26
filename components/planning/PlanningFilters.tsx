@@ -2,31 +2,23 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { TabNavigation, TabNavigationLink } from '@/components/ui/tab-navigation';
 import { DateRangePicker, type DateRange } from '@/components/DatePicker';
+import { addMonths } from 'date-fns';
 
-type Props = {
-  value: '6m' | '9m' | '12m';
-  onChange: (v: '6m' | '9m' | '12m') => void;
-};
-
-export default function PlanningFilters({ value, onChange }: Props) {
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+export default function PlanningFilters() {
+  // Default: 6 Monate ab morgen
+  const tomorrow = React.useMemo(() => {
+    const t = new Date(); t.setDate(t.getDate() + 1); t.setHours(0,0,0,0); return t;
+  }, []);
+  const defaultRange: DateRange = React.useMemo(() => ({ from: tomorrow, to: addMonths(tomorrow, 6) }), [tomorrow]);
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(defaultRange);
+  const presets = React.useMemo(() => ([
+    { label: '6 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 6) } },
+    { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
+    { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
+  ]), [tomorrow]);
   return (
     <Card className="mx-auto">
-      <div className="p-4 sm:p-6">
-        <TabNavigation>
-          <TabNavigationLink href="#" active={value === '6m'} onClick={(e) => { e.preventDefault(); onChange('6m'); }}>
-            6 Monate
-          </TabNavigationLink>
-          <TabNavigationLink href="#" active={value === '9m'} onClick={(e) => { e.preventDefault(); onChange('9m'); }}>
-            9 Monate
-          </TabNavigationLink>
-          <TabNavigationLink href="#" active={value === '12m'} onClick={(e) => { e.preventDefault(); onChange('12m'); }}>
-            12 Monate
-          </TabNavigationLink>
-        </TabNavigation>
-      </div>
       <div className="p-6 pt-0">
         <label className="text-sm font-medium text-gray-900 dark:text-gray-50">Zeitraum</label>
         <div className="mt-2 w-60">
@@ -34,6 +26,7 @@ export default function PlanningFilters({ value, onChange }: Props) {
             value={dateRange}
             onChange={setDateRange}
             className="w-60"
+            presets={presets}
           />
         </div>
       </div>
