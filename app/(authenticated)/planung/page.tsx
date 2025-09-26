@@ -361,36 +361,7 @@ export default function Planung() {
   return (
     <div className="space-y-6">
       <PlanningTabs activeTab={activeTab as any} onTabChange={handleTabChange as any} />
-      <PlanningFilters
-        activeTab={activeTab as any}
-        onTabChange={handleTabChange as any}
-        startDate={startDate}
-        endDate={endDate}
-        onDateRangeChange={(from?: Date, to?: Date)=> { if (from) setStartDate(from); if (to) setEndDate(to); }}
-        searchText={searchText}
-        onSearch={(v)=> setSearchText(v)}
-        selectedCategories={[
-          ...(showFixkosten ? ['Fixkosten'] : []),
-          ...(showLoehne ? ['Lohn'] : []),
-          ...(showStandard ? ['Standard'] : []),
-          ...(showManual ? ['Manual'] : []),
-          ...(showSimulations ? ['Simulation'] : []),
-        ]}
-        onCategoriesChange={(vals)=> {
-          setShowFixkosten(vals.includes('Fixkosten'));
-          setShowLoehne(vals.includes('Lohn'));
-          setShowStandard(vals.includes('Standard'));
-          setShowManual(vals.includes('Manual'));
-          setShowSimulations(vals.includes('Simulation'));
-        }}
-        showIncoming={showIncoming}
-        onToggleIncoming={(v)=> setShowIncoming(v)}
-        showOutgoing={showOutgoing}
-        onToggleOutgoing={(v)=> setShowOutgoing(v)}
-        sortOption={sortOption as any}
-        onSortChange={(v)=> setSortOption(v)}
-        onNewTransaction={()=> setIsFormOpen(true)}
-      />
+      <PlanningFilters />
         
         {/* Content area */}
         {isLoading ? (
