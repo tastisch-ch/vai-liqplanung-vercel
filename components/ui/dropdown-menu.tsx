@@ -59,7 +59,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cx(
-      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-hidden transition",
+      "relative group/item flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 outline-hidden transition",
       "data-[highlighted]:bg-gray-100 dark:data-[highlighted]:bg-gray-900",
       className,
     )}
@@ -68,6 +68,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
     <DropdownMenuPrimitive.ItemIndicator className="mr-2 inline-flex h-4 w-4 items-center justify-center text-blue-600">
       <RiCheckLine className="h-4 w-4" aria-hidden="true" />
     </DropdownMenuPrimitive.ItemIndicator>
+    <span className="mr-2 inline-flex h-4 w-4 items-center justify-center opacity-0 group-data-[highlighted]/item:opacity-0" />
     <span className="flex-1 text-gray-900 dark:text-gray-50">{children}</span>
     {hint ? (
       <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-gray-900 dark:text-gray-400">
