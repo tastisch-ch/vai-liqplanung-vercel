@@ -94,7 +94,7 @@ const Calendar = ({
         head_cell: 'w-9 font-medium text-sm sm:text-xs text-center text-gray-400 dark:text-gray-600 pb-2',
         row: 'w-full mt-0.5',
         cell: cx('relative p-0 text-center focus-within:relative', 'text-gray-900 dark:text-gray-50'),
-        day: cx('size-9 rounded-md text-sm focus:z-10', 'text-gray-900 dark:text-gray-50', 'hover:bg-gray-200 dark:hover:bg-gray-700', focusRing),
+        day: cx('size-9 rounded-md text-sm focus:z-10', 'text-gray-900 dark:text-gray-50', 'hover:bg-gray-200 dark:hover:bg-gray-700'),
         day_today: 'font-semibold',
         day_selected: cx('rounded-sm', 'aria-selected:bg-blue-500 aria-selected:text-white', 'dark:aria-selected:bg-blue-500 dark:aria-selected:text-white'),
         day_disabled: 'text-gray-300! dark:text-gray-700! line-through disabled:hover:bg-transparent',
