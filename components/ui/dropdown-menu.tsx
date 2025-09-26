@@ -55,7 +55,7 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
     hint?: string;
   }
->(({ className, children, hint, onSelect, ...props }, ref) => (
+>(({ className, children, hint, ...props }, ref) => (
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cx(
@@ -63,11 +63,6 @@ export const DropdownMenuCheckboxItem = React.forwardRef<
       "data-[highlighted]:bg-gray-100 dark:data-[highlighted]:bg-gray-900",
       className,
     )}
-    onSelect={(e) => {
-      // keep menu open while toggling
-      e.preventDefault();
-      onSelect?.(e);
-    }}
     {...props}
   >
     <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
