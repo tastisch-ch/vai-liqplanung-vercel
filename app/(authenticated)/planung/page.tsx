@@ -66,6 +66,9 @@ export default function Planung() {
   // Add simulation state
   const [showSimulations, setShowSimulations] = useState(true);
 
+  // Persisted filters storage key (kept in sync with PlanningFilters)
+  const STORAGE_KEY = 'planning:filters:v1';
+
   // Add confirmation dialog state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<EnhancedTransaction | null>(null);
@@ -122,6 +125,45 @@ export default function Planung() {
       setIsLoading(false);
     }
   };
+
+  // Hydrate filters from sessionStorage on mount so table reflects persisted filters immediately
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw) as {
+        dateRange?: { from?: string; to?: string };
+        categories?: string[];
+        directions?: string[];
+        query?: string;
+      };
+      if (data.dateRange?.from && data.dateRange?.to) {
+        const from = new Date(data.dateRange.from);
+        const to = new Date(data.dateRange.to);
+        if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+          setStartDate(from);
+          setEndDate(to);
+        }
+      }
+      if (Array.isArray(data.categories)) {
+        setShowFixkosten(data.categories.includes('Fixkosten'));
+        setShowLoehne(data.categories.includes('Lohn'));
+        setShowStandard(data.categories.includes('Standard'));
+        setShowManual(data.categories.includes('Manual'));
+        setShowSimulations(data.categories.includes('Simulation'));
+      }
+      if (Array.isArray(data.directions)) {
+        setShowIncoming(data.directions.includes('incoming'));
+        setShowOutgoing(data.directions.includes('outgoing'));
+      }
+      if (typeof data.query === 'string') {
+        setSearchText(data.query);
+      }
+    } catch (_) {
+      // ignore hydration errors
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -188,7 +230,7 @@ export default function Planung() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(transactions);
-  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing]);
+  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions]);
   
   // Filter function with explicit balance parameter
   const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
