@@ -14,7 +14,7 @@ import { ModernKpiCards } from '@/app/components/dashboard/ModernKpiCards';
 import { SimpleBalanceChart } from '@/app/components/dashboard/SimpleBalanceChart';
 // Removed charts after balance chart for now
 // Lists removed for now
-import { Alerts } from '@/app/components/dashboard/Alerts';
+// Alerts banner removed – integrated into Reichweite KPI
 import { OverdueIncomingInvoices } from '@/app/components/dashboard/OverdueIncomingInvoices';
 import { CostStructureDonut } from '@/app/components/dashboard/CostStructureDonut';
 import { UpcomingLargeOutflows } from '@/app/components/dashboard/UpcomingLargeOutflows';
@@ -175,7 +175,7 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <Alerts currentBalance={currentBalance} runwayMonths={kpi.runwayMonths} firstNegativeDate={kpi.firstNegative} />
+      {/* Banner removed: undercoverage info now lives in Reichweite KPI */}
 
       <ModernKpiCards
         currentBalance={currentBalance}
