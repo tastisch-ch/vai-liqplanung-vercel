@@ -55,8 +55,8 @@ export default function PlanningFilters(props: Props) {
   } = props;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg relative z-30 overflow-visible">
-      <div className="border-b border-gray-200 p-4 sm:p-6">
+    <div className="relative rounded-tremor-default border border-tremor-border bg-tremor-background shadow-tremor-input dark:border-dark-tremor-border dark:bg-dark-tremor-background dark:shadow-dark-tremor-input z-30 overflow-visible">
+      <div className="border-b border-tremor-border p-4 sm:p-6 dark:border-dark-tremor-border">
         <TabGroup index={(['monthly','quarterly','yearly'] as const).indexOf(activeTab)} onIndexChange={(i)=> onTabChange((['monthly','quarterly','yearly'] as const)[i])}>
           <TabList className="w-full overflow-x-auto">
             <Tab>3 Monate</Tab>
@@ -66,9 +66,9 @@ export default function PlanningFilters(props: Props) {
         </TabGroup>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 border-b border-gray-200 p-4 sm:p-6 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 border-b border-tremor-border p-4 sm:p-6 sm:grid-cols-2 md:grid-cols-4 dark:border-dark-tremor-border">
         <div className="w-full">
-          <label className="text-tremor-default font-medium text-gray-900">Zeitraum</label>
+          <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Zeitraum</label>
           <div className="mt-2 relative z-40">
             <TremorDatePicker
               className="w-full border-tremor-border dark:border-dark-tremor-border"
@@ -90,10 +90,10 @@ export default function PlanningFilters(props: Props) {
           </div>
         </div>
         <div className="w-full">
-          <label className="text-tremor-default font-medium text-gray-900">Kategorien</label>
+          <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Kategorien</label>
           <div className="mt-2 relative z-40">
             <MultiSelect
-              className="w-full"
+              className="w-full border-tremor-border dark:border-dark-tremor-border"
               placeholder="Kategorien filtern"
               value={selectedCategories}
               onValueChange={(vals: string[]) => onCategoriesChange(vals)}
@@ -108,10 +108,10 @@ export default function PlanningFilters(props: Props) {
           </div>
         </div>
         <div className="w-full">
-          <label className="text-tremor-default font-medium text-gray-900">Beschreibung</label>
+          <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Beschreibung</label>
           <div className="mt-2 relative z-30">
             <TextInput
-              className="w-full"
+              className="w-full border-tremor-border dark:border-dark-tremor-border"
               value={searchText}
               onValueChange={onSearch as any}
               placeholder="Beschreibung suchen"
@@ -120,7 +120,7 @@ export default function PlanningFilters(props: Props) {
           </div>
         </div>
         <div className="w-full">
-          <label className="text-tremor-default font-medium text-gray-900">Sortierung</label>
+          <label className="text-tremor-default font-medium text-tremor-content-strong dark:text-dark-tremor-content-strong">Sortierung</label>
           <div className="mt-2">
             <Select className="w-full" value={sortOption} onValueChange={(v: any)=>onSortChange(v)}>
               <SelectItem value="date-asc">Datum ↑</SelectItem>
@@ -147,8 +147,7 @@ export default function PlanningFilters(props: Props) {
           </div>
         </Flex>
       </div>
-
-      <div className="absolute inset-x-0 bottom-0 -mb-1 h-10 rounded-b-2xl bg-gradient-to-t from-white via-white to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 -mb-1 h-14 rounded-b-tremor-default bg-gradient-to-t from-tremor-background via-tremor-background to-transparent dark:from-gray-950 dark:via-gray-950 dark:to-transparent" />
     </div>
   );
 }
