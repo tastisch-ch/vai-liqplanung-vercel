@@ -29,7 +29,7 @@ export function SearchInput({ value, onChange, placeholder = "Suche...", classNa
   }, [internal, debounceMs, onChange]);
 
   return (
-    <div className={cx("relative", className)}>
+    <div className={cx("relative w-full", className)}>
       <RiSearchLine className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
       <input
         id={id}
@@ -39,7 +39,7 @@ export function SearchInput({ value, onChange, placeholder = "Suche...", classNa
         onChange={(e) => setInternal(e.target.value)}
         placeholder={placeholder}
         className={
-          "peer w-60 sm:w-72 appearance-none rounded-md border h-9 px-3 pl-9 text-sm outline-hidden transition-all " +
+          "peer w-full sm:w-72 md:w-80 appearance-none rounded-md border h-9 px-3 pl-9 text-sm outline-hidden transition-all " +
           "bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-500 " +
           "hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 focus:border-gray-400 dark:focus:ring-gray-700/30"
         }

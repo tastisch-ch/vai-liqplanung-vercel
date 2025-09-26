@@ -76,16 +76,16 @@ export default function PlanningFilters() {
   };
   return (
     <Card className="mx-auto">
-      <div className="p-6 pt-0 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-6 flex-wrap">
+      <div className="p-6 pt-0 grid grid-cols-1 sm:flex sm:flex-row sm:items-end gap-3 sm:gap-6">
         <div>
           <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Zeitraum</label>
-          <div className="mt-2 w-60 h-9">
-            <DateRangePicker value={dateRange} onChange={setDateRange} className="w-60" presets={presets} />
+          <div className="mt-2 w-full sm:w-60 h-9">
+            <DateRangePicker value={dateRange} onChange={setDateRange} className="w-full sm:w-60" presets={presets} />
           </div>
         </div>
         <div>
           <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Suche</label>
-          <div className="mt-2">
+          <div className="mt-2 w-full">
             <SearchInput
               value={query}
               onChange={(v) => {
@@ -176,7 +176,7 @@ export default function PlanningFilters() {
         <div className="sm:ml-auto">
           <label className="sr-only">Reset</label>
           <div className="mt-2">
-            <Button variant="outline" className="h-9 inline-flex items-center gap-2" onClick={resetFilters}>
+            <Button variant="outline" className="h-9 inline-flex items-center gap-2 w-full sm:w-auto" onClick={resetFilters}>
               <RiRefreshLine className="h-4 w-4" />
               Filter zurücksetzen
             </Button>

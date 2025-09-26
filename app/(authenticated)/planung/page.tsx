@@ -445,7 +445,7 @@ export default function Planung() {
                 Transaktion
               </Button>
             </div>
-            <Table className="mt-4">
+            <Table className="mt-4 hidden md:table">
               <TableHead>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
                   <TableHeaderCell>Datum</TableHeaderCell>
@@ -509,6 +509,42 @@ export default function Planung() {
               </TableBody>
             </Table>
           </TableRoot>
+          {/* Mobile compact list */}
+          <div className="md:hidden space-y-2 mt-4">
+            {filteredTransactions.map((tx) => {
+              const isIncome = tx.direction === 'Incoming';
+              const amountClass = isIncome ? 'text-emerald-700' : 'text-rose-700';
+              return (
+                <div key={tx.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 pr-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate" title={tx.details}>{tx.details}</div>
+                      <div className="mt-1 text-xs text-gray-500">{format(tx.date, 'dd.MM.yyyy', { locale: de })}</div>
+                    </div>
+                    <div className={`text-right tabular-nums text-sm font-semibold ${amountClass}`}>
+                      <span className="mr-1">{isIncome ? '+' : '-'}</span>{formatCHF(Math.abs(tx.amount))}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <div className="inline-flex items-center gap-2">
+                      {tx.kategorie === 'Lohn' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Lohn</span>
+                      ) : tx.kategorie === 'Fixkosten' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Fixkosten</span>
+                      ) : tx.kategorie === 'Simulation' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">Simulation</span>
+                      ) : tx.modified ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">Manuell</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">Standard</span>
+                      )}
+                    </div>
+                    <div className="text-gray-600">KS: {formatCHF(tx.kontostand || 0)}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
       {/* Delete confirmation dialog */}
