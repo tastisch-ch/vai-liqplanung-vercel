@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { DayPicker, type DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
+import './calendar-tremor.css';
 
 export type Matcher = any;
 

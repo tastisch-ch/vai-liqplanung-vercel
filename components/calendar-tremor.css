@@ -1,0 +1,9 @@
+/* Tremor-like overrides for react-day-picker when used with className="rdp-tremor" */
+.rdp-tremor .rdp-months { display: flex; gap: 1rem; }
+.rdp-tremor .rdp-head_cell { font-size: 0.75rem; color: #6b7280; }
+.rdp-tremor .rdp-day { border-radius: 0.375rem; }
+.rdp-tremor .rdp-day:hover { background: #f3f4f6; }
+.rdp-tremor .rdp-day_selected, .rdp-tremor .rdp-day_start, .rdp-tremor .rdp-day_end { background: #d1fae5; color: #065f46; }
+.rdp-tremor .rdp-day_range_middle { background: #ecfdf5; color: #065f46; }
+.rdp-tremor .rdp-day_today { outline: 1px solid #10b981; }
+.rdp-tremor .rdp-day_outside { color: #d1d5db; }
