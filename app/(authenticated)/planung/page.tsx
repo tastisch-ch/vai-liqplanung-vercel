@@ -65,6 +65,7 @@ export default function Planung() {
   
   // Add simulation state
   const [showSimulations, setShowSimulations] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
 
   // Persisted filters storage key (kept in sync with PlanningFilters)
   const STORAGE_KEY = 'planning:filters:v1';
@@ -162,12 +163,15 @@ export default function Planung() {
       }
     } catch (_) {
       // ignore hydration errors
+    } finally {
+      setHydrated(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     fetchData();
-  }, [user?.id, startDate, endDate]);
+  }, [hydrated, user?.id, startDate, endDate]);
 
   // (Sticky header intentionally disabled)
 
@@ -227,10 +231,11 @@ export default function Planung() {
     }
   }, []);
   
-  // Apply filters when filter criteria change
+  // Apply filters when filter criteria change (only after hydration to avoid double work)
   useEffect(() => {
+    if (!hydrated) return;
     applyFilters(transactions);
-  }, [searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions]);
+  }, [hydrated, searchText, sortOption, showFixkosten, showLoehne, showStandard, showManual, showSimulations, showIncoming, showOutgoing, transactions]);
   
   // Filter function with explicit balance parameter
   const applyFiltersWithBalance = (allTransactions: EnhancedTransaction[], balanceToUse: number) => {
