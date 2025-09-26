@@ -449,8 +449,8 @@ export default function Planung() {
               </Button>
             </div>
             <Table className="mt-4 hidden md:table">
-              <TableHead>
-                <TableRow className="sticky top-0 z-10 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95 border-b border-gray-200 dark:border-gray-800">
+              <TableHead className="sticky top-0 z-20 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:bg-gray-950/95">
+                <TableRow className="border-b border-gray-200 dark:border-gray-800">
                   <TableHeaderCell>Datum</TableHeaderCell>
                   <TableHeaderCell>Beschreibung</TableHeaderCell>
                   <TableHeaderCell>Kategorie</TableHeaderCell>
