@@ -491,12 +491,12 @@ export default function Planung() {
                       <RiMagicLine className="h-3.5 w-3.5 text-fuchsia-700" /> Simulation
                     </span>
                   ) : transaction.modified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800">
-                      <RiEdit2Line className="h-3.5 w-3.5 text-zinc-700" /> Manuell
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      <RiEdit2Line className="h-3.5 w-3.5 text-indigo-700" /> Manuell
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      <RiCoinsLine className="h-3.5 w-3.5" /> Standard
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-stone-100 text-stone-800">
+                      <RiCoinsLine className="h-3.5 w-3.5 text-stone-700" /> Standard
                     </span>
                   );
                   return (

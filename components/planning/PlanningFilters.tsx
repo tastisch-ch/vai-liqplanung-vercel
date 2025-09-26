@@ -62,9 +62,9 @@ export default function PlanningFilters() {
       case 'Simulation':
         return <RiMagicLine className="h-4 w-4 text-fuchsia-600" />;
       case 'Manual':
-        return <RiEdit2Line className="h-4 w-4 text-zinc-600" />;
+        return <RiEdit2Line className="h-4 w-4 text-indigo-600" />;
       default:
-        return <RiCoinsLine className="h-4 w-4 text-slate-600" />;
+        return <RiCoinsLine className="h-4 w-4 text-stone-600" />;
     }
   };
   // handler: keep menu open while toggling; dispatch filter once when closing
