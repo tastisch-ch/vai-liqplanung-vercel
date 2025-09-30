@@ -1,5 +1,6 @@
 'use client';
 
+import PageHeader from "@/components/layout/PageHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
 import { Mitarbeiter, LohnDaten, MitarbeiterWithLohn } from "@/models/types";
@@ -17,6 +18,8 @@ import { formatCHF } from "@/lib/currency";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
+import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
+import { Button } from "@/components/ui/button";
 
 export default function MitarbeiterPage() {
   const { authState } = useAuth();
@@ -463,22 +466,15 @@ export default function MitarbeiterPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Mitarbeiter-Verwaltung</h1>
-        
-        {!isReadOnly && (
-          <button
-            onClick={() => setShowMitarbeiterModal(true)}
-            className="btn-vaios-primary flex items-center"
-            disabled={loading}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+      <PageHeader
+        title="Mitarbeiter"
+        subtitle="Team verwalten und Lohndaten pflegen"
+        actions={!isReadOnly ? (
+          <Button onClick={() => setShowMitarbeiterModal(true)} className="mt-4 sm:mt-0 inline-flex items-center gap-2 bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
             Neuer Mitarbeiter
-          </button>
-        )}
-      </div>
+          </Button>
+        ) : null}
+      />
       
       {/* Read-only warning if applicable */}
       {isReadOnly && (
@@ -535,116 +531,69 @@ export default function MitarbeiterPage() {
         </div>
       )}
       
-      {/* Employees List */}
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Mitarbeiter ({mitarbeiter.length})</h2>
-        
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500">Daten werden geladen...</p>
-          </div>
-        ) : mitarbeiter.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">Keine Mitarbeiter gefunden.</p>
-            <p className="mt-2 text-sm text-gray-500">
-              Erstellen Sie einen neuen Mitarbeiter, um Lohndaten zu verwalten.
-            </p>
-          </div>
-        ) : (
-          <div className="border rounded-lg divide-y">
+      {/* Employees List (Tremor Table) */}
+      {loading ? (
+        <div className="p-8 text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-500">Daten werden geladen...</p>
+        </div>
+      ) : mitarbeiter.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-gray-500">Keine Mitarbeiter gefunden.</p>
+          <p className="mt-2 text-sm text-gray-500">Erstellen Sie einen neuen Mitarbeiter, um Lohndaten zu verwalten.</p>
+        </div>
+      ) : (
+        <TableRoot>
+          <Table className="mt-2 hidden md:table">
+            <TableHead>
+              <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                <TableHeaderCell>Name</TableHeaderCell>
+                <TableHeaderCell>Aktueller Lohn</TableHeaderCell>
+                <TableHeaderCell>Seit</TableHeaderCell>
+                <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {mitarbeiter.map((employee) => {
+                const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
+                return (
+                  <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                    <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
+                    <TableCell className="text-gray-600">{currentSalary ? formatCHF(currentSalary.lohn.Betrag) : '-'}</TableCell>
+                    <TableCell className="text-gray-600">{currentSalary ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-3">
+                        <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
+                        <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} disabled={isReadOnly || loading} className="text-green-600 hover:text-green-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Lohn hinzufügen</button>
+                        <button onClick={() => handleDeleteMitarbeiter(employee.id)} disabled={isReadOnly || loading} className="text-red-600 hover:text-red-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Löschen</button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {/* Mobile compact list */}
+          <div className="md:hidden space-y-2 mt-4">
             {mitarbeiter.map((employee) => {
               const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
               return (
-                <div key={employee.id} className="p-4">
-                  <div className="flex flex-wrap justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{employee.Name}</h3>
-                      {currentSalary && (
-                        <div className="mt-1 text-sm text-gray-600">
-                          Aktueller Lohn: {formatCHF(currentSalary.lohn.Betrag)} (seit {format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de })})
-                        </div>
-                      )}
+                <div key={employee.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 pr-2">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">{employee.Name}</div>
+                      <div className="mt-1 text-xs text-gray-500">{currentSalary ? `${formatCHF(currentSalary.lohn.Betrag)} seit ${format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de })}` : 'Kein Lohn hinterlegt'}</div>
                     </div>
-                    
-                    <div className="flex items-start gap-2 ml-4">
-                      <button
-                        onClick={() => startEditing(employee)}
-                        disabled={isReadOnly || loading}
-                        className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Bearbeiten
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          setSelectedMitarbeiter(employee);
-                          setShowLohnModal(true);
-                          setLohnForm({
-                            start: format(new Date(), 'yyyy-MM-dd'),
-                            betrag: 0,
-                            ende: ''
-                          });
-                          setSelectedLohn(null);
-                        }}
-                        disabled={isReadOnly || loading}
-                        className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Lohn hinzufügen
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDeleteMitarbeiter(employee.id)}
-                        disabled={isReadOnly || loading}
-                        className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Löschen
-                      </button>
+                    <div className="text-right">
+                      <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 text-xs cursor-pointer">Bearbeiten</button>
                     </div>
                   </div>
-                  
-                  {/* Salary history */}
-                  {employee.Lohn && employee.Lohn.length > 0 && (
-                    <div className="mt-3 pl-4 border-l-2 border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Lohnhistorie:</h4>
-                      <div className="space-y-2">
-                        {employee.Lohn.sort((a, b) => b.Start.getTime() - a.Start.getTime()).map((lohn) => (
-                          <div key={lohn.id} className="flex justify-between text-sm">
-                            <div>
-                              <span className="font-medium">{formatCHF(lohn.Betrag)}</span>
-                              {' - '}
-                              <span className="text-gray-600">
-                                {format(lohn.Start, 'dd.MM.yyyy', { locale: de })}
-                                {lohn.Ende ? ` bis ${format(lohn.Ende, 'dd.MM.yyyy', { locale: de })}` : ' (aktuell)'}
-                              </span>
-                            </div>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => startEditingLohn(employee, lohn)}
-                                disabled={isReadOnly || loading}
-                                className="text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Bearbeiten
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLohn(lohn.id, employee.id)}
-                                disabled={isReadOnly || loading}
-                                className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Löschen
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </TableRoot>
+      )}
       
       {/* Mitarbeiter Modal */}
       {showMitarbeiterModal && (
