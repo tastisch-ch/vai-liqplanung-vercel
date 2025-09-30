@@ -1,5 +1,6 @@
 'use client';
 
+import PageHeader from "@/components/layout/PageHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
 import type { Fixkosten } from "@/models/types";
@@ -14,6 +15,7 @@ import {
   getFixkostenCategories,
   filterFixkostenByCategory
 } from "@/lib/services/fixkosten";
+import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
@@ -406,24 +408,19 @@ export default function Fixkosten() {
   
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Fixkosten-Verwaltung</h1>
-        
-        <div className="flex items-center">
-          {!isReadOnly && (
-            <button
-              onClick={() => setShowFixkostenModal(true)}
-              className="btn-vaios-primary flex items-center"
-              disabled={loading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Neue Fixkosten
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Fixkosten"
+        subtitle="Wiederkehrende Ausgaben verwalten"
+        actions={!isReadOnly ? (
+          <button
+            onClick={() => setShowFixkostenModal(true)}
+            className="mt-4 w-full whitespace-nowrap rounded-md bg-[#CEFF65] px-4 py-2.5 text-sm font-medium text-gray-900 shadow-sm hover:bg-lime-200 dark:text-gray-900 sm:mt-0 sm:w-fit"
+            disabled={loading}
+          >
+            + Fixkosten
+          </button>
+        ) : null}
+      />
       
       {/* Read-only warning if applicable */}
       {isReadOnly && (
@@ -540,7 +537,7 @@ export default function Fixkosten() {
         </div>
       </div>
 
-      {/* Fixkosten list */}
+      {/* Fixkosten list (Tremor Table) */}
       {loading ? (
         <div className="p-8 text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -559,81 +556,101 @@ export default function Fixkosten() {
           )}
         </div>
       ) : (
-        <div className="border rounded-lg divide-y">
-          {filteredFixkosten.map((item) => {
-            const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
-            
-            return (
-              <div key={item.id} className={`p-4 ${isActive ? '' : 'bg-gray-50'}`}>
-                <div className="flex flex-wrap justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium flex items-center">
-                      {item.name}
-                      {!isActive && (
-                        <span className="ml-2 inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
-                          Beendet
-                        </span>
-                      )}
-                    </h3>
-                    <div className="mt-1 flex flex-wrap gap-x-4 text-sm text-gray-500">
-                      <div>
-                        Betrag: <span className="font-medium">{formatCHF(item.betrag)}</span>
+        <TableRoot className="mt-2">
+          <Table className="mt-4 hidden md:table">
+            <TableHead>
+              <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                <TableHeaderCell>Name</TableHeaderCell>
+                <TableHeaderCell>Rhythmus</TableHeaderCell>
+                <TableHeaderCell>Kategorie</TableHeaderCell>
+                <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
+                <TableHeaderCell className="text-right">Monatlich</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredFixkosten.map((item) => {
+                const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
+                return (
+                  <TableRow key={item.id} className={isActive ? '' : 'bg-gray-50'}>
+                    <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{item.name}</TableCell>
+                    <TableCell>{item.rhythmus}</TableCell>
+                    <TableCell>{item.kategorie || 'Allgemein'}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCHF(item.betrag)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCHF(monthlyAmount)}</TableCell>
+                    <TableCell className="text-sm text-gray-500">{statusText}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-3">
+                        <button
+                          onClick={() => startEditing(item)}
+                          disabled={isReadOnly || loading}
+                          className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Bearbeiten
+                        </button>
+                        {isActive ? (
+                          <button
+                            onClick={() => handleEndFixkosten(item.id)}
+                            disabled={isReadOnly || loading}
+                            className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Beenden
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivateFixkosten(item.id)}
+                            disabled={isReadOnly || loading}
+                            className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Reaktivieren
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteFixkosten(item.id)}
+                          disabled={isReadOnly || loading}
+                          className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Löschen
+                        </button>
                       </div>
-                      <div>
-                        Rhythmus: <span className="font-medium">{item.rhythmus}</span>
-                      </div>
-                      <div>
-                        Monatlich: <span className="font-medium">{formatCHF(monthlyAmount)}</span>
-                      </div>
-                      <div>
-                        Kategorie: <span className="font-medium">{item.kategorie || 'Allgemein'}</span>
-                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {/* Simple mobile list */}
+          <div className="md:hidden space-y-2">
+            {filteredFixkosten.map((item) => {
+              const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
+              return (
+                <div key={item.id} className="rounded-lg border border-gray-200 dark:border-gray-800 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-50">{item.name}</div>
+                      <div className="text-xs text-gray-500">{item.rhythmus} • {item.kategorie || 'Allgemein'}</div>
+                      <div className="text-xs text-gray-500 mt-1">{statusText}</div>
                     </div>
-                    <div className="mt-1 text-sm text-gray-500">
-                      <span className="font-medium">{statusText}</span>
+                    <div className="text-right">
+                      <div className="text-sm font-medium tabular-nums">{formatCHF(item.betrag)}</div>
+                      <div className="text-xs text-gray-500 tabular-nums">{formatCHF(monthlyAmount)}</div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-start gap-2 ml-4">
-                    <button
-                      onClick={() => startEditing(item)}
-                      disabled={isReadOnly || loading}
-                      className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Bearbeiten
-                    </button>
-                    
+                  <div className="mt-2 flex items-center justify-end gap-3">
+                    <button onClick={() => startEditing(item)} disabled={isReadOnly || loading} className="text-blue-600 text-xs">Bearbeiten</button>
                     {isActive ? (
-                      <button
-                        onClick={() => handleEndFixkosten(item.id)}
-                        disabled={isReadOnly || loading}
-                        className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Beenden
-                      </button>
+                      <button onClick={() => handleEndFixkosten(item.id)} disabled={isReadOnly || loading} className="text-yellow-600 text-xs">Beenden</button>
                     ) : (
-                      <button
-                        onClick={() => handleReactivateFixkosten(item.id)}
-                        disabled={isReadOnly || loading}
-                        className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Reaktivieren
-                      </button>
+                      <button onClick={() => handleReactivateFixkosten(item.id)} disabled={isReadOnly || loading} className="text-green-600 text-xs">Reaktivieren</button>
                     )}
-                    
-                    <button
-                      onClick={() => handleDeleteFixkosten(item.id)}
-                      disabled={isReadOnly || loading}
-                      className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Löschen
-                    </button>
+                    <button onClick={() => handleDeleteFixkosten(item.id)} disabled={isReadOnly || loading} className="text-red-600 text-xs">Löschen</button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </TableRoot>
       )}
       
       {/* Neue Fixkosten Modal */}
