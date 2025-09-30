@@ -15,12 +15,18 @@ import {
   getAktuelleLohne
 } from "@/lib/services/mitarbeiter";
 import { formatCHF } from "@/lib/currency";
-import { format } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
 import { Button } from "@/components/ui/button";
-import { RiArrowDownSLine, RiArrowRightSLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiArrowRightSLine, RiCalendar2Line } from "@remixicon/react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import * as Popover from "@radix-ui/react-popover";
+import { Calendar } from "@/components/Calendar";
 
 export default function MitarbeiterPage() {
   const { authState } = useAuth();
@@ -654,145 +660,56 @@ export default function MitarbeiterPage() {
       )}
       
       {/* Mitarbeiter Modal */}
-      {showMitarbeiterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-2xl w-full mx-4 overflow-y-auto max-h-[90vh]">
-            <h2 className="text-xl font-semibold mb-4">
-              Neuen Mitarbeiter anlegen
-            </h2>
-            
-            <form onSubmit={(e) => {
-              handleSubmitMitarbeiter(e, false);
-              setShowMitarbeiterModal(false);
-            }} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={mitarbeiterForm.name}
-                  onChange={handleMitarbeiterInputChange}
-                  disabled={isReadOnly || loading}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+      <Dialog open={showMitarbeiterModal} onOpenChange={setShowMitarbeiterModal}>
+        <DialogContent className="sm:max-w-[560px] p-0 overflow-hidden">
+          <Card className="shadow-none border-0 !p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Neuen Mitarbeiter anlegen</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => { handleSubmitMitarbeiter(e, false); setShowMitarbeiterModal(false); }} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Name</Label>
+                <Input id="name" name="name" type="text" value={mitarbeiterForm.name} onChange={handleMitarbeiterInputChange} disabled={isReadOnly || loading} required className="h-11 text-base" />
               </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetMitarbeiterForm();
-                    setShowMitarbeiterModal(false);
-                  }}
-                  disabled={loading}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={isReadOnly || loading}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
-                </button>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => { resetMitarbeiterForm(); setShowMitarbeiterModal(false); }}>Abbrechen</Button>
+                <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">Hinzufügen</Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Card>
+        </DialogContent>
+      </Dialog>
       
       {/* Lohn Modal */}
-      {showLohnModal && selectedMitarbeiter && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
-            <h2 className="text-xl font-semibold mb-4">
-              Neue Lohndaten anlegen für {selectedMitarbeiter.Name}
-            </h2>
-            
-            <form onSubmit={(e) => {
-              handleSubmitLohn(e, false);
-              setShowLohnModal(false);
-            }} className="space-y-4">
+      <Dialog open={showLohnModal && !!selectedMitarbeiter} onOpenChange={setShowLohnModal}>
+        <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden">
+          <Card className="shadow-none border-0 !p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Neue Lohndaten anlegen für {selectedMitarbeiter?.Name}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => { handleSubmitLohn(e, false); setShowLohnModal(false); }} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="start" className="block text-sm font-medium text-gray-700 mb-1">
-                    Startdatum
-                  </label>
-                  <input
-                    id="start"
-                    name="start"
-                    type="date"
-                    value={lohnForm.start}
-                    onChange={handleLohnInputChange}
-                    disabled={isReadOnly || loading}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="start" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
+                  <Input id="start" name="start" type="date" value={lohnForm.start} onChange={handleLohnInputChange} disabled={isReadOnly || loading} required className="h-11 text-base" />
                 </div>
-                
-                <div>
-                  <label htmlFor="betrag" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lohn (CHF)
-                  </label>
-                  <input
-                    id="betrag"
-                    name="betrag"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={lohnForm.betrag}
-                    onChange={handleLohnInputChange}
-                    disabled={isReadOnly || loading}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="betrag" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Lohn (CHF)</Label>
+                  <Input id="betrag" name="betrag" type="number" min="0" step="0.01" value={lohnForm.betrag} onChange={handleLohnInputChange} disabled={isReadOnly || loading} required className="h-11 text-base" />
                 </div>
-                
-                <div>
-                  <label htmlFor="ende" className="block text-sm font-medium text-gray-700 mb-1">
-                    Enddatum (optional)
-                  </label>
-                  <input
-                    id="ende"
-                    name="ende"
-                    type="date"
-                    value={lohnForm.ende}
-                    onChange={handleLohnInputChange}
-                    disabled={isReadOnly || loading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="ende" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
+                  <Input id="ende" name="ende" type="date" value={lohnForm.ende} onChange={handleLohnInputChange} disabled={isReadOnly || loading} className="h-11 text-base" />
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetLohnForm();
-                    setShowLohnModal(false);
-                  }}
-                  disabled={loading}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={isReadOnly || loading}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
-                </button>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => { resetLohnForm(); setShowLohnModal(false); }}>Abbrechen</Button>
+                <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">Hinzufügen</Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Card>
+        </DialogContent>
+      </Dialog>
       
       {/* Edit Mitarbeiter Modal */}
       {editingId && editingMitarbeiter && (
