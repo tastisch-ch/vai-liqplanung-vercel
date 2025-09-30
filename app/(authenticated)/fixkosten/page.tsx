@@ -1,6 +1,7 @@
 'use client';
 
 import PageHeader from "@/components/layout/PageHeader";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
 import type { Fixkosten } from "@/models/types";
