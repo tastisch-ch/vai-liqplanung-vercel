@@ -17,6 +17,9 @@ import {
   filterFixkostenByCategory
 } from "@/lib/services/fixkosten";
 import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { SearchInput } from "@/components/SearchInput";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
@@ -39,6 +42,7 @@ export default function Fixkosten() {
   const [categories, setCategories] = useState<string[]>(['Allgemein']);
   const [newCategory, setNewCategory] = useState<string>('');
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [query, setQuery] = useState('');
   
   // State for showing the new fixkosten modal
   const [showFixkostenModal, setShowFixkostenModal] = useState(false);
@@ -117,7 +121,7 @@ export default function Fixkosten() {
   // Apply filters when filter criteria change
   useEffect(() => {
     applyFilters(fixkosten);
-  }, [showOnlyActive, rhythmusFilter, categoryFilter]);
+  }, [showOnlyActive, rhythmusFilter, categoryFilter, query]);
   
   // Filter function
   const applyFilters = (data: Fixkosten[]) => {
@@ -136,6 +140,12 @@ export default function Fixkosten() {
     // Apply category filter
     if (categoryFilter) {
       filtered = filterFixkostenByCategory(filtered, categoryFilter);
+    }
+
+    // Apply search query on name
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      filtered = filtered.filter(item => item.name.toLowerCase().includes(q));
     }
     
     // Sort by name
@@ -480,55 +490,104 @@ export default function Fixkosten() {
       
       {/* Filter controls - Tremor style */}
       <Card>
-        <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-end">
-            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none mr-3">Status</label>
-            <label className="inline-flex items-center gap-2 h-9">
-              <input
-                type="checkbox"
-                checked={showOnlyActive}
-                onChange={(e) => setShowOnlyActive(e.target.checked)}
-                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-              />
-              <span className="text-sm text-gray-700">Nur aktive</span>
-            </label>
-          </div>
+        <div className="p-6 pt-0 grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Nur aktive -> Switch */}
           <div>
-            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Rhythmus</label>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {['monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'].map(rhythm => (
-                <label key={rhythm} className="inline-flex items-center gap-2 h-9">
-                  <input
-                    type="checkbox"
-                    checked={rhythmusFilter.includes(rhythm)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setRhythmusFilter([...rhythmusFilter, rhythm]);
-                      } else {
-                        setRhythmusFilter(rhythmusFilter.filter(r => r !== rhythm));
-                      }
-                    }}
-                    className="h-4 w-4 text-gray-700 focus:ring-gray-500 border-gray-300 rounded"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">{rhythm}</span>
-                </label>
-              ))}
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Status</label>
+            <div className="mt-2 h-9 flex items-center">
+              <Switch checked={showOnlyActive} onCheckedChange={(v)=> setShowOnlyActive(!!v)} />
+              <span className="ml-2 text-sm text-gray-700">Nur aktive</span>
             </div>
           </div>
+
+          {/* Rhythmus -> Dropdown (multi) */}
           <div>
-            <label htmlFor="categoryFilter" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Kategorie</label>
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Rhythmus</label>
             <div className="mt-2">
-              <select
-                id="categoryFilter"
-                value={categoryFilter || ''}
-                onChange={(e) => setCategoryFilter(e.target.value || null)}
-                className="h-9 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
-              >
-                <option value="">Alle Kategorien</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="peer inline-flex items-center gap-x-2 rounded-md border h-9 px-3 text-sm shadow-xs outline-hidden transition-all w-full lg:w-60 bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60"
+                  >
+                    {rhythmusFilter.length === 0 ? 'Keiner' : rhythmusFilter.length === 4 ? 'Alle' : `${rhythmusFilter.length} ausgewählt`}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-60">
+                  <DropdownMenuLabel>Rhythmus</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={rhythmusFilter.length === 4}
+                    onSelect={(e)=> e.preventDefault()}
+                    onCheckedChange={(v)=> setRhythmusFilter(v ? ['monatlich','quartalsweise','halbjährlich','jährlich'] : [])}
+                  >
+                    Alle
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  {['monatlich','quartalsweise','halbjährlich','jährlich'].map(r => (
+                    <DropdownMenuCheckboxItem
+                      key={r}
+                      checked={rhythmusFilter.includes(r)}
+                      onSelect={(e)=> e.preventDefault()}
+                      onCheckedChange={(v)=> setRhythmusFilter(v ? Array.from(new Set([...rhythmusFilter, r])) : rhythmusFilter.filter(x=>x!==r))}
+                    >
+                      {r}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Kategorie -> Dropdown (wie Planung) */}
+          <div>
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Kategorie</label>
+            <div className="mt-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="peer inline-flex items-center gap-x-2 rounded-md border h-9 px-3 text-sm shadow-xs outline-hidden transition-all w-full lg:w-60 bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60"
+                  >
+                    {categoryFilter ? categoryFilter : 'Alle Kategorien'}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-60">
+                  <DropdownMenuLabel>Kategorie</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={!categoryFilter}
+                    onSelect={(e)=> e.preventDefault()}
+                    onCheckedChange={(v)=> setCategoryFilter(v ? null : categoryFilter)}
+                  >
+                    Alle
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                  {categories.map(c => (
+                    <DropdownMenuCheckboxItem
+                      key={c}
+                      checked={categoryFilter === c}
+                      onSelect={(e)=> e.preventDefault()}
+                      onCheckedChange={(v)=> setCategoryFilter(v ? c : null)}
+                    >
+                      {c}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Suche -> wie Planung */}
+          <div>
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Suche</label>
+            <div className="mt-2">
+              <SearchInput
+                value={query}
+                onChange={(v)=> setQuery(v)}
+                placeholder="Volltext"
+                debounceMs={300}
+              />
             </div>
           </div>
         </div>
