@@ -20,6 +20,7 @@ import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
 import { Button } from "@/components/ui/button";
+import { RiArrowDownSLine, RiArrowRightSLine } from "@remixicon/react";
 
 export default function MitarbeiterPage() {
   const { authState } = useAuth();
@@ -31,6 +32,7 @@ export default function MitarbeiterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   
   // State for selected employee
   const [selectedMitarbeiter, setSelectedMitarbeiter] = useState<Mitarbeiter | null>(null);
@@ -557,18 +559,66 @@ export default function MitarbeiterPage() {
               {mitarbeiter.map((employee) => {
                 const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
                 return (
-                  <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
-                    <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
-                    <TableCell className="text-gray-600">{currentSalary ? formatCHF(currentSalary.lohn.Betrag) : '-'}</TableCell>
-                    <TableCell className="text-gray-600">{currentSalary ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="inline-flex items-center gap-3">
-                        <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
-                        <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} disabled={isReadOnly || loading} className="text-green-600 hover:text-green-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Lohn hinzufügen</button>
-                        <button onClick={() => handleDeleteMitarbeiter(employee.id)} disabled={isReadOnly || loading} className="text-red-600 hover:text-red-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Löschen</button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                      <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
+                      <TableCell className="text-gray-600">{currentSalary ? formatCHF(currentSalary.lohn.Betrag) : '-'}</TableCell>
+                      <TableCell className="text-gray-600">{currentSalary ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-3">
+                          <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
+                          <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} disabled={isReadOnly || loading} className="text-green-600 hover:text-green-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Lohn hinzufügen</button>
+                          <button onClick={() => handleDeleteMitarbeiter(employee.id)} disabled={isReadOnly || loading} className="text-red-600 hover:text-red-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Löschen</button>
+                          <button
+                            onClick={() => {
+                              setExpandedRows(prev => {
+                                const next = new Set(prev);
+                                if (next.has(employee.id)) next.delete(employee.id); else next.add(employee.id);
+                                return next;
+                              });
+                            }}
+                            className="text-gray-600 hover:text-gray-900 text-sm inline-flex items-center gap-1"
+                          >
+                            {expandedRows.has(employee.id) ? <RiArrowDownSLine className="h-4 w-4" /> : <RiArrowRightSLine className="h-4 w-4" />}
+                            Historie
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {expandedRows.has(employee.id) && (
+                      <TableRow className="bg-gray-50/60 dark:bg-gray-900/30">
+                        <TableCell colSpan={4} className="p-0">
+                          <div className="px-4 py-3">
+                            {employee.Lohn && employee.Lohn.length > 0 ? (
+                              <div className="space-y-2">
+                                {employee.Lohn
+                                  .slice()
+                                  .sort((a, b) => b.Start.getTime() - a.Start.getTime())
+                                  .map((lohn) => (
+                                    <div key={lohn.id} className="flex justify-between text-sm">
+                                      <div>
+                                        <span className="font-medium">{formatCHF(lohn.Betrag)}</span>
+                                        {" - "}
+                                        <span className="text-gray-600">
+                                          {format(lohn.Start, 'dd.MM.yyyy', { locale: de })}
+                                          {lohn.Ende ? ` bis ${format(lohn.Ende, 'dd.MM.yyyy', { locale: de })}` : ' (aktuell)'}
+                                        </span>
+                                      </div>
+                                      <div className="inline-flex items-center gap-2">
+                                        <button onClick={() => startEditingLohn(employee, lohn)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
+                                        <button onClick={() => handleDeleteLohn(lohn.id, employee.id)} disabled={isReadOnly || loading} className="text-red-600 hover:text-red-800 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Löschen</button>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500">Keine Historie vorhanden.</div>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
                 );
               })}
             </TableBody>
