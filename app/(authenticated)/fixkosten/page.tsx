@@ -17,7 +17,7 @@ import {
   filterFixkostenByCategory
 } from "@/lib/services/fixkosten";
 import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/tremor-table";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { SearchInput } from "@/components/SearchInput";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -718,7 +718,7 @@ export default function Fixkosten() {
       
       {/* Neue Fixkosten Modal (Tremor-style) */}
       <Dialog open={showFixkostenModal} onOpenChange={setShowFixkostenModal}>
-        <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[640px] p-0 overflow-visible z-[60]">
           <Card className="shadow-none border-0 !p-6">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Neue Fixkosten</DialogTitle>
@@ -753,21 +753,23 @@ export default function Fixkosten() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rhythmus" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Rhythmus</Label>
-                  <select
-                    id="rhythmus"
-                    value={newFixkosten.rhythmus || 'monatlich'}
-                    onChange={(e) => setNewFixkosten({
-                      ...newFixkosten,
-                      rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
-                    })}
-                    disabled={isReadOnly || loading}
-                    className="h-11 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
-                  >
-                    <option value="monatlich">monatlich</option>
-                    <option value="quartalsweise">quartalsweise</option>
-                    <option value="halbjährlich">halbjährlich</option>
-                    <option value="jährlich">jährlich</option>
-                  </select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`peer inline-flex items-center gap-x-2 rounded-md border h-11 px-3 text-base shadow-xs outline-hidden transition-all w-full bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60`}
+                        disabled={isReadOnly || loading}
+                      >
+                        {newFixkosten.rhythmus || 'monatlich'}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuItem onClick={() => setNewFixkosten({ ...newFixkosten, rhythmus: 'monatlich' })}>monatlich</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setNewFixkosten({ ...newFixkosten, rhythmus: 'quartalsweise' })}>quartalsweise</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setNewFixkosten({ ...newFixkosten, rhythmus: 'halbjährlich' })}>halbjährlich</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setNewFixkosten({ ...newFixkosten, rhythmus: 'jährlich' })}>jährlich</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
@@ -789,17 +791,24 @@ export default function Fixkosten() {
                       <Button type="button" onClick={handleAddCategory} className="h-11 rounded-l-none">Hinzufügen</Button>
                     </div>
                   ) : (
-                    <select
-                      id="kategorie"
-                      value={newFixkosten.kategorie || 'Allgemein'}
-                      onChange={(e) => setNewFixkosten({...newFixkosten, kategorie: e.target.value})}
-                      disabled={isReadOnly || loading}
-                      className="h-11 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
-                    >
-                      {categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={`peer inline-flex items-center gap-x-2 rounded-md border h-11 px-3 text-base shadow-xs outline-hidden transition-all w-full bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60`}
+                          disabled={isReadOnly || loading}
+                        >
+                          {newFixkosten.kategorie || 'Allgemein'}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56">
+                        {categories.map(category => (
+                          <DropdownMenuItem key={category} onClick={() => setNewFixkosten({ ...newFixkosten, kategorie: category })}>
+                            {category}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                 </div>
               </div>
