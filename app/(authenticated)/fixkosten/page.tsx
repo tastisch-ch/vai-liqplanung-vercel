@@ -477,29 +477,26 @@ export default function Fixkosten() {
         </div>
       )}
       
-      {/* Filter controls */}
-      <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-        <h2 className="text-xl font-semibold mb-4">Filter</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="flex items-center">
+      {/* Filter controls - Tremor style */}
+      <Card>
+        <div className="p-6 pt-0 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-end">
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none mr-3">Status</label>
+            <label className="inline-flex items-center gap-2 h-9">
               <input
                 type="checkbox"
                 checked={showOnlyActive}
                 onChange={(e) => setShowOnlyActive(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
               />
-              <span className="ml-2 text-sm text-gray-700">Nur aktive Fixkosten anzeigen</span>
+              <span className="text-sm text-gray-700">Nur aktive</span>
             </label>
           </div>
-          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rhythmus Filter
-            </label>
-            <div className="space-x-2">
+            <label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Rhythmus</label>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               {['monatlich', 'quartalsweise', 'halbjährlich', 'jährlich'].map(rhythm => (
-                <label key={rhythm} className="inline-flex items-center mr-3">
+                <label key={rhythm} className="inline-flex items-center gap-2 h-9">
                   <input
                     type="checkbox"
                     checked={rhythmusFilter.includes(rhythm)}
@@ -510,32 +507,31 @@ export default function Fixkosten() {
                         setRhythmusFilter(rhythmusFilter.filter(r => r !== rhythm));
                       }
                     }}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-gray-700 focus:ring-gray-500 border-gray-300 rounded"
                   />
-                  <span className="ml-1 text-sm text-gray-700">{rhythm}</span>
+                  <span className="text-sm text-gray-700 capitalize">{rhythm}</span>
                 </label>
               ))}
             </div>
           </div>
-          
           <div>
-            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-1">
-              Kategorie
-            </label>
-            <select
-              id="categoryFilter"
-              value={categoryFilter || ''}
-              onChange={(e) => setCategoryFilter(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Alle Kategorien</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+            <label htmlFor="categoryFilter" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Kategorie</label>
+            <div className="mt-2">
+              <select
+                id="categoryFilter"
+                value={categoryFilter || ''}
+                onChange={(e) => setCategoryFilter(e.target.value || null)}
+                className="h-9 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
+              >
+                <option value="">Alle Kategorien</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Fixkosten list (Tremor Table) */}
       {loading ? (
