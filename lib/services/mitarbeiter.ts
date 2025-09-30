@@ -430,17 +430,17 @@ export function getAktuelleLohne(mitarbeiter: MitarbeiterWithLohn[]): { mitarbei
   const result: { mitarbeiter: MitarbeiterWithLohn; lohn: LohnDaten }[] = [];
   
   mitarbeiter.forEach(ma => {
-    // Find the currently valid salary by filtering and sorting
-    const activeLohne = ma.Lohn.filter(lohn => 
-      lohn.Start <= today && (!lohn.Ende || lohn.Ende >= today)
-    ).sort((a, b) => b.Start.getTime() - a.Start.getTime());
-    
-    // If there's an active salary, add it to the result
-    if (activeLohne.length > 0) {
-      result.push({
-        mitarbeiter: ma,
-        lohn: activeLohne[0]
-      });
+    const sorted = ma.Lohn.slice().sort((a, b) => b.Start.getTime() - a.Start.getTime());
+    // First try currently active
+    const active = sorted.find(lohn => lohn.Start <= today && (!lohn.Ende || lohn.Ende >= today));
+    if (active) {
+      result.push({ mitarbeiter: ma, lohn: active });
+      return;
+    }
+    // Fallback to nearest future salary
+    const future = sorted.filter(lohn => lohn.Start > today).sort((a, b) => a.Start.getTime() - b.Start.getTime())[0];
+    if (future) {
+      result.push({ mitarbeiter: ma, lohn: future });
     }
   });
   

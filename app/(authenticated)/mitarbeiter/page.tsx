@@ -562,8 +562,16 @@ export default function MitarbeiterPage() {
                   <>
                     <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
                       <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
-                      <TableCell className="text-gray-600">{currentSalary ? formatCHF(currentSalary.lohn.Betrag) : '-'}</TableCell>
-                      <TableCell className="text-gray-600">{currentSalary ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
+                      <TableCell className="text-gray-600">
+                        {currentSalary ? (
+                          currentSalary.lohn.Start <= new Date() ? (
+                            formatCHF(currentSalary.lohn.Betrag)
+                          ) : (
+                            `${formatCHF(currentSalary.lohn.Betrag)} (ab ${format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de })})`
+                          )
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell className="text-gray-600">{currentSalary ? (currentSalary.lohn.Start <= new Date() ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-') : '-'}</TableCell>
                       <TableCell className="text-right">
                         <div className="inline-flex items-center gap-3">
                           <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
