@@ -573,7 +573,7 @@ export default function Fixkosten() {
               {filteredFixkosten.map((item) => {
                 const { isActive, monthlyAmount, statusText } = getFixkostenDisplayInfo(item);
                 return (
-                  <TableRow key={item.id} className={isActive ? '' : 'bg-gray-50'}>
+                  <TableRow key={item.id} className={`${isActive ? '' : 'bg-gray-50'} hover:bg-gray-50 dark:hover:bg-gray-900/40`}>
                     <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{item.name}</TableCell>
                     <TableCell>{item.rhythmus}</TableCell>
                     <TableCell>{item.kategorie || 'Allgemein'}</TableCell>
