@@ -585,7 +585,7 @@ export default function Fixkosten() {
                         <button
                           onClick={() => startEditing(item)}
                           disabled={isReadOnly || loading}
-                          className="text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Bearbeiten
                         </button>
@@ -593,7 +593,7 @@ export default function Fixkosten() {
                           <button
                             onClick={() => handleEndFixkosten(item.id)}
                             disabled={isReadOnly || loading}
-                            className="text-yellow-600 hover:text-yellow-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-yellow-600 hover:text-yellow-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Beenden
                           </button>
@@ -601,7 +601,7 @@ export default function Fixkosten() {
                           <button
                             onClick={() => handleReactivateFixkosten(item.id)}
                             disabled={isReadOnly || loading}
-                            className="text-green-600 hover:text-green-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-green-600 hover:text-green-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Reaktivieren
                           </button>
@@ -609,7 +609,7 @@ export default function Fixkosten() {
                         <button
                           onClick={() => handleDeleteFixkosten(item.id)}
                           disabled={isReadOnly || loading}
-                          className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-red-600 hover:text-red-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Löschen
                         </button>
@@ -638,13 +638,13 @@ export default function Fixkosten() {
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-end gap-3">
-                    <button onClick={() => startEditing(item)} disabled={isReadOnly || loading} className="text-blue-600 text-xs">Bearbeiten</button>
+                    <button onClick={() => startEditing(item)} disabled={isReadOnly || loading} className="text-blue-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Bearbeiten</button>
                     {isActive ? (
-                      <button onClick={() => handleEndFixkosten(item.id)} disabled={isReadOnly || loading} className="text-yellow-600 text-xs">Beenden</button>
+                      <button onClick={() => handleEndFixkosten(item.id)} disabled={isReadOnly || loading} className="text-yellow-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Beenden</button>
                     ) : (
-                      <button onClick={() => handleReactivateFixkosten(item.id)} disabled={isReadOnly || loading} className="text-green-600 text-xs">Reaktivieren</button>
+                      <button onClick={() => handleReactivateFixkosten(item.id)} disabled={isReadOnly || loading} className="text-green-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Reaktivieren</button>
                     )}
-                    <button onClick={() => handleDeleteFixkosten(item.id)} disabled={isReadOnly || loading} className="text-red-600 text-xs">Löschen</button>
+                    <button onClick={() => handleDeleteFixkosten(item.id)} disabled={isReadOnly || loading} className="text-red-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Löschen</button>
                   </div>
                 </div>
               );
