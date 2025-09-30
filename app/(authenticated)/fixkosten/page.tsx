@@ -24,8 +24,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import * as Popover from "@radix-ui/react-popover";
+import { Calendar } from "@/components/Calendar";
+import { RiCalendar2Line } from "@remixicon/react";
 import { formatCHF } from "@/lib/currency";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, parse, isValid } from "date-fns";
 import { de } from "date-fns/locale";
 import { useNotification } from "@/components/ui/Notification";
 import Link from "next/link";
@@ -804,28 +807,109 @@ export default function Fixkosten() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start_date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={(newFixkosten.start || new Date()).toISOString().split('T')[0]}
-                    onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
-                    disabled={isReadOnly || loading}
-                    className="h-11 text-base"
-                  />
+                  <Popover.Root>
+                    <div className="relative">
+                      <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                      <Popover.Trigger asChild>
+                        <Input
+                          id="start_date"
+                          type="text"
+                          placeholder="dd.mm.yyyy"
+                          value={newFixkosten.start ? format(newFixkosten.start, 'dd.MM.yyyy') : ''}
+                          onChange={(e)=>{
+                            const val = e.target.value;
+                            // parse on blur/enter via onBlur below
+                            // keep as is to allow free typing
+                            // temporarily store as string by converting to Date on commit
+                          }}
+                          onClick={(e)=>{ (e.target as HTMLInputElement).select(); }}
+                          onKeyDown={(e)=>{
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const txt = (e.target as HTMLInputElement).value.trim();
+                              if (!txt) return;
+                              const fmts = ['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd'];
+                              let parsed: Date | null = null;
+                              for (const f of fmts) { const p = parse(txt, f, new Date()); if (isValid(p)) { parsed = p; break; } }
+                              if (parsed) setNewFixkosten({...newFixkosten, start: parsed});
+                            }
+                          }}
+                          onBlur={(e)=>{
+                            const txt = (e.target as HTMLInputElement).value.trim();
+                            if (!txt) return;
+                            const fmts = ['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd'];
+                            let parsed: Date | null = null;
+                            for (const f of fmts) { const p = parse(txt, f, new Date()); if (isValid(p)) { parsed = p; break; } }
+                            if (parsed) setNewFixkosten({...newFixkosten, start: parsed});
+                          }}
+                          className="h-11 text-base pl-9"
+                        />
+                      </Popover.Trigger>
+                    </div>
+                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                      <Calendar
+                        mode="single"
+                        numberOfMonths={1}
+                        weekStartsOn={1}
+                        selected={newFixkosten.start || undefined}
+                        onSelect={(d: Date | undefined) => {
+                          if (!d) return;
+                          setNewFixkosten({ ...newFixkosten, start: d });
+                        }}
+                        className="rdp-tremor"
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end_date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={newFixkosten.enddatum ? newFixkosten.enddatum.toISOString().split('T')[0] : ''}
-                    onChange={(e) => setNewFixkosten({
-                      ...newFixkosten,
-                      enddatum: e.target.value ? new Date(e.target.value) : null
-                    })}
-                    disabled={isReadOnly || loading}
-                    className="h-11 text-base"
-                  />
+                  <Popover.Root>
+                    <div className="relative">
+                      <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                      <Popover.Trigger asChild>
+                        <Input
+                          id="end_date"
+                          type="text"
+                          placeholder="dd.mm.yyyy"
+                          value={newFixkosten.enddatum ? format(newFixkosten.enddatum, 'dd.MM.yyyy') : ''}
+                          onChange={(e)=>{/* free typing; commit on blur/enter */}}
+                          onClick={(e)=>{ (e.target as HTMLInputElement).select(); }}
+                          onKeyDown={(e)=>{
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const txt = (e.target as HTMLInputElement).value.trim();
+                              if (!txt) { setNewFixkosten({...newFixkosten, enddatum: null}); return; }
+                              const fmts = ['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd'];
+                              let parsed: Date | null = null;
+                              for (const f of fmts) { const p = parse(txt, f, new Date()); if (isValid(p)) { parsed = p; break; } }
+                              setNewFixkosten({...newFixkosten, enddatum: parsed});
+                            }
+                          }}
+                          onBlur={(e)=>{
+                            const txt = (e.target as HTMLInputElement).value.trim();
+                            if (!txt) { setNewFixkosten({...newFixkosten, enddatum: null}); return; }
+                            const fmts = ['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd'];
+                            let parsed: Date | null = null;
+                            for (const f of fmts) { const p = parse(txt, f, new Date()); if (isValid(p)) { parsed = p; break; } }
+                            setNewFixkosten({...newFixkosten, enddatum: parsed});
+                          }}
+                          className="h-11 text-base pl-9"
+                        />
+                      </Popover.Trigger>
+                    </div>
+                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                      <Calendar
+                        mode="single"
+                        numberOfMonths={1}
+                        weekStartsOn={1}
+                        selected={newFixkosten.enddatum || undefined}
+                        onSelect={(d: Date | undefined) => {
+                          setNewFixkosten({ ...newFixkosten, enddatum: d || null });
+                        }}
+                        className="rdp-tremor"
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
               </div>
 
