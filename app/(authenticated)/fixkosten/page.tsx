@@ -20,6 +20,10 @@ import { TableRoot, Table, TableHead, TableHeaderCell, TableBody, TableRow, Tabl
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { SearchInput } from "@/components/SearchInput";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatCHF } from "@/lib/currency";
 import { format, addMonths } from "date-fns";
 import { de } from "date-fns/locale";
@@ -709,37 +713,30 @@ export default function Fixkosten() {
         </TableRoot>
       )}
       
-      {/* Neue Fixkosten Modal */}
-      {showFixkostenModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
-            <h2 className="text-xl font-semibold mb-4">Neue Fixkosten hinzufügen</h2>
-            
-            <form onSubmit={(e) => {
-              handleAddFixkosten(e);
-              setShowFixkostenModal(false);
-            }} className="space-y-4">
+      {/* Neue Fixkosten Modal (Tremor-style) */}
+      <Dialog open={showFixkostenModal} onOpenChange={setShowFixkostenModal}>
+        <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden">
+          <Card className="shadow-none border-0 !p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Neue Fixkosten</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => { handleAddFixkosten(e); setShowFixkostenModal(false); }} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Bezeichnung
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Bezeichnung</Label>
+                  <Input
                     id="name"
                     type="text"
                     value={newFixkosten.name}
                     onChange={(e) => setNewFixkosten({...newFixkosten, name: e.target.value})}
                     disabled={isReadOnly || loading}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="h-11 text-base"
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                    Betrag (CHF)
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="amount" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Betrag (CHF)</Label>
+                  <Input
                     id="amount"
                     type="number"
                     min="0"
@@ -748,23 +745,20 @@ export default function Fixkosten() {
                     onChange={(e) => setNewFixkosten({...newFixkosten, betrag: parseFloat(e.target.value)})}
                     disabled={isReadOnly || loading}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="h-11 text-base"
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="rhythmus" className="block text-sm font-medium text-gray-700 mb-1">
-                    Rhythmus
-                  </label>
+                <div className="space-y-2">
+                  <Label htmlFor="rhythmus" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Rhythmus</Label>
                   <select
                     id="rhythmus"
                     value={newFixkosten.rhythmus || 'monatlich'}
                     onChange={(e) => setNewFixkosten({
-                      ...newFixkosten, 
+                      ...newFixkosten,
                       rhythmus: e.target.value as 'monatlich' | 'quartalsweise' | 'halbjährlich' | 'jährlich'
                     })}
                     disabled={isReadOnly || loading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="h-11 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
                   >
                     <option value="monatlich">monatlich</option>
                     <option value="quartalsweise">quartalsweise</option>
@@ -773,37 +767,23 @@ export default function Fixkosten() {
                   </select>
                 </div>
               </div>
-              
-              {/* Category field */}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="kategorie" className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                <div className="space-y-2">
+                  <Label htmlFor="kategorie" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none flex justify-between">
                     <span>Kategorie</span>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowAddCategory(!showAddCategory)}
-                      className="text-blue-600 hover:text-blue-800 text-xs"
-                    >
-                      {showAddCategory ? 'Abbrechen' : 'Neue Kategorie hinzufügen'}
-                    </button>
-                  </label>
-                  
+                    <button type="button" onClick={() => setShowAddCategory(!showAddCategory)} className="text-blue-600 hover:text-blue-800 text-xs">{showAddCategory ? 'Abbrechen' : 'Neue Kategorie hinzufügen'}</button>
+                  </Label>
                   {showAddCategory ? (
                     <div className="flex items-center">
-                      <input
+                      <Input
                         type="text"
                         value={newCategory}
                         onChange={(e) => setNewCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="h-11 text-base rounded-r-none"
                         placeholder="Neue Kategorie"
                       />
-                      <button
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Hinzufügen
-                      </button>
+                      <Button type="button" onClick={handleAddCategory} className="h-11 rounded-l-none">Hinzufügen</Button>
                     </div>
                   ) : (
                     <select
@@ -811,7 +791,7 @@ export default function Fixkosten() {
                       value={newFixkosten.kategorie || 'Allgemein'}
                       onChange={(e) => setNewFixkosten({...newFixkosten, kategorie: e.target.value})}
                       disabled={isReadOnly || loading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="h-11 w-full px-3 border border-gray-300 rounded-md shadow-xs outline-hidden bg-white dark:bg-gray-950 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/60 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30 focus:border-gray-400"
                     >
                       {categories.map(category => (
                         <option key={category} value={category}>{category}</option>
@@ -820,72 +800,45 @@ export default function Fixkosten() {
                   )}
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Startdatum
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="start_date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
+                  <Input
                     id="start_date"
                     type="date"
                     value={(newFixkosten.start || new Date()).toISOString().split('T')[0]}
                     onChange={(e) => setNewFixkosten({...newFixkosten, start: new Date(e.target.value)})}
                     disabled={isReadOnly || loading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="h-11 text-base"
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Enddatum (optional)
-                  </label>
-                  <input
+                <div className="space-y-2">
+                  <Label htmlFor="end_date" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
+                  <Input
                     id="end_date"
                     type="date"
                     value={newFixkosten.enddatum ? newFixkosten.enddatum.toISOString().split('T')[0] : ''}
                     onChange={(e) => setNewFixkosten({
-                      ...newFixkosten, 
+                      ...newFixkosten,
                       enddatum: e.target.value ? new Date(e.target.value) : null
                     })}
                     disabled={isReadOnly || loading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="h-11 text-base"
                   />
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Reset form and close modal
-                    setNewFixkosten({
-                      name: '',
-                      betrag: 0,
-                      rhythmus: 'monatlich',
-                      start: new Date(),
-                      enddatum: null,
-                      kategorie: 'Allgemein'
-                    });
-                    setShowFixkostenModal(false);
-                  }}
-                  disabled={loading}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setShowFixkostenModal(false)}>Abbrechen</Button>
+                <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
                   {loading ? 'Wird gespeichert...' : 'Hinzufügen'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Card>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit form modal */}
       {editingId && editingFixkosten && (
