@@ -638,13 +638,13 @@ export default function Fixkosten() {
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-end gap-3">
-                    <button onClick={() => startEditing(item)} disabled={isReadOnly || loading} className="text-blue-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Bearbeiten</button>
+                    <button onClick={() => startEditing(item)} disabled={isReadOnly || loading} className="text-blue-600 text-xs cursor-pointer">Bearbeiten</button>
                     {isActive ? (
-                      <button onClick={() => handleEndFixkosten(item.id)} disabled={isReadOnly || loading} className="text-yellow-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Beenden</button>
+                      <button onClick={() => handleEndFixkosten(item.id)} disabled={isReadOnly || loading} className="text-yellow-600 text-xs cursor-pointer">Beenden</button>
                     ) : (
-                      <button onClick={() => handleReactivateFixkosten(item.id)} disabled={isReadOnly || loading} className="text-green-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Reaktivieren</button>
+                      <button onClick={() => handleReactivateFixkosten(item.id)} disabled={isReadOnly || loading} className="text-green-600 text-xs cursor-pointer">Reaktivieren</button>
                     )}
-                    <button onClick={() => handleDeleteFixkosten(item.id)} disabled={isReadOnly || loading} className="text-red-600 text-xs cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Löschen</button>
+                    <button onClick={() => handleDeleteFixkosten(item.id)} disabled={isReadOnly || loading} className="text-red-600 text-xs cursor-pointer">Löschen</button>
                   </div>
                 </div>
               );

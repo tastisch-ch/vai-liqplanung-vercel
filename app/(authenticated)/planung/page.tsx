@@ -497,10 +497,10 @@ export default function Planung() {
                       <TableCell className="text-right">
                         {transaction.kategorie !== 'Fixkosten' && transaction.kategorie !== 'Lohn' && (
                           <div className="inline-flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleEditTransaction(transaction)} className="text-gray-600 hover:text-gray-900">
+                            <Button variant="ghost" size="sm" onClick={() => handleEditTransaction(transaction)} className="text-gray-600 hover:text-gray-900 cursor-pointer">
                               <RiPencilLine className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(transaction)} className="text-rose-600 hover:text-rose-700">
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(transaction)} className="text-rose-600 hover:text-rose-700 cursor-pointer">
                               <RiDeleteBin6Line className="h-4 w-4" />
                             </Button>
                           </div>

@@ -164,14 +164,14 @@ export default function PlanningFilters() {
               <ToggleGroupItem
                 value="incoming"
                 aria-label="Einnahmen"
-                className="data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-700"
+                className="data-[state=on]:bg-emerald-100 data-[state=on]:text-emerald-700 cursor-pointer"
               >
                 <RiAddLine className="size-4 shrink-0" />
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="outgoing"
                 aria-label="Ausgaben"
-                className="data-[state=on]:bg-rose-100 data-[state=on]:text-rose-700"
+                className="data-[state=on]:bg-rose-100 data-[state=on]:text-rose-700 cursor-pointer"
               >
                 <RiSubtractLine className="size-4 shrink-0" />
               </ToggleGroupItem>
