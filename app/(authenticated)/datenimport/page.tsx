@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { supabase } from "@/lib/supabase/client";
 
 export default function DatenImport() {
   const { authState, refreshAuth } = useAuth();
@@ -85,6 +86,29 @@ export default function DatenImport() {
       const raw = localStorage.getItem('planning:last-import');
       if (raw) setLastImport(JSON.parse(raw));
     } catch {}
+  }, []);
+
+  // Load last import info from Supabase (global, persisted)
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLastImport = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('imports')
+          .select('imported_at,user_email,user_id')
+          .order('imported_at', { ascending: false })
+          .limit(1);
+        if (!error && data && data.length > 0) {
+          const row = data[0] as any;
+          const info = { date: row.imported_at, user: row.user_email || row.user_id || 'unknown' };
+          if (isMounted) setLastImport(info);
+        }
+      } catch (_) {
+        // ignore; best-effort display
+      }
+    };
+    fetchLastImport();
+    return () => { isMounted = false; };
   }, []);
 
   // Manual auth refresh 
