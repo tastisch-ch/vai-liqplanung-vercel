@@ -494,17 +494,22 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   const supabase = createRouteHandlerSupabaseClient(request);
 
   try {
-    // Load existing tracked invoices for this user
-    console.log('Loading existing invoices for user:', userId);
-    
-    // Load all existing transactions for this user to check for potential conflicts
-    // Also check if there are any records with the specific invoice_id that's causing the conflict
-    const { data: existingInvoices, error: loadErr } = await supabase
+    // Load existing invoices (global for matching) and user-specific for removals
+    console.log('Loading existing invoices (global + per-user)');
+
+    const { data: existingForMatching, error: loadMatchErr } = await supabase
+      .from('buchungen')
+      .select('id, invoice_id, amount, date, details, is_invoice, user_id');
+
+    const { data: existingForUser, error: loadUserErr } = await supabase
       .from('buchungen')
       .select('id, invoice_id, amount, date, details, is_invoice')
-      .eq('user_id', userId);  // Get ALL transactions to see what might conflict
-    
-    // Also check specifically for the invoice_id that's causing the constraint violation
+      .eq('user_id', userId);
+
+    if (loadMatchErr) throw loadMatchErr;
+    if (loadUserErr) throw loadUserErr;
+
+    // Also check specifically for the invoice_id that's causing the constraint violation (debug)
     const { data: conflictingRecord, error: conflictErr } = await supabase
       .from('buchungen')
       .select('id, invoice_id, amount, date, details, is_invoice, user_id')
@@ -513,24 +518,23 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
       
     console.log('Conflicting record check:', { conflictingRecord, conflictErr });
     
-    console.log('Query executed, error:', loadErr);
-    console.log('Raw existingInvoices data:', existingInvoices);
+    console.log('Loaded for matching:', existingForMatching?.length || 0, 'for user:', existingForUser?.length || 0);
     
-    if (loadErr) {
-      console.error('Error loading existing invoices:', loadErr);
+    if (loadUserErr) {
+      console.error('Error loading user invoices:', loadUserErr);
       // If columns don't exist, treat as empty result
-      if (loadErr.code === '42703') {
+      if ((loadUserErr as any).code === '42703') {
         console.log('invoice_id or is_invoice columns do not exist, treating as empty');
         const existingByInvoiceId = new Map();
         return { newCount: 0, updatedCount: 0, removedCount: 0 };
       }
-      throw new Error(`Failed to load existing invoices: ${loadErr.message}`);
+      throw new Error(`Failed to load user invoices: ${loadUserErr.message}`);
     }
     
-    console.log('Found', existingInvoices?.length || 0, 'existing invoices');
+    console.log('Found', existingForUser?.length || 0, 'existing user invoices');
 
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string }>();
-  for (const inv of existingInvoices || []) {
+  for (const inv of existingForMatching || []) {
     const invId = (inv as any).invoice_id as string | null;
     const details = (inv as any).details as string;
     
@@ -683,7 +687,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
 
   // Determine removals: existing invoices not present in current file
   const removedIds: string[] = [];
-  for (const inv of existingInvoices || []) {
+  for (const inv of existingForUser || []) {
     const invId = (inv as any).invoice_id as string | null;
     if (invId && !seenIds.has(invId)) removedIds.push((inv as any).id);
   }
