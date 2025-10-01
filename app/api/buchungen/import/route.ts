@@ -207,6 +207,12 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
     .from('buchungen')
     .select('details, direction, amount, date')
     .eq('user_id', userId);
+
+  // Normalization helper
+  const normalizeDetails = (s: string) => String(s || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
   
   // Extract transaction rows from HTML - find expandable item rows
   const rowRegex = /<tr[^>]*class="expandable item"[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -214,9 +220,10 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
   
   console.log(`Found ${rows.length} potential transaction rows in HTML`);
   
-  const processedRows = [];
+  const processedRows = [] as Array<{ date: string; details: string; amount: number; direction: 'Incoming' | 'Outgoing' }>;
   let duplicateCount = 0;
   let ignoredCount = 0;
+  const seenImportKeys = new Set<string>();
   
   for (const rowMatch of rows) {
     const rowContent = rowMatch[1];
@@ -291,14 +298,28 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
           // Use absolute value of amount
           amount = Math.abs(amount);
           
-          // Check for duplicates
-          const isDuplicate = checkIfDuplicate(
-            existingTransactions || [],
-            details,
-            direction,
-            amount,
-            date
-          );
+          // Build normalized key (per-day) and check duplicates within current import
+          const day = date.toISOString().slice(0, 10);
+          const normDetails = normalizeDetails(details);
+          const importKey = `${normDetails}|${direction}|${amount.toFixed(2)}|${day}`;
+
+          if (seenImportKeys.has(importKey)) {
+            duplicateCount++;
+            continue;
+          }
+
+          // Check for duplicates in DB including same day
+          const isDuplicate = (existingTransactions || []).some((tx: any) => {
+            const txDay = String(tx.date).slice(0, 10);
+            const amountDiff = Math.abs(tx.amount - amount);
+            const amountTolerance = amount * 0.01; // 1%
+            return (
+              normalizeDetails(tx.details) === normDetails &&
+              tx.direction === direction &&
+              txDay === day &&
+              amountDiff <= amountTolerance
+            );
+          });
           
           if (isDuplicate) {
             duplicateCount++;
@@ -311,6 +332,7 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
             amount: amount,
             direction: direction
           });
+          seenImportKeys.add(importKey);
         }
       }
     } catch (error) {
