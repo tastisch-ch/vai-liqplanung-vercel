@@ -153,7 +153,7 @@ body {
   outline: none;
 }
 
-/* Subtle focus for common form controls (visible on focus and focus-visible) */
+/* Subtle focus for common form controls (visible on focus and focus-visible) - Vaios Lime @ 40% */
 input:focus,
 input:focus-visible,
 textarea:focus,
@@ -165,8 +165,8 @@ select:focus-visible,
 .outline-hidden:focus,
 .outline-hidden:focus-visible {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(2, 64, 61, 0.12);
-  border-color: rgba(2, 64, 61, 0.4);
+  box-shadow: 0 0 0 3px rgba(206, 255, 101, 0.4);
+  border-color: rgba(206, 255, 101, 0.4);
   transition: box-shadow 120ms ease, border-color 120ms ease;
 }
 
