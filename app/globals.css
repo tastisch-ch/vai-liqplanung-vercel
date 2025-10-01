@@ -153,13 +153,21 @@ body {
   outline: none;
 }
 
-/* Subtle focus for common form controls */
+/* Subtle focus for common form controls (visible on focus and focus-visible) */
+input:focus,
 input:focus-visible,
+textarea:focus,
 textarea:focus-visible,
+select:focus,
 select:focus-visible,
-[role="combobox"]:focus-visible {
-  box-shadow: 0 0 0 2px rgba(2, 64, 61, 0.12);
-  border-color: rgba(2, 64, 61, 0.35);
+[role="combobox"]:focus,
+[role="combobox"]:focus-visible,
+.outline-hidden:focus,
+.outline-hidden:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(2, 64, 61, 0.12);
+  border-color: rgba(2, 64, 61, 0.4);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
 }
 
 .focus\:ring-blue-500:focus {
