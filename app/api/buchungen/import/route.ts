@@ -203,10 +203,10 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
   
   // Get existing transactions to check for duplicates
   const supabase = createRouteHandlerSupabaseClient(request);
+  // IMPORTANT: de-dupe across ALL users (shared dataset)
   const { data: existingTransactions } = await supabase
     .from('buchungen')
-    .select('details, direction, amount, date')
-    .eq('user_id', userId);
+    .select('details, direction, amount, date, user_id');
 
   // Normalization helper
   const normalizeDetails = (s: string) => String(s || '')
