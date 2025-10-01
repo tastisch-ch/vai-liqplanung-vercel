@@ -15,7 +15,7 @@ export function OverdueIncomingInvoices({ items }: Props) {
     <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <svg className="w-6 h-6 text-violet-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="w-6 h-6 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="4" width="18" height="14" rx="2" ry="2"></rect>
             <line x1="8" y1="9" x2="16" y2="9"></line>
             <line x1="8" y1="13" x2="12" y2="13"></line>
@@ -42,7 +42,7 @@ export function OverdueIncomingInvoices({ items }: Props) {
               key={t.id}
               className="relative flex w-full items-center space-x-3 rounded-lg bg-gray-50 p-2 hover:bg-gray-100"
             >
-              <span className="inline-flex min-w-20 justify-center rounded bg-violet-800 px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap">
+              <span className="inline-flex min-w-20 justify-center rounded bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap">
                 {invoice ? String(invoice).toUpperCase() : '–'}
               </span>
               <p className="flex w-full items-center justify-between space-x-4 truncate text-sm font-medium">
