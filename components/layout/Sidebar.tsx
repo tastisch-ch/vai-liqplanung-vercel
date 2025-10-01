@@ -445,9 +445,9 @@ export default function Sidebar() {
             {!collapsed && (
               <div className="mt-2 text-center">
                 <div className="text-sm font-medium text-gray-900">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Ziel • erreicht: {formatCHF(revAchieved)}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Bisher erreicht: {formatCHF(revAchieved)}</div>
                 {revTarget > 0 && (
-                  <div className="text-xs text-gray-700 mt-0.5">Fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span> bis 31.12.</div>
+                  <div className="text-xs text-gray-700 mt-0.5">fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span></div>
                 )}
               </div>
             )}
