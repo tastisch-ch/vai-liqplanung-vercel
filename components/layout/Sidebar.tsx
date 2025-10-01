@@ -424,13 +424,28 @@ export default function Sidebar() {
       {isAuthenticated && (
         <div className="p-4 border-b border-gray-200">
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
-            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-700 flex items-center gap-2 whitespace-nowrap">
               <svg className="h-5 w-5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 20l9-16-9 4-9-4 9 16z"/>
               </svg>
               {!collapsed && `Ertragsziel ${currentYear}`}
             </h3>
-            {!collapsed && !revLoading && (
+          </div>
+          <div className={`${revLoading ? 'opacity-60' : ''} flex flex-col items-center`}>
+            <ProgressCircle value={revProgress} size={collapsed ? 64 : 112} />
+            {!collapsed && (
+              <div className="mt-2 text-center">
+                <div className="text-sm font-medium text-gray-900">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
+                <div className="text-xs text-gray-600 mt-0.5">Bisher erreicht: {formatCHF(revAchieved)}</div>
+                {revTarget > 0 && (
+                  <div className="text-xs text-gray-700 mt-0.5">fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span></div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {!collapsed && !revLoading && (
+            <div className="mt-3 flex justify-end">
               <button 
                 onClick={() => setIsRevEditing(true)}
                 className="text-xs text-blue-600 hover:text-blue-800"
@@ -438,20 +453,8 @@ export default function Sidebar() {
               >
                 {revTarget > 0 ? 'Ziel anpassen' : 'Ziel setzen'}
               </button>
-            )}
-          </div>
-          <div className={`${revLoading ? 'opacity-60' : ''} flex flex-col items-center`}>
-            <ProgressCircle value={revProgress} size={collapsed ? 64 : 112} />
-            {!collapsed && (
-              <div className="mt-2 text-center">
-                <div className="text-sm font-medium text-gray-900">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
-                <div className="text-xs text-gray-500 mt-0.5">Bisher erreicht: {formatCHF(revAchieved)}</div>
-                {revTarget > 0 && (
-                  <div className="text-xs text-gray-700 mt-0.5">fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span></div>
-                )}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <Dialog open={isRevEditing} onOpenChange={setIsRevEditing}>
             <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
