@@ -72,6 +72,51 @@ export default function MitarbeiterPage() {
   });
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
+  const [startText, setStartText] = useState('');
+  const [endText, setEndText] = useState('');
+
+  useEffect(() => {
+    if (showLohnModal) {
+      try {
+        const d = new Date(lohnForm.start);
+        setStartText(isNaN(d.getTime()) ? '' : format(d, 'dd.MM.yyyy'));
+      } catch { setStartText(''); }
+      try {
+        if (!lohnForm.ende) { setEndText(''); }
+        else { const d2 = new Date(lohnForm.ende); setEndText(isNaN(d2.getTime()) ? '' : format(d2, 'dd.MM.yyyy')); }
+      } catch { setEndText(''); }
+    }
+  }, [showLohnModal]);
+
+  const parseDateText = (txt: string): Date | null => {
+    const t = txt.trim();
+    if (!t) return null;
+    const fmts = ['dd.MM.yyyy', 'd.M.yyyy', 'd.M.yy', 'yyyy-MM-dd'];
+    for (const f of fmts) {
+      const p = parse(t, f, new Date());
+      if (isValid(p)) return p;
+    }
+    return null;
+  };
+
+  const commitStartText = () => {
+    const d = parseDateText(startText);
+    if (!d) return;
+    setLohnForm({ ...lohnForm, start: format(d, 'yyyy-MM-dd') });
+    setStartText(format(d, 'dd.MM.yyyy'));
+  };
+
+  const commitEndText = () => {
+    if (!endText.trim()) {
+      setLohnForm({ ...lohnForm, ende: '' });
+      setEndText('');
+      return;
+    }
+    const d = parseDateText(endText);
+    if (!d) return;
+    setLohnForm({ ...lohnForm, ende: format(d, 'yyyy-MM-dd') });
+    setEndText(format(d, 'dd.MM.yyyy'));
+  };
   
   // Fetch employees data
   useEffect(() => {
@@ -703,10 +748,11 @@ export default function MitarbeiterPage() {
                           name="start"
                           type="text"
                           placeholder="dd.mm.yyyy"
-                          value={(() => { try { const d = new Date(lohnForm.start); return isNaN(d.getTime()) ? '' : format(d, 'dd.MM.yyyy'); } catch { return ''; } })()}
-                          onChange={(e)=>{ const txt=e.target.value; const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:any=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, start: format(parsed,'yyyy-MM-dd')}); }}
+                          value={startText}
+                          onChange={(e)=> setStartText(e.target.value)}
                           onClick={(e)=>{ setStartOpen(true); (e.target as HTMLInputElement).select(); }}
-                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setStartOpen(false); } }}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); commitStartText(); setStartOpen(false); } }}
+                          onBlur={()=>{ commitStartText(); }}
                           className="h-11 text-base pl-9"
                         />
                       </Popover.Trigger>
@@ -717,7 +763,7 @@ export default function MitarbeiterPage() {
                         numberOfMonths={1}
                         weekStartsOn={1}
                         selected={(() => { try { const d=new Date(lohnForm.start); return isNaN(d.getTime())?undefined:d; } catch { return undefined; } })()}
-                        onSelect={(d: Date | undefined) => { if(!d) return; setLohnForm({...lohnForm, start: format(d,'yyyy-MM-dd')}); setStartOpen(false); }}
+                        onSelect={(d: Date | undefined) => { if(!d) return; setLohnForm({...lohnForm, start: format(d,'yyyy-MM-dd')}); setStartText(format(d,'dd.MM.yyyy')); setStartOpen(false); }}
                         className="rdp-tremor"
                       />
                     </Popover.Content>
@@ -738,10 +784,11 @@ export default function MitarbeiterPage() {
                           name="ende"
                           type="text"
                           placeholder="dd.mm.yyyy"
-                          value={(() => { if(!lohnForm.ende) return ''; try { const d = new Date(lohnForm.ende); return isNaN(d.getTime())? '': format(d,'dd.MM.yyyy'); } catch { return ''; } })()}
-                          onChange={(e)=>{ const txt=e.target.value; if(!txt){ setLohnForm({...lohnForm, ende: ''}); return; } const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:any=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, ende: format(parsed,'yyyy-MM-dd')}); }}
+                          value={endText}
+                          onChange={(e)=> setEndText(e.target.value)}
                           onClick={(e)=>{ setEndOpen(true); (e.target as HTMLInputElement).select(); }}
-                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setEndOpen(false); } }}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); commitEndText(); setEndOpen(false); } }}
+                          onBlur={()=>{ commitEndText(); }}
                           className="h-11 text-base pl-9"
                         />
                       </Popover.Trigger>
@@ -752,7 +799,7 @@ export default function MitarbeiterPage() {
                         numberOfMonths={1}
                         weekStartsOn={1}
                         selected={(() => { if(!lohnForm.ende) return undefined; try { const d=new Date(lohnForm.ende); return isNaN(d.getTime())? undefined: d; } catch { return undefined; } })()}
-                        onSelect={(d: Date | undefined) => { setLohnForm({...lohnForm, ende: d ? format(d,'yyyy-MM-dd') : ''}); setEndOpen(false); }}
+                        onSelect={(d: Date | undefined) => { if(!d){ setLohnForm({...lohnForm, ende: ''}); setEndText(''); setEndOpen(false); return; } setLohnForm({...lohnForm, ende: format(d,'yyyy-MM-dd')}); setEndText(format(d,'dd.MM.yyyy')); setEndOpen(false); }}
                         className="rdp-tremor"
                       />
                     </Popover.Content>
