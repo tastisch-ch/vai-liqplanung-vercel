@@ -1,5 +1,6 @@
 'use client';
 
+import React from "react";
 import PageHeader from "@/components/layout/PageHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
@@ -703,7 +704,7 @@ export default function MitarbeiterPage() {
                           type="text"
                           placeholder="dd.mm.yyyy"
                           value={(() => { try { const d = new Date(lohnForm.start); return isNaN(d.getTime()) ? '' : format(d, 'dd.MM.yyyy'); } catch { return ''; } })()}
-                          onChange={(e)=>{ const txt=e.target.value; const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:Date|null=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, start: format(parsed,'yyyy-MM-dd')}); }}
+                          onChange={(e)=>{ const txt=e.target.value; const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:any=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, start: format(parsed,'yyyy-MM-dd')}); }}
                           onClick={(e)=>{ setStartOpen(true); (e.target as HTMLInputElement).select(); }}
                           onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setStartOpen(false); } }}
                           className="h-11 text-base pl-9"
@@ -738,7 +739,7 @@ export default function MitarbeiterPage() {
                           type="text"
                           placeholder="dd.mm.yyyy"
                           value={(() => { if(!lohnForm.ende) return ''; try { const d = new Date(lohnForm.ende); return isNaN(d.getTime())? '': format(d,'dd.MM.yyyy'); } catch { return ''; } })()}
-                          onChange={(e)=>{ const txt=e.target.value; if(!txt){ setLohnForm({...lohnForm, ende: ''}); return; } const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:Date|null=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, ende: format(parsed,'yyyy-MM-dd')}); }}
+                          onChange={(e)=>{ const txt=e.target.value; if(!txt){ setLohnForm({...lohnForm, ende: ''}); return; } const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:any=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, ende: format(parsed,'yyyy-MM-dd')}); }}
                           onClick={(e)=>{ setEndOpen(true); (e.target as HTMLInputElement).select(); }}
                           onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setEndOpen(false); } }}
                           className="h-11 text-base pl-9"
