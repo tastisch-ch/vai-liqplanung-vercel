@@ -639,6 +639,7 @@ export default function MitarbeiterPage() {
                 <TableHeaderCell>Name</TableHeaderCell>
                 <TableHeaderCell>Aktueller Lohn</TableHeaderCell>
                 <TableHeaderCell>Seit</TableHeaderCell>
+                <TableHeaderCell>Bis</TableHeaderCell>
                 <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
               </TableRow>
             </TableHead>
@@ -658,8 +659,9 @@ export default function MitarbeiterPage() {
                           )
                         ) : '-'}
                       </TableCell>
-                      <TableCell className="text-gray-600">{currentSalary ? (currentSalary.lohn.Start <= new Date() ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-') : '-'}</TableCell>
-                      <TableCell className="text-right">
+                    <TableCell className="text-gray-600">{currentSalary ? (currentSalary.lohn.Start <= new Date() ? format(currentSalary.lohn.Start, 'dd.MM.yyyy', { locale: de }) : '-') : '-'}</TableCell>
+                    <TableCell className="text-gray-600">{currentSalary && currentSalary.lohn.Ende ? format(currentSalary.lohn.Ende instanceof Date ? currentSalary.lohn.Ende : new Date(currentSalary.lohn.Ende), 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
+                    <TableCell className="text-right">
                         <div className="inline-flex items-center gap-3">
                           <button onClick={() => startEditing(employee)} disabled={isReadOnly || loading} className="text-blue-600 hover:text-blue-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Bearbeiten</button>
                           <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} disabled={isReadOnly || loading} className="text-green-600 hover:text-green-800 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Lohn hinzufügen</button>
