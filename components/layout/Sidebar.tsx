@@ -300,9 +300,9 @@ export default function Sidebar() {
   }
 
   return (
-    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-full md:h-[calc(100vh-1.5rem)] flex flex-col transition-[width] duration-300`}>
+    <div className={`${collapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 md:border md:border-gray-200 md:bg-white/80 md:backdrop-blur md:shadow-lg md:rounded-2xl md:m-3 h-[100vh] md:h-[calc(100vh-1.5rem)] overflow-hidden flex flex-col transition-[width] duration-300`}>
       {/* Sidebar Header with logo + collapse */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-center">
+      <div className="p-3 border-b border-gray-200 flex items-center justify-center">
         <div className="flex items-center gap-3">
           <Image src="/assets/vaios-icon.svg" alt="vaios icon" width={32} height={32} priority className={`${collapsed ? 'block' : 'hidden'}`} />
           <Image src="/assets/vaios-logo.svg" alt="vaios" width={132} height={28} priority className={`${collapsed ? 'hidden' : 'block'}`} />
@@ -320,7 +320,7 @@ export default function Sidebar() {
 
       {/* Account Section integrated */}
       {isAuthenticated && user && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 border-b border-gray-200">
           <div className={`flex items-center ${collapsed ? 'justify-center' : ''}`}>
             <div className={`h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold ${collapsed ? '' : 'mr-3'}`}>
               {user.email?.charAt(0).toUpperCase() || 'U'}
@@ -337,7 +337,7 @@ export default function Sidebar() {
       
       {/* Kontostand Section */}
       {isAuthenticated && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 border-b border-gray-200">
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
             <h3 className="font-semibold text-gray-700 flex items-center gap-2">
               <svg className="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -422,7 +422,7 @@ export default function Sidebar() {
 
       {/* Ertragsziel Section */}
       {isAuthenticated && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-3 border-b border-gray-200">
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
             <h3 className="font-semibold text-gray-700 flex items-center gap-2 whitespace-nowrap">
               <svg className="h-5 w-5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -477,8 +477,8 @@ export default function Sidebar() {
       )}
       
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-8">
+      <div className="p-3 overflow-hidden flex-1 flex flex-col justify-between">
+        <div className="space-y-6">
           {/* Main Navigation */}
           <div>
             {!collapsed && (
@@ -489,9 +489,12 @@ export default function Sidebar() {
           
           {/* Admin Section removed */}
         </div>
+        <div className="pt-3">
+          {/* bottom spacer to bring signout closer without scroll */}
+        </div>
       </div>
       {/* Sign out + collapse at bottom (stacked) */}
-      <div className="mt-auto p-4 border-t border-gray-200">
+      <div className="p-3 border-t border-gray-200">
         {isAuthenticated && (
           <button onClick={handleSignOut} className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-between'} text-sm text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md`}>
             <span className="flex items-center gap-2">
