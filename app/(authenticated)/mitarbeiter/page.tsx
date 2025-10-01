@@ -69,6 +69,8 @@ export default function MitarbeiterPage() {
     betrag: 0,
     ende: ''
   });
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
   
   // Fetch employees data
   useEffect(() => {
@@ -691,7 +693,34 @@ export default function MitarbeiterPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
-                  <Input id="start" name="start" type="date" value={lohnForm.start} onChange={handleLohnInputChange} disabled={isReadOnly || loading} required className="h-11 text-base" />
+                  <Popover.Root open={startOpen} onOpenChange={setStartOpen}>
+                    <div className="relative">
+                      <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                      <Popover.Trigger asChild>
+                        <Input
+                          id="start"
+                          name="start"
+                          type="text"
+                          placeholder="dd.mm.yyyy"
+                          value={(() => { try { const d = new Date(lohnForm.start); return isNaN(d.getTime()) ? '' : format(d, 'dd.MM.yyyy'); } catch { return ''; } })()}
+                          onChange={(e)=>{ const txt=e.target.value; const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:Date|null=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, start: format(parsed,'yyyy-MM-dd')}); }}
+                          onClick={(e)=>{ setStartOpen(true); (e.target as HTMLInputElement).select(); }}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setStartOpen(false); } }}
+                          className="h-11 text-base pl-9"
+                        />
+                      </Popover.Trigger>
+                    </div>
+                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                      <Calendar
+                        mode="single"
+                        numberOfMonths={1}
+                        weekStartsOn={1}
+                        selected={(() => { try { const d=new Date(lohnForm.start); return isNaN(d.getTime())?undefined:d; } catch { return undefined; } })()}
+                        onSelect={(d: Date | undefined) => { if(!d) return; setLohnForm({...lohnForm, start: format(d,'yyyy-MM-dd')}); setStartOpen(false); }}
+                        className="rdp-tremor"
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="betrag" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Lohn (CHF)</Label>
@@ -699,7 +728,34 @@ export default function MitarbeiterPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ende" className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
-                  <Input id="ende" name="ende" type="date" value={lohnForm.ende} onChange={handleLohnInputChange} disabled={isReadOnly || loading} className="h-11 text-base" />
+                  <Popover.Root open={endOpen} onOpenChange={setEndOpen}>
+                    <div className="relative">
+                      <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                      <Popover.Trigger asChild>
+                        <Input
+                          id="ende"
+                          name="ende"
+                          type="text"
+                          placeholder="dd.mm.yyyy"
+                          value={(() => { if(!lohnForm.ende) return ''; try { const d = new Date(lohnForm.ende); return isNaN(d.getTime())? '': format(d,'dd.MM.yyyy'); } catch { return ''; } })()}
+                          onChange={(e)=>{ const txt=e.target.value; if(!txt){ setLohnForm({...lohnForm, ende: ''}); return; } const fmts=['dd.MM.yyyy','d.M.yyyy','d.M.yy','yyyy-MM-dd']; let parsed:Date|null=null; for(const f of fmts){ const p=parse(txt,f,new Date()); if(isValid(p)){ parsed=p; break; } } if(parsed){ setLohnForm({...lohnForm, ende: format(parsed,'yyyy-MM-dd')}); }}
+                          onClick={(e)=>{ setEndOpen(true); (e.target as HTMLInputElement).select(); }}
+                          onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); setEndOpen(false); } }}
+                          className="h-11 text-base pl-9"
+                        />
+                      </Popover.Trigger>
+                    </div>
+                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                      <Calendar
+                        mode="single"
+                        numberOfMonths={1}
+                        weekStartsOn={1}
+                        selected={(() => { if(!lohnForm.ende) return undefined; try { const d=new Date(lohnForm.ende); return isNaN(d.getTime())? undefined: d; } catch { return undefined; } })()}
+                        onSelect={(d: Date | undefined) => { setLohnForm({...lohnForm, ende: d ? format(d,'yyyy-MM-dd') : ''}); setEndOpen(false); }}
+                        className="rdp-tremor"
+                      />
+                    </Popover.Content>
+                  </Popover.Root>
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
