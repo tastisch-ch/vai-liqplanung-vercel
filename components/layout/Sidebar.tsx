@@ -180,27 +180,28 @@ export default function Sidebar() {
     }
   };
 
-  function ProgressCircle({ value }: { value: number }) {
-    const radius = 18; // px
-    const stroke = 4;
+  function ProgressCircle({ value, size = 96 }: { value: number; size?: number }) {
+    const stroke = 6;
+    const radius = (size - stroke) / 2;
+    const center = size / 2;
     const c = 2 * Math.PI * radius;
     const pct = Math.max(0, Math.min(100, value));
     const dash = (pct / 100) * c;
     return (
-      <svg width={44} height={44} viewBox="0 0 44 44" className="shrink-0">
-        <circle cx="22" cy="22" r={radius} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+        <circle cx={center} cy={center} r={radius} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
         <circle
-          cx="22"
-          cy="22"
+          cx={center}
+          cy={center}
           r={radius}
           stroke="#CEFF65"
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={`${dash} ${c - dash}`}
           strokeLinecap="round"
-          transform="rotate(-90 22 22)"
+          transform={`rotate(-90 ${center} ${center})`}
         />
-        <text x="22" y="24" textAnchor="middle" fontSize="10" className="fill-gray-700">{Math.round(pct)}%</text>
+        <text x={center} y={center + 4} textAnchor="middle" fontSize={Math.max(12, Math.round(size * 0.16))} className="fill-gray-700 font-medium">{Math.round(pct)}%</text>
       </svg>
     );
   }
@@ -439,14 +440,14 @@ export default function Sidebar() {
               </button>
             )}
           </div>
-          <div className={`${collapsed ? 'items-center justify-center' : ''} ${revLoading ? 'opacity-60' : ''} flex gap-3`}>
-            <ProgressCircle value={revProgress} />
+          <div className={`${revLoading ? 'opacity-60' : ''} flex flex-col items-center`}>
+            <ProgressCircle value={revProgress} size={collapsed ? 64 : 112} />
             {!collapsed && (
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
-                <div className="text-xs text-gray-500">Ziel • erreicht: {formatCHF(revAchieved)}</div>
+              <div className="mt-2 text-center">
+                <div className="text-sm font-medium text-gray-900">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
+                <div className="text-xs text-gray-500 mt-0.5">Ziel • erreicht: {formatCHF(revAchieved)}</div>
                 {revTarget > 0 && (
-                  <div className="text-xs text-gray-700">Fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span> bis 31.12.</div>
+                  <div className="text-xs text-gray-700 mt-0.5">Fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span> bis 31.12.</div>
                 )}
               </div>
             )}
