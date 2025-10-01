@@ -730,7 +730,7 @@ export default function MitarbeiterPage() {
       
       {/* Lohn Modal */}
       <Dialog open={showLohnModal && !!selectedMitarbeiter} onOpenChange={setShowLohnModal}>
-        <DialogContent className="sm:max-w-[640px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[640px] p-0 overflow-visible z-[70]">
           <Card className="shadow-none border-0 !p-6">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Neue Lohndaten anlegen für {selectedMitarbeiter?.Name}</DialogTitle>
@@ -757,7 +757,7 @@ export default function MitarbeiterPage() {
                         />
                       </Popover.Trigger>
                     </div>
-                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                    <Popover.Content sideOffset={8} className="z-[80] rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
                       <Calendar
                         mode="single"
                         numberOfMonths={1}
@@ -793,7 +793,7 @@ export default function MitarbeiterPage() {
                         />
                       </Popover.Trigger>
                     </div>
-                    <Popover.Content sideOffset={8} className="z-50 rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                    <Popover.Content sideOffset={8} className="z-[80] rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
                       <Calendar
                         mode="single"
                         numberOfMonths={1}
@@ -865,98 +865,37 @@ export default function MitarbeiterPage() {
       )}
       
       {/* Edit Lohn Modal */}
-      {editingLohnId && editingLohn && editingLohnMitarbeiter && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl w-full mx-4 overflow-y-auto max-h-[90vh]">
-            <h2 className="text-xl font-semibold mb-4">
-              Lohndaten bearbeiten für {editingLohnMitarbeiter.Name}
-            </h2>
-            
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmitLohn(e, true);
-            }} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="edit_lohn_start" className="block text-sm font-medium text-gray-700 mb-1">
-                    Startdatum
-                  </label>
-                  <input
-                    id="edit_lohn_start"
-                    name="start"
-                    type="date"
-                    value={format(editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start), 'yyyy-MM-dd')}
-                    onChange={(e) => setEditingLohn({
-                      ...editingLohn,
-                      Start: new Date(e.target.value)
-                    })}
-                    disabled={loading}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+      <Dialog open={!!(editingLohnId && editingLohn && editingLohnMitarbeiter)} onOpenChange={(v)=> { if(!v) cancelEditingLohn(); }}>
+        <DialogContent className="sm:max-w-[640px] p-0 overflow-visible z-[70]">
+          <Card className="shadow-none border-0 !p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">Lohndaten bearbeiten für {editingLohnMitarbeiter?.Name}</DialogTitle>
+            </DialogHeader>
+            {editingLohn && (
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmitLohn(e, true); }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
+                    <Input type="date" value={format(editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start), 'yyyy-MM-dd')} onChange={(e)=> setEditingLohn({ ...editingLohn, Start: new Date(e.target.value) })} className="h-11 text-base" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Lohn (CHF)</Label>
+                    <Input type="number" min="0" step="0.01" value={editingLohn.Betrag} onChange={(e)=> setEditingLohn({ ...editingLohn, Betrag: parseFloat(e.target.value) || 0 })} className="h-11 text-base" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
+                    <Input type="date" value={editingLohn.Ende ? format(editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende), 'yyyy-MM-dd') : ''} onChange={(e)=> setEditingLohn({ ...editingLohn, Ende: e.target.value ? new Date(e.target.value) : null })} className="h-11 text-base" />
+                  </div>
                 </div>
-                
-                <div>
-                  <label htmlFor="edit_lohn_betrag" className="block text-sm font-medium text-gray-700 mb-1">
-                    Lohn (CHF)
-                  </label>
-                  <input
-                    id="edit_lohn_betrag"
-                    name="betrag"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={editingLohn.Betrag}
-                    onChange={(e) => setEditingLohn({
-                      ...editingLohn,
-                      Betrag: parseFloat(e.target.value) || 0
-                    })}
-                    disabled={loading}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={cancelEditingLohn}>Abbrechen</Button>
+                  <Button type="submit" className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">Aktualisieren</Button>
                 </div>
-                
-                <div>
-                  <label htmlFor="edit_lohn_ende" className="block text-sm font-medium text-gray-700 mb-1">
-                    Enddatum (optional)
-                  </label>
-                  <input
-                    id="edit_lohn_ende"
-                    name="ende"
-                    type="date"
-                    value={editingLohn.Ende ? format(editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende), 'yyyy-MM-dd') : ''}
-                    onChange={(e) => setEditingLohn({
-                      ...editingLohn,
-                      Ende: e.target.value ? new Date(e.target.value) : null
-                    })}
-                    disabled={loading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={cancelEditingLohn}
-                  disabled={loading}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Wird gespeichert...' : 'Aktualisieren'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            )}
+          </Card>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 
