@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import PageHeader from "@/components/layout/PageHeader";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useRef, useEffect } from "react";
 import { useNotification } from "@/components/ui/Notification";
@@ -7,8 +8,13 @@ import { loadBuchungen } from "@/lib/services/buchungen";
 import { Buchung } from "@/models/types";
 import { format } from "date-fns";
 import { formatCHF } from "@/lib/currency";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 import { authClient } from "@/lib/auth/client-auth";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 export default function DatenImport() {
   const { authState, refreshAuth } = useAuth();
@@ -27,6 +33,7 @@ export default function DatenImport() {
   const [isLoadingExisting, setIsLoadingExisting] = useState<boolean>(false);
   const [authDebug, setAuthDebug] = useState<string>('Checking auth status...');
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [lastImport, setLastImport] = useState<{ date: string; user: string } | null>(null);
 
   // Check authentication status on page load
   useEffect(() => {
@@ -71,6 +78,14 @@ export default function DatenImport() {
       setAuthDebug('Not logged in');
     }
   }, [user]);
+
+  // Load last import info from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('planning:last-import');
+      if (raw) setLastImport(JSON.parse(raw));
+    } catch {}
+  }, []);
 
   // Manual auth refresh 
   const forceAuthRefresh = async () => {
@@ -171,6 +186,12 @@ export default function DatenImport() {
         });
         showNotification(`${result.count} Transaktionen erfolgreich importiert`, 'success');
         setHtmlInput('');
+        // persist last import (date,user)
+        try {
+          const info = { date: new Date().toISOString(), user: user?.email || user?.id || 'unknown' };
+          localStorage.setItem('planning:last-import', JSON.stringify(info));
+          setLastImport(info);
+        } catch {}
       } else {
         setImportError('Keine Daten importiert. ' + (result.message || ''));
         showNotification('Keine Daten importiert', 'info');
@@ -245,6 +266,11 @@ export default function DatenImport() {
         const count = result.count ?? result.stats?.newCount + result.stats?.updatedCount + result.stats?.removedCount ?? 0;
         setImportSuccess({ message: result.message || 'Import erfolgreich', count });
         showNotification(result.message || `Import erfolgreich (${count})`, 'success');
+        try {
+          const info = { date: new Date().toISOString(), user: user?.email || user?.id || 'unknown' };
+          localStorage.setItem('planning:last-import', JSON.stringify(info));
+          setLastImport(info);
+        } catch {}
       } else {
         setImportError('Keine Daten importiert. ' + (result.message || ''));
         showNotification('Keine Daten importiert', 'info');
@@ -327,63 +353,35 @@ export default function DatenImport() {
   
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Datenimport</h1>
-      
-      {/* Auth Debug Info (only in development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-gray-100 p-4 rounded-lg mb-4 text-xs font-mono">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm font-semibold">Auth Debug</p>
-            <button
-              onClick={forceAuthRefresh}
-              className="px-2 py-1 bg-blue-500 text-white rounded text-xs"
-            >
-              Refresh Auth
-            </button>
+      <PageHeader
+        title="Datenimport"
+        subtitle="Bank-HTML und Rechnungen (Excel) importieren"
+        actions={lastImport ? (
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            Letzter Import: {format(new Date(lastImport.date), 'dd.MM.yyyy HH:mm')} – {lastImport.user}
           </div>
-          <p className="text-gray-800 break-all">
-            {authDebug}
-          </p>
-          {user && (
-            <div className="mt-2">
-              <p>User ID: {user.id}</p>
-              <p>Email: {user.email}</p>
-            </div>
-          )}
-        </div>
-      )}
-      
-      <div className="bg-blue-50 p-4 rounded-lg mb-4">
-        <p className="text-blue-800">
-          ℹ️ Der Start-Kontostand kann über die Einstellungen verwaltet werden, unabhängig vom Datenimport.
-        </p>
-      </div>
-      
-      {/* Info/Help */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
-        <h2 className="text-xl font-semibold mb-2">📋 Importanleitung</h2>
-        <div className="prose prose-sm max-w-none">
-          <h3>So importierst du deine Finanzdaten:</h3>
-          <ol>
-            <li>
-              <strong>E-Banking-Daten</strong>: Kopiere die HTML-Tabelle aus deinem E-Banking und füge sie unten ein (für Ausgaben).
-            </li>
-            <li>
-              <strong>Rechnungsdaten</strong> (optional): Lade Excel-Datei mit ausstehenden Rechnungen hoch (für Einnahmen).
-            </li>
-            <li>Klicke auf "Import starten".</li>
-          </ol>
-          <p><strong>Hinweis</strong>: Der Kontostand kann über die Einstellungen verwaltet werden.</p>
-        </div>
-      </div>
+        ) : null}
+      />
       
       {/* Import Forms */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Daten importieren</h2>
+      <Card className="shadow-sm">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">Daten importieren</h2>
+          <Tooltip.Provider delayDuration={100}>
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <span className="text-xs text-gray-500 cursor-help">Hilfe</span>
+              </Tooltip.Trigger>
+              <Tooltip.Content sideOffset={6} className="rounded-md border bg-white px-2 py-1 text-xs shadow-md text-gray-700">
+                HTML: E‑Banking Tabelle einfügen. Excel: Rechnungen mit Spalten (Zahlbar bis, Kunde, Kundennummer, Brutto).
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </Tooltip.Provider>
+        </div>
         
         {/* Error Message */}
         {importError && (
-          <div className="bg-red-50 p-4 rounded-md border border-red-200 mb-4">
+          <div className="bg-red-50 p-3 rounded-md border border-red-200 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -401,7 +399,7 @@ export default function DatenImport() {
         
         {/* Success Message */}
         {importSuccess && (
-          <div className="bg-green-50 p-4 rounded-md border border-green-200 mb-4">
+          <div className="bg-green-50 p-3 rounded-md border border-green-200 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -419,103 +417,59 @@ export default function DatenImport() {
         
         {/* HTML Import Form */}
         <form onSubmit={handleHtmlImport} className="mb-8">
-          <div className="mb-4">
-            <label htmlFor="html-input" className="block text-sm font-medium text-gray-700 mb-1">
-              HTML-Tabelle aus E-Banking einfügen (Ausgaben):
-            </label>
+          <div className="mb-3">
+            <Label htmlFor="html-input" className="text-xs">HTML-Tabelle (E‑Banking, Ausgaben)</Label>
             <textarea
               id="html-input"
               value={htmlInput}
-              onChange={e => setHtmlInput(e.target.value)}
+              onChange={(e) => setHtmlInput(e.target.value)}
               disabled={isImporting}
-              placeholder="<table>...</table> aus dem E-Banking hier einfügen"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 h-64"
+              placeholder="<table>...</table> hier einfügen"
+              className="mt-2 w-full h-56 rounded-md border border-gray-300 dark:border-gray-800 bg-white dark:bg-gray-950 p-3 text-sm shadow-xs outline-hidden focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700/30"
             />
           </div>
-          
           <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={isImporting || !htmlInput.trim()}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isImporting ? 'Importiere...' : 'HTML Import starten'}
-            </button>
+            <Button type="submit" disabled={isImporting || !htmlInput.trim()} className="bg-[#CEFF65] text-[#02403D] hover:bg-[#C2F95A] border border-[#CEFF65]">
+              {isImporting ? 'Importiere…' : 'HTML importieren'}
+            </Button>
           </div>
         </form>
         
         {/* Excel Import Form */}
-        <div className="border-t border-gray-200 pt-6">
-          <label htmlFor="excel-import" className="block text-sm font-medium text-gray-700 mb-3">
-            📄 Rechnungsdaten (Excel, Einnahmen):
-          </label>
-          
-            <div
-              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
-                isDragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-              }`}
-              onDragOver={handleDragOver}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="space-y-1 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              <div className="flex text-sm text-gray-600 justify-center">
-                  <label
-                  htmlFor="excel-import"
-                    className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                  >
-                    <span>Datei hochladen</span>
-                  <input
-                    id="excel-import"
-                    name="excel-import"
-                    type="file"
-                    ref={fileInputRef}
-                    disabled={isImporting}
-                    accept=".xlsx,.xls"
-                    className="sr-only"
-                    onChange={handleExcelImport}
-                  />
-                  </label>
-                  <p className="pl-1">oder hierher ziehen</p>
-              </div>
-              <p className="text-xs text-gray-500">
-                {isDragOver ? 'Datei fallen lassen zum Hochladen' : 'XLSX oder XLS bis zu 10MB'}
-              </p>
+        <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+          <Label htmlFor="excel-import" className="text-xs">Rechnungsdaten (Excel, Einnahmen)</Label>
+          <div
+            className={`mt-2 flex flex-col items-center justify-center rounded-md border-2 border-dashed p-6 text-center transition-colors ${isDragOver ? 'border-violet-400 bg-violet-50' : 'border-gray-300 dark:border-gray-800'}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <svg className="mx-auto h-10 w-10 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+              <label htmlFor="excel-import" className="relative cursor-pointer rounded-md bg-white dark:bg-gray-950 px-3 py-1.5 font-medium text-violet-700 hover:text-violet-800 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-violet-300">
+                <span>Datei auswählen</span>
+                <input id="excel-import" name="excel-import" type="file" ref={fileInputRef} disabled={isImporting} accept=".xlsx,.xls" className="sr-only" onChange={handleExcelImport} />
+              </label>
+              <span>oder hierher ziehen</span>
             </div>
+            <p className="mt-1 text-xs text-gray-500">XLSX/XLS bis 10MB</p>
           </div>
-          
-          <p className="mt-2 text-sm text-gray-500">
-            Die Excel-Datei sollte die Spalten "Zahlbar bis", "Kunde", "Kundennummer" und "Brutto" enthalten.
-          </p>
         </div>
-      </div>
+      </Card>
       
       {/* Existing Transactions */}
-      <div className="bg-white p-6 rounded-xl shadow-sm">
+      <Card className="shadow-sm">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Vorhandene Daten</h2>
-          <button
+          <Button
             onClick={loadExistingTransactions}
             disabled={isLoadingExisting}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoadingExisting ? 'Lade Daten...' : 'Daten laden'}
-          </button>
+            {isLoadingExisting ? 'Lade Daten…' : 'Daten laden'}
+          </Button>
         </div>
         
         {!showExistingData ? (
@@ -632,7 +586,7 @@ export default function DatenImport() {
             )}
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 } 
