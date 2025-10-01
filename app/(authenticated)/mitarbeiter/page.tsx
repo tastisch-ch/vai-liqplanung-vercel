@@ -769,7 +769,7 @@ export default function MitarbeiterPage() {
                   return (
                     <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
                       <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
-                      <TableCell className="text-gray-600">{last ? format(last.Betrag, undefined as any) : '-'}</TableCell>
+                      <TableCell className="text-gray-600">{last ? formatCHF(last.Betrag) : '-'}</TableCell>
                       <TableCell className="text-gray-600">{last && last.Ende ? format(last.Ende, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
                       <TableCell className="text-right">
                         <div className="inline-flex items-center gap-3">
