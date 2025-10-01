@@ -521,14 +521,14 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     console.log('Loaded for matching:', existingForMatching?.length || 0, 'for user:', existingForUser?.length || 0);
     
     if (loadUserErr) {
-      console.error('Error loading user invoices:', loadUserErr);
+      console.error('Error loading user invoices:', loadUserErr as any);
       // If columns don't exist, treat as empty result
       if ((loadUserErr as any).code === '42703') {
         console.log('invoice_id or is_invoice columns do not exist, treating as empty');
         const existingByInvoiceId = new Map();
         return { newCount: 0, updatedCount: 0, removedCount: 0 };
       }
-      throw new Error(`Failed to load user invoices: ${loadUserErr.message}`);
+      throw new Error(`Failed to load user invoices: ${(loadUserErr as any)?.message || String(loadUserErr)}`);
     }
     
     console.log('Found', existingForUser?.length || 0, 'existing user invoices');
