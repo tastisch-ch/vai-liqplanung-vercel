@@ -547,8 +547,13 @@ export default function MitarbeiterPage() {
     }
   };
   
-  // Get current salaries for all employees
+  // Get current (or nearest future) salaries for all employees
   const currentSalaries = getAktuelleLohne(mitarbeiter);
+  const today = new Date();
+  const hasActiveOrFuture = (ma: MitarbeiterWithLohn) =>
+    (ma.Lohn || []).some(l => (l.Start >= today) || (l.Start <= today && (!l.Ende || l.Ende >= today)));
+  const activeOrPlanned = mitarbeiter.filter(hasActiveOrFuture);
+  const leftEmployees = mitarbeiter.filter(ma => !hasActiveOrFuture(ma));
 
   // Debug readOnly state
   console.log("Auth state:", { user, isReadOnly, loading });
@@ -644,7 +649,7 @@ export default function MitarbeiterPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {mitarbeiter.map((employee) => {
+              {activeOrPlanned.map((employee) => {
                 const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
                 return (
                   <>
@@ -722,7 +727,7 @@ export default function MitarbeiterPage() {
           </Table>
           {/* Mobile compact list */}
           <div className="md:hidden space-y-2 mt-4">
-            {mitarbeiter.map((employee) => {
+            {activeOrPlanned.map((employee) => {
               const currentSalary = currentSalaries.find(s => s.mitarbeiter.id === employee.id);
               return (
                 <div key={employee.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
@@ -740,6 +745,65 @@ export default function MitarbeiterPage() {
             })}
           </div>
         </TableRoot>
+      )}
+
+      {/* Left employees */}
+      {leftEmployees.length > 0 && (
+        <div className="mt-8">
+          <PageHeader title="Ausgeschiedene Mitarbeiter" subtitle="Ohne aktiven oder geplanten Lohn" />
+          <TableRoot>
+            <Table className="mt-2 hidden md:table">
+              <TableHead>
+                <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                  <TableHeaderCell>Name</TableHeaderCell>
+                  <TableHeaderCell>Letzter Lohn</TableHeaderCell>
+                  <TableHeaderCell>Bis</TableHeaderCell>
+                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {leftEmployees.map((employee) => {
+                  const last = employee.Lohn && employee.Lohn.length > 0
+                    ? employee.Lohn.slice().sort((a,b)=> b.Start.getTime() - a.Start.getTime())[0]
+                    : null;
+                  return (
+                    <TableRow key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                      <TableCell className="text-gray-900 dark:text-gray-50 font-medium">{employee.Name}</TableCell>
+                      <TableCell className="text-gray-600">{last ? format(last.Betrag, undefined as any) : '-'}</TableCell>
+                      <TableCell className="text-gray-600">{last && last.Ende ? format(last.Ende, 'dd.MM.yyyy', { locale: de }) : '-'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex items-center gap-3">
+                          <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} className="text-green-600 hover:text-green-800 text-sm cursor-pointer">Lohn hinzufügen</button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            {/* Mobile list for left employees */}
+            <div className="md:hidden space-y-2 mt-4">
+              {leftEmployees.map((employee) => {
+                const last = employee.Lohn && employee.Lohn.length > 0
+                  ? employee.Lohn.slice().sort((a,b)=> b.Start.getTime() - a.Start.getTime())[0]
+                  : null;
+                return (
+                  <div key={employee.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 pr-2">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate">{employee.Name}</div>
+                        <div className="mt-1 text-xs text-gray-500">{last && last.Ende ? `bis ${format(last.Ende, 'dd.MM.yyyy', { locale: de })}` : '—'}</div>
+                      </div>
+                      <div className="text-right">
+                        <button onClick={() => { setSelectedMitarbeiter(employee); setShowLohnModal(true); setLohnForm({ start: format(new Date(), 'yyyy-MM-dd'), betrag: 0, ende: '' }); setSelectedLohn(null); }} className="text-green-600 text-xs cursor-pointer">Lohn hinzufügen</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TableRoot>
+        </div>
       )}
       
       {/* Mitarbeiter Modal */}
