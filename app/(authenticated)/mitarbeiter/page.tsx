@@ -74,6 +74,10 @@ export default function MitarbeiterPage() {
   const [endOpen, setEndOpen] = useState(false);
   const [startText, setStartText] = useState('');
   const [endText, setEndText] = useState('');
+  const [editStartOpen, setEditStartOpen] = useState(false);
+  const [editEndOpen, setEditEndOpen] = useState(false);
+  const [editStartText, setEditStartText] = useState('');
+  const [editEndText, setEditEndText] = useState('');
 
   useEffect(() => {
     if (showLohnModal) {
@@ -87,6 +91,19 @@ export default function MitarbeiterPage() {
       } catch { setEndText(''); }
     }
   }, [showLohnModal]);
+
+  useEffect(() => {
+    if (editingLohn) {
+      try {
+        const d = editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start);
+        setEditStartText(isNaN(d.getTime()) ? '' : format(d, 'dd.MM.yyyy'));
+      } catch { setEditStartText(''); }
+      try {
+        const e = editingLohn.Ende ? (editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende)) : null;
+        setEditEndText(e ? format(e, 'dd.MM.yyyy') : '');
+      } catch { setEditEndText(''); }
+    }
+  }, [editingLohn, editingLohnId]);
 
   const parseDateText = (txt: string): Date | null => {
     const t = txt.trim();
@@ -116,6 +133,22 @@ export default function MitarbeiterPage() {
     if (!d) return;
     setLohnForm({ ...lohnForm, ende: format(d, 'yyyy-MM-dd') });
     setEndText(format(d, 'dd.MM.yyyy'));
+  };
+
+  const commitEditStartText = () => {
+    const d = parseDateText(editStartText);
+    if (!d || !editingLohn) return;
+    setEditingLohn({ ...editingLohn, Start: d });
+    setEditStartText(format(d, 'dd.MM.yyyy'));
+  };
+
+  const commitEditEndText = () => {
+    if (!editingLohn) return;
+    if (!editEndText.trim()) { setEditingLohn({ ...editingLohn, Ende: null }); setEditEndText(''); return; }
+    const d = parseDateText(editEndText);
+    if (!d) return;
+    setEditingLohn({ ...editingLohn, Ende: d });
+    setEditEndText(format(d, 'dd.MM.yyyy'));
   };
   
   // Fetch employees data
@@ -876,7 +909,17 @@ export default function MitarbeiterPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Startdatum</Label>
-                    <Input type="date" value={format(editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start), 'yyyy-MM-dd')} onChange={(e)=> setEditingLohn({ ...editingLohn, Start: new Date(e.target.value) })} className="h-11 text-base" />
+                    <Popover.Root open={editStartOpen} onOpenChange={setEditStartOpen}>
+                      <div className="relative">
+                        <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Popover.Trigger asChild>
+                          <Input type="text" placeholder="dd.mm.yyyy" value={editStartText} onChange={(e)=> setEditStartText(e.target.value)} onClick={(e)=> { setEditStartOpen(true); (e.target as HTMLInputElement).select(); }} onKeyDown={(e)=> { if(e.key==='Enter'){ e.preventDefault(); commitEditStartText(); setEditStartOpen(false); } }} onBlur={()=> commitEditStartText()} className="h-11 text-base pl-9" />
+                        </Popover.Trigger>
+                      </div>
+                      <Popover.Content sideOffset={8} className="z-[80] rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                        <Calendar mode="single" numberOfMonths={1} weekStartsOn={1} selected={(() => { const d = editingLohn.Start instanceof Date ? editingLohn.Start : new Date(editingLohn.Start); return isNaN(d.getTime()) ? undefined : d; })()} onSelect={(d)=> { if(!d) return; setEditingLohn({ ...editingLohn, Start: d }); setEditStartText(format(d,'dd.MM.yyyy')); setEditStartOpen(false); }} className="rdp-tremor" />
+                      </Popover.Content>
+                    </Popover.Root>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Lohn (CHF)</Label>
@@ -884,7 +927,17 @@ export default function MitarbeiterPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-gray-900 dark:text-gray-50 leading-none">Enddatum (optional)</Label>
-                    <Input type="date" value={editingLohn.Ende ? format(editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende), 'yyyy-MM-dd') : ''} onChange={(e)=> setEditingLohn({ ...editingLohn, Ende: e.target.value ? new Date(e.target.value) : null })} className="h-11 text-base" />
+                    <Popover.Root open={editEndOpen} onOpenChange={setEditEndOpen}>
+                      <div className="relative">
+                        <RiCalendar2Line className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Popover.Trigger asChild>
+                          <Input type="text" placeholder="dd.mm.yyyy" value={editEndText} onChange={(e)=> setEditEndText(e.target.value)} onClick={(e)=> { setEditEndOpen(true); (e.target as HTMLInputElement).select(); }} onKeyDown={(e)=> { if(e.key==='Enter'){ e.preventDefault(); commitEditEndText(); setEditEndOpen(false); } }} onBlur={()=> commitEditEndText()} className="h-11 text-base pl-9" />
+                        </Popover.Trigger>
+                      </div>
+                      <Popover.Content sideOffset={8} className="z-[80] rounded-md border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-950">
+                        <Calendar mode="single" numberOfMonths={1} weekStartsOn={1} selected={(() => { const e = editingLohn.Ende ? (editingLohn.Ende instanceof Date ? editingLohn.Ende : new Date(editingLohn.Ende)) : null; return e || undefined; })()} onSelect={(d)=> { if(!d){ setEditingLohn({ ...editingLohn, Ende: null }); setEditEndText(''); setEditEndOpen(false); return; } setEditingLohn({ ...editingLohn, Ende: d }); setEditEndText(format(d,'dd.MM.yyyy')); setEditEndOpen(false); }} className="rdp-tremor" />
+                      </Popover.Content>
+                    </Popover.Root>
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2">
