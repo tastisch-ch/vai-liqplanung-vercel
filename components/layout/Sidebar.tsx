@@ -12,6 +12,9 @@ import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import Image from 'next/image';
+import { getRevenueProgress, getRevenueTarget, upsertRevenueTarget } from '@/lib/services/revenue-target';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -106,6 +109,16 @@ export default function Sidebar() {
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
+  // Revenue goal (Ertragsziel)
+  const currentYear = new Date().getFullYear();
+  const [revLoading, setRevLoading] = useState(false);
+  const [revTarget, setRevTarget] = useState(0);
+  const [revAchieved, setRevAchieved] = useState(0);
+  const [revRemaining, setRevRemaining] = useState(0);
+  const [revProgress, setRevProgress] = useState(0);
+  const [isRevEditing, setIsRevEditing] = useState(false);
+  const [revInput, setRevInput] = useState('');
+
   // Load global balance
   useEffect(() => {
     async function loadSettings() {
@@ -128,6 +141,69 @@ export default function Sidebar() {
       loadSettings();
     }
   }, [isAuthenticated]);
+
+  // Load revenue progress
+  useEffect(() => {
+    async function loadRevenue() {
+      try {
+        setRevLoading(true);
+        const progress = await getRevenueProgress(currentYear);
+        setRevTarget(progress.target);
+        setRevAchieved(progress.achieved);
+        setRevRemaining(progress.remaining);
+        setRevProgress(progress.progress);
+        setRevInput(formatCHF(progress.target));
+      } catch (error) {
+        logError(error, 'Error loading revenue progress');
+      } finally {
+        setRevLoading(false);
+      }
+    }
+    if (isAuthenticated) {
+      loadRevenue();
+    }
+  }, [isAuthenticated]);
+
+  const updateRevenueTarget = async () => {
+    try {
+      const amount = parseCHF(revInput) ?? 0;
+      await upsertRevenueTarget(currentYear, amount, { id: user?.id, email: user?.email || null });
+      // reload
+      const progress = await getRevenueProgress(currentYear);
+      setRevTarget(progress.target);
+      setRevAchieved(progress.achieved);
+      setRevRemaining(progress.remaining);
+      setRevProgress(progress.progress);
+      setIsRevEditing(false);
+    } catch (error) {
+      logError(error, 'Error updating revenue target');
+    }
+  };
+
+  function ProgressCircle({ value }: { value: number }) {
+    const radius = 18; // px
+    const stroke = 4;
+    const c = 2 * Math.PI * radius;
+    const pct = Math.max(0, Math.min(100, value));
+    const dash = (pct / 100) * c;
+    return (
+      <svg width={44} height={44} viewBox="0 0 44 44" className="shrink-0">
+        <circle cx="22" cy="22" r={radius} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
+        <circle
+          cx="22"
+          cy="22"
+          r={radius}
+          stroke="#CEFF65"
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={`${dash} ${c - dash}`}
+          strokeLinecap="round"
+          transform="rotate(-90 22 22)"
+        />
+        <text x="22" y="24" textAnchor="middle" fontSize="10" className="fill-gray-700">{Math.round(pct)}%</text>
+      </svg>
+    );
+  }
 
   const updateKontostand = async () => {
     try {
@@ -340,6 +416,59 @@ export default function Sidebar() {
             )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Ertragsziel Section */}
+      {isAuthenticated && (
+        <div className="p-4 border-b border-gray-200">
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
+            <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+              <svg className="h-5 w-5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 20l9-16-9 4-9-4 9 16z"/>
+              </svg>
+              {!collapsed && `Ertragsziel ${currentYear}`}
+            </h3>
+            {!collapsed && !revLoading && (
+              <button 
+                onClick={() => setIsRevEditing(true)}
+                className="text-xs text-blue-600 hover:text-blue-800"
+                disabled={isReadOnly}
+              >
+                {revTarget > 0 ? 'Ziel anpassen' : 'Ziel setzen'}
+              </button>
+            )}
+          </div>
+          <div className={`${collapsed ? 'items-center justify-center' : ''} ${revLoading ? 'opacity-60' : ''} flex gap-3`}>
+            <ProgressCircle value={revProgress} />
+            {!collapsed && (
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">{revTarget > 0 ? formatCHF(revTarget) : 'Kein Ziel gesetzt'}</div>
+                <div className="text-xs text-gray-500">Ziel • erreicht: {formatCHF(revAchieved)}</div>
+                {revTarget > 0 && (
+                  <div className="text-xs text-gray-700">Fehlt: <span className="font-medium">{formatCHF(revRemaining)}</span> bis 31.12.</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Dialog open={isRevEditing} onOpenChange={setIsRevEditing}>
+            <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+              <div className="p-4">
+                <DialogHeader>
+                  <DialogTitle>Ertragsziel {currentYear} festlegen</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-3">
+                  <label className="text-xs text-gray-600">Zielbetrag (Einnahmen)</label>
+                  <Input value={revInput} onChange={(e)=>setRevInput(e.target.value)} placeholder="CHF 0.00" />
+                  <div className="flex justify-end gap-2">
+                    <button className="px-3 py-1.5 text-xs rounded-md border" onClick={()=>{ setIsRevEditing(false); setRevInput(formatCHF(revTarget)); }}>Abbrechen</button>
+                    <button className="px-3 py-1.5 text-xs rounded-md bg-[#CEFF65] text-[#02403D] border border-[#CEFF65]" onClick={updateRevenueTarget} disabled={isReadOnly}>Speichern</button>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
       

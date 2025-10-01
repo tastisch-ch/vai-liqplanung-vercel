@@ -1,0 +1,61 @@
+import { supabase } from '@/lib/supabase/client';
+import { startOfYear, endOfYear } from 'date-fns';
+
+export type RevenueTarget = {
+  year: number;
+  target_amount: number;
+  updated_at: string;
+  updated_by?: string | null;
+  updated_by_email?: string | null;
+};
+
+export async function getRevenueTarget(year: number): Promise<RevenueTarget | null> {
+  const { data, error } = await supabase
+    .from('revenue_targets')
+    .select('year,target_amount,updated_at,updated_by,updated_by_email')
+    .eq('year', year)
+    .maybeSingle();
+  if (error) return null;
+  return data as any;
+}
+
+export async function upsertRevenueTarget(year: number, amount: number, user?: { id?: string | null; email?: string | null }) {
+  const { data, error } = await supabase
+    .from('revenue_targets')
+    .upsert({
+      year,
+      target_amount: amount,
+      updated_by: user?.id || null,
+      updated_by_email: user?.email || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'year' })
+    .select('year,target_amount,updated_at,updated_by,updated_by_email')
+    .single();
+  if (error) throw error;
+  return data as RevenueTarget;
+}
+
+export async function sumIncomingForYear(year: number): Promise<number> {
+  const from = startOfYear(new Date(year, 0, 1)).toISOString();
+  const to = endOfYear(new Date(year, 11, 31)).toISOString();
+  const { data, error } = await supabase
+    .from('buchungen')
+    .select('amount,direction,is_simulation,date')
+    .gte('date', from)
+    .lte('date', to);
+  if (error || !data) return 0;
+  return (data as any[])
+    .filter((r) => r.direction === 'Incoming' && !r.is_simulation)
+    .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+}
+
+export async function getRevenueProgress(year: number) {
+  const target = await getRevenueTarget(year);
+  if (!target) return { target: 0, achieved: 0, remaining: 0, progress: 0 };
+  const achieved = await sumIncomingForYear(year);
+  const remaining = Math.max(0, target.target_amount - achieved);
+  const progress = target.target_amount > 0 ? Math.min(100, (achieved / target.target_amount) * 100) : 0;
+  return { target: target.target_amount, achieved, remaining, progress };
+}
+
+
