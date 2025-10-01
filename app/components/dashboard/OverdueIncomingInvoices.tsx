@@ -37,12 +37,14 @@ export function OverdueIncomingInvoices({ items }: Props) {
           const customer = extractCustomerFromDetails(t.details);
           const baseDate = (t as any).original_date ? new Date((t as any).original_date) : new Date(t.date);
           const overdueDays = Math.max(0, differenceInDays(new Date(), baseDate));
+          const isSimulation = (t as any).kategorie === 'Simulation';
+          const badgeColor = isSimulation ? 'bg-violet-800' : 'bg-emerald-500';
           return (
             <li
               key={t.id}
               className="relative flex w-full items-center space-x-3 rounded-lg bg-gray-50 p-2 hover:bg-gray-100"
             >
-              <span className="inline-flex min-w-20 justify-center rounded bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap">
+              <span className={`inline-flex min-w-20 justify-center rounded ${badgeColor} px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap`}>
                 {invoice ? String(invoice).toUpperCase() : '–'}
               </span>
               <p className="flex w-full items-center justify-between space-x-4 truncate text-sm font-medium">
