@@ -101,10 +101,15 @@ export async function POST(request: NextRequest) {
         // Persist last import meta (best-effort)
         try {
           await supabase
-            .from('app_meta')
-            .upsert({ key: 'last_import', value: { date: new Date().toISOString(), user: session.user.email || session.user.id } }, { onConflict: 'key' as any });
+            .from('imports')
+            .insert({
+              kind: 'excel',
+              user_id: session.user.id,
+              user_email: (session.user as any).email || null,
+              details: { count: stats.newCount + stats.updatedCount + stats.removedCount, duplicates: stats.removedCount }
+            });
         } catch (e) {
-          console.warn('Persist last_import failed (non-fatal):', e);
+          console.warn('Persist last_import (imports) failed (non-fatal):', e);
         }
         return NextResponse.json(
           {
@@ -166,21 +171,23 @@ export async function POST(request: NextRequest) {
       // Persist last import meta (best-effort, global shared key)
       try {
         await supabase
-          .from('app_meta')
-          .upsert({ key: 'last_import', value: { date: now, user: session.user.email || session.user.id } }, { onConflict: 'key' as any });
+          .from('imports')
+          .insert({
+            kind: 'html',
+            user_id: session.user.id,
+            user_email: (session.user as any).email || null,
+            details: { count: processedData.length, duplicates: duplicateCount }
+          });
       } catch (e) {
-        console.warn('Persist last_import failed (non-fatal):', e);
+        console.warn('Persist last_import (imports) failed (non-fatal):', e);
       }
 
-      return NextResponse.json(
-        { 
-          success: true, 
-          message: `Importiert: ${processedData.length} Einträge${duplicateCount > 0 ? `, ${duplicateCount} Duplikate übersprungen` : ''}`, 
-          count: processedData.length,
-          duplicates: duplicateCount
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({ 
+        success: true, 
+        message: `Importiert: ${processedData.length} Einträge${duplicateCount > 0 ? `, ${duplicateCount} Duplikate übersprungen` : ''}`, 
+        count: processedData.length,
+        duplicates: duplicateCount
+      }, { status: 200 });
     }
     
     if (duplicateCount > 0) {
