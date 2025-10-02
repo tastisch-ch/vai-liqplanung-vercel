@@ -46,11 +46,15 @@ export default function MobileNav() {
   const MiniProgress = ({ value = 0 }: { value?: number }) => {
     const size = 28; const stroke = 3; const r = (size - stroke) / 2; const c = 2 * Math.PI * r; const pct = Math.max(0, Math.min(100, value)); const dash = (pct / 100) * c; const center = size / 2;
     return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-        <circle cx={center} cy={center} r={r} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
-        <circle cx={center} cy={center} r={r} stroke="#CEFF65" strokeWidth={stroke} fill="none" strokeDasharray={`${dash} ${c - dash}`} strokeLinecap="round" transform={`rotate(-90 ${center} ${center})`} />
-        <text x={center} y={center+3} textAnchor="middle" fontSize="10" className="fill-gray-700 font-medium" dominantBaseline="middle">{Math.round(pct)}</text>
-      </svg>
+      <div style={{ width: size, height: size }} className="relative shrink-0">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <circle cx={center} cy={center} r={r} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
+          <circle cx={center} cy={center} r={r} stroke="#CEFF65" strokeWidth={stroke} fill="none" strokeDasharray={`${dash} ${c - dash}`} strokeLinecap="round" transform={`rotate(-90 ${center} ${center})`} />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[10px] leading-none text-gray-700 font-medium">{Math.round(pct)}</span>
+        </div>
+      </div>
     );
   };
   return (
