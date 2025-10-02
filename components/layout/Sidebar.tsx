@@ -146,6 +146,7 @@ export default function Sidebar() {
   // Load revenue progress
   useEffect(() => {
     async function loadRevenue() {
+      console.log('[Revenue] load start for year', currentYear);
       try {
         setRevLoading(true);
 
@@ -179,10 +180,18 @@ export default function Sidebar() {
         setRevLoading(false);
       }
     }
-    if (isAuthenticated) {
-      loadRevenue();
-    }
-  }, [isAuthenticated]);
+    // Run once on mount; session persistence should attach JWT
+    loadRevenue();
+
+    // Retry once after 2s if still no target
+    const t = setTimeout(() => {
+      if (revTarget === 0) {
+        console.log('[Revenue] retry fetch after 2s');
+        loadRevenue();
+      }
+    }, 2000);
+    return () => clearTimeout(t);
+  }, []);
 
   const updateRevenueTarget = async () => {
     try {
