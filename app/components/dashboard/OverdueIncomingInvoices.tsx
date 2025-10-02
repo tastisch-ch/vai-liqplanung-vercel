@@ -42,19 +42,37 @@ export function OverdueIncomingInvoices({ items }: Props) {
           return (
             <li
               key={t.id}
-              className="relative flex w-full flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-50 p-3 hover:bg-gray-100"
+              className="relative w-full rounded-lg bg-gray-50 p-3 hover:bg-gray-100"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className={`inline-flex min-w-16 sm:min-w-20 justify-center rounded ${badgeColor} px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-white whitespace-nowrap`}>
-                  {invoice ? String(invoice).toUpperCase() : '–'}
-                </span>
-                <span className="truncate text-sm text-gray-700">
+              {/* Mobile: strictly vertical */}
+              <div className="sm:hidden space-y-1">
+                <div>
+                  <span className={`inline-flex min-w-16 justify-center rounded ${badgeColor} px-2 py-1 text-xs font-semibold text-white whitespace-nowrap`}>
+                    {invoice ? String(invoice).toUpperCase() : '–'}
+                  </span>
+                </div>
+                <div className="truncate text-sm text-gray-700">
                   {customer || t.details}
                   <span className="ml-2 text-xs text-gray-500">({overdueDays} Tage überfällig)</span>
-                </span>
+                </div>
+                <div className="text-sm font-semibold text-gray-900">
+                  {formatCHF(t.amount)}
+                </div>
               </div>
-              <div className="mt-2 sm:mt-0 text-sm sm:text-base font-semibold text-gray-900 sm:pl-3">
-                {formatCHF(t.amount)}
+              {/* Desktop: compact in one row */}
+              <div className="hidden sm:flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`inline-flex min-w-20 justify-center rounded ${badgeColor} px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap`}>
+                    {invoice ? String(invoice).toUpperCase() : '–'}
+                  </span>
+                  <span className="truncate text-sm text-gray-700">
+                    {customer || t.details}
+                    <span className="ml-2 text-xs text-gray-500">({overdueDays} Tage überfällig)</span>
+                  </span>
+                </div>
+                <div className="text-base font-semibold text-gray-900 pl-3">
+                  {formatCHF(t.amount)}
+                </div>
               </div>
             </li>
           );
