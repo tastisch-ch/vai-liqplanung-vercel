@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const year = Number(searchParams.get('year') || new Date().getFullYear());
+    const debug = searchParams.get('debug') === '1';
     // Prefer server-session client; if no session, fall back to service-role client
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (targetErr) {
-      return NextResponse.json({ error: targetErr.message }, { status: 500 });
+      return NextResponse.json({ error: targetErr.message, mode: useAdmin ? 'service' : 'session', hasServiceKey: !!serviceKey && serviceKey.length > 10 }, { status: 500 });
     }
 
     const targetRow = Array.isArray(targetRows) && targetRows.length > 0 ? targetRows[0] : null;
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       .lte('date', to);
 
     if (amtErr) {
-      return NextResponse.json({ error: amtErr.message }, { status: 500 });
+      return NextResponse.json({ error: amtErr.message, mode: useAdmin ? 'service' : 'session', hasServiceKey: !!serviceKey && serviceKey.length > 10 }, { status: 500 });
     }
 
     const achieved = (amounts || [])
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
       progress,
       updated_at: targetRow?.updated_at ?? null,
       updated_by_email: targetRow?.updated_by_email ?? null,
+      ...(debug ? { mode: useAdmin ? 'service' : 'session', hasServiceKey: !!serviceKey && serviceKey.length > 10 } : {}),
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 });
