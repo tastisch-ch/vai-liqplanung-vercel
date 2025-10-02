@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   description: "Finanzen einfach planen und verwalten",
   manifest: "/manifest.webmanifest",
   themeColor: "#CEFF65",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport: Viewport = {
