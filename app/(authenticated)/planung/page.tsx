@@ -522,16 +522,16 @@ export default function Planung() {
               const amountClass = isIncome ? 'text-emerald-700' : 'text-rose-700';
               return (
                 <div key={tx.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 pr-2">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate" title={tx.details}>{tx.details}</div>
-                      <div className="mt-1 text-xs text-gray-500">{format(tx.date, 'dd.MM.yyyy', { locale: de })}</div>
-                    </div>
-                    <div className={`text-right tabular-nums text-sm font-semibold ${amountClass}`}>
-                      <span className="mr-1">{isIncome ? '+' : '-'}</span>{formatCHF(Math.abs(tx.amount))}
-                    </div>
+                  {/* Zeile 1: Details */}
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate" title={tx.details}>{tx.details}</div>
+                  {/* Zeile 2: Betrag */}
+                  <div className={`mt-1 tabular-nums text-base font-semibold ${amountClass}`}>
+                    <span className="mr-1">{isIncome ? '+' : '-'}</span>{formatCHF(Math.abs(tx.amount))}
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                  {/* Zeile 3: Datum */}
+                  <div className="mt-1 text-xs text-gray-500">{format(tx.date, 'dd.MM.yyyy', { locale: de })}</div>
+                  {/* Zeile 4: Kategorie + Kontostand */}
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
                     <div className="inline-flex items-center gap-2">
                       {tx.kategorie === 'Lohn' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Lohn</span>
@@ -545,7 +545,7 @@ export default function Planung() {
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">Standard</span>
                       )}
                     </div>
-                    <div className="text-gray-600">KS: {formatCHF(tx.kontostand || 0)}</div>
+                    <div className="text-gray-700">KS: {formatCHF(tx.kontostand || 0)}</div>
                   </div>
                 </div>
               );
