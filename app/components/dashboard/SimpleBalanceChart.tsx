@@ -78,7 +78,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       {/* Desktop chart */}
       <div className="mt-4 hidden h-56 sm:block">
-        <div className="rounded-xl overflow-hidden border border-gray-100">
+        <div className="rounded-xl overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -103,7 +103,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
 
       {/* Mobile chart (simpler axis like the Overdue card style) */}
       <div className="mt-4 h-48 sm:hidden">
-        <div className="rounded-lg overflow-hidden border border-gray-100">
+        <div className="rounded-lg overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
