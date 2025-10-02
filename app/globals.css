@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --mobile-nav-total: 76px; /* status row + tabs approx. */
   
   /* Vaios brand colors */
   --color-primary: #02403D;    /* Main brand color */
@@ -80,6 +81,11 @@ body {
   overflow-wrap: anywhere;
   word-break: break-word;
   hyphens: auto;
+}
+
+/* Bottom padding to keep content clear of the MobileNav */
+.pb-mobile-nav {
+  padding-bottom: calc(var(--mobile-nav-total) + env(safe-area-inset-bottom));
 }
 
 /* Utility classes for Vaios brand colors */
