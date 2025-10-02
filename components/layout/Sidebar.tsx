@@ -150,17 +150,6 @@ export default function Sidebar() {
       try {
         setRevLoading(true);
 
-        // Ensure session is available before querying (RLS)
-        let tries = 0;
-        while (tries < 5) {
-          const sess = await supabase.auth.getSession();
-          const hasSession = !!sess.data.session;
-          console.log('[Revenue] session?', hasSession, 'try', tries + 1);
-          if (hasSession) break;
-          await new Promise((r) => setTimeout(r, 200));
-          tries++;
-        }
-
         // 1) Directly read the latest target row for the current year
         const { data: rt, error: rtErr } = await supabase
           .from('revenue_targets')
@@ -204,18 +193,20 @@ export default function Sidebar() {
         setRevLoading(false);
       }
     }
-    // Run once on mount; session persistence should attach JWT
+    if (!isAuthenticated) return;
+    // initial fetch once authenticated
     loadRevenue();
-
-    // Retry once after 2s if still no target
-    const t = setTimeout(() => {
-      if (revTarget === 0) {
-        console.log('[Revenue] retry fetch after 2s');
+    // subscribe to auth changes to refetch when token refreshes/sign-in happens
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
+      console.log('[Revenue] auth event', evt, 'has session?', !!session);
+      if (session) {
         loadRevenue();
       }
-    }, 2000);
-    return () => clearTimeout(t);
-  }, []);
+    });
+    return () => {
+      try { sub.subscription.unsubscribe(); } catch {}
+    };
+  }, [isAuthenticated, currentYear]);
 
   const updateRevenueTarget = async () => {
     try {
