@@ -49,6 +49,7 @@ export default function MobileNav() {
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
         <circle cx={center} cy={center} r={r} stroke="#E5E7EB" strokeWidth={stroke} fill="none" />
         <circle cx={center} cy={center} r={r} stroke="#CEFF65" strokeWidth={stroke} fill="none" strokeDasharray={`${dash} ${c - dash}`} strokeLinecap="round" transform={`rotate(-90 ${center} ${center})`} />
+        <text x={center} y={center+1} textAnchor="middle" fontSize="9" className="fill-gray-700 font-medium">{Math.round(pct)}%</text>
       </svg>
     );
   };

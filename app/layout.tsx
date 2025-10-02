@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VAI-Liq: Finanzplanung und Liquiditätsmanagement",
+  title: "vaios Dashboard",
   description: "Finanzen einfach planen und verwalten",
   manifest: "/manifest.webmanifest",
   themeColor: "#CEFF65",
