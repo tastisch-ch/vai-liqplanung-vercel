@@ -31,7 +31,7 @@ export function ModernKpiCards({
   const runwayProgress = Math.min((runwayMonths / 12) * 100, 100);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 overflow-visible">
       {/* Current Balance */}
       <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200">
           <div className="flex items-center justify-between mb-4">
@@ -161,7 +161,7 @@ export function ModernKpiCards({
       </div>
 
       {/* Open Transactions Summary - Full Width */}
-      <div className="col-span-full">
+      <div className="col-span-full overflow-visible">
         <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 overflow-visible">
           <h3 className="text-lg font-semibold text-gray-800 mb-6">Offene Transaktionen</h3>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

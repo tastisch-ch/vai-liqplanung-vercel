@@ -158,7 +158,7 @@ export default function DashboardPage() {
   // Lists data removed for now
 
   return (
-    <div className="container mx-auto max-w-[1200px] px-4 md:px-6 space-y-6 overflow-x-hidden">
+    <div className="container mx-auto max-w-[1200px] px-4 md:px-6 space-y-6 overflow-x-hidden md:overflow-visible">
       <PageHeader title="Dashboard" subtitle="Aktuelle Kennzahlen und Forecast" actions={
         <div className="flex items-center gap-3">
           <label className="text-sm text-gray-600">Zeitraum</label>
