@@ -158,7 +158,7 @@ export default function DashboardPage() {
   // Lists data removed for now
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4 space-y-6 overflow-x-hidden">
       <PageHeader title="Dashboard" subtitle="Aktuelle Kennzahlen und Forecast" actions={
         <div className="flex items-center gap-3">
           <label className="text-sm text-gray-600">Zeitraum</label>
@@ -189,7 +189,9 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="lg:col-span-2">
-          <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
+          <div className="overflow-x-auto sm:overflow-x-hidden">
+            <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
+          </div>
         </div>
       </div>
 
