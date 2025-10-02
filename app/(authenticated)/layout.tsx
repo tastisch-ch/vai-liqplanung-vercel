@@ -81,7 +81,7 @@ export default function AuthenticatedLayout({
           </div>
           <div className="flex-grow">
             {/* Main content */}
-            <main className="p-4 md:p-6 w-full pb-20 md:pb-6">
+            <main className="p-4 md:p-6 w-full pb-mobile-nav md:pb-6">
               <div className="mx-auto max-w-7xl">
                 {children}
               </div>
