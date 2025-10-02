@@ -60,9 +60,9 @@ export function OverdueIncomingInvoices({ items }: Props) {
                 </div>
               </div>
               {/* Desktop: compact in one row */}
-              <div className="hidden sm:flex items-center justify-between">
+                <div className="hidden sm:flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`inline-flex min-w-20 justify-center rounded ${badgeColor} px-3 py-1.5 text-sm font-semibold text-white whitespace-nowrap`}>
+                  <span className={`inline-flex min-w-20 justify-center rounded ${badgeColor} px-4 py-1.5 text-xs font-semibold text-white whitespace-nowrap`}>
                     {invoice ? String(invoice).toUpperCase() : '–'}
                   </span>
                   <span className="truncate text-sm text-gray-700">
