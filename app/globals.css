@@ -51,6 +51,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Mobile defaults */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
 /* Utility classes for Vaios brand colors */
 .bg-vaios-primary {
   background-color: var(--color-primary);

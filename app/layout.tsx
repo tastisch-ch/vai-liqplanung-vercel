@@ -17,6 +17,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VAI-Liq: Finanzplanung und Liquiditätsmanagement",
   description: "Finanzen einfach planen und verwalten",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#CEFF65",
 };
 
 export default function RootLayout({
