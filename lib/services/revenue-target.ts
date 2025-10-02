@@ -10,16 +10,16 @@ export type RevenueTarget = {
 };
 
 export async function getRevenueTarget(year: number): Promise<RevenueTarget | null> {
-  // Safe fetch that never triggers 406 on zero/multiple rows
+  // Fetch as array (no object Accept header) to avoid 406 entirely
   const { data, error } = await supabase
     .from('revenue_targets')
     .select('year,target_amount,updated_at,updated_by,updated_by_email')
     .eq('year', year)
     .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
   if (error) return null;
-  return data as any;
+  const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+  return row as any;
 }
 
 export async function upsertRevenueTarget(year: number, amount: number, user?: { id?: string | null; email?: string | null }) {
