@@ -14,32 +14,65 @@ interface NotificationProps {
 }
 
 const getTypeStyles = (type: NotificationType) => {
+  // Tremor-like: white card, subtle ring, colored left border + icon
   switch (type) {
     case 'success':
-      return 'bg-green-100 border-green-500 text-green-700';
+      return {
+        container: 'bg-white text-emerald-900 border-emerald-500',
+        icon: 'text-emerald-600'
+      };
     case 'error':
-      return 'bg-red-100 border-red-500 text-red-700';
+      return {
+        container: 'bg-white text-rose-900 border-rose-500',
+        icon: 'text-rose-600'
+      };
     case 'info':
-      return 'bg-blue-100 border-blue-500 text-blue-700';
+      return {
+        container: 'bg-white text-sky-900 border-sky-500',
+        icon: 'text-sky-600'
+      };
     case 'loading':
-      return 'bg-gray-100 border-gray-500 text-gray-700';
+      return {
+        container: 'bg-white text-gray-800 border-gray-400',
+        icon: 'text-gray-500'
+      };
     default:
-      return 'bg-gray-100 border-gray-500 text-gray-700';
+      return {
+        container: 'bg-white text-gray-800 border-gray-400',
+        icon: 'text-gray-500'
+      };
   }
 };
 
-const getIcon = (type: NotificationType) => {
+const getIconSvg = (type: NotificationType) => {
   switch (type) {
     case 'success':
-      return '✅';
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      );
     case 'error':
-      return '❌';
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      );
     case 'info':
-      return 'ℹ️';
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+      );
     case 'loading':
-      return '⏳';
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5 animate-spin" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" className="opacity-25" />
+          <path d="M12 2a10 10 0 0 1 10 10" className="opacity-75" />
+        </svg>
+      );
     default:
-      return 'ℹ️';
+      return null;
   }
 };
 
@@ -51,6 +84,7 @@ export default function Notification({
   onClose
 }: NotificationProps) {
   const [visible, setVisible] = useState(isVisible);
+  const styles = getTypeStyles(type);
 
   useEffect(() => {
     setVisible(isVisible);
@@ -68,25 +102,29 @@ export default function Notification({
   if (!visible) return null;
 
   return (
-    <div 
-      className={`fixed top-4 right-4 z-50 p-4 rounded-md border-l-4 shadow-md max-w-md transition-all duration-300 ${getTypeStyles(type)}`}
-      role="alert"
+    <div
+      className={`fixed top-4 right-4 z-50 max-w-sm pointer-events-auto animate-[toast-in_180ms_ease-out]`}
+      role={type === 'loading' ? 'status' : 'alert'}
+      aria-live="polite"
     >
-      <div className="flex items-start">
-        <div className="mr-2 text-xl">{getIcon(type)}</div>
-        <div className="flex-1">
-          <p className="font-semibold">{message}</p>
+      <div className={`p-4 rounded-xl border-l-4 shadow-lg ring-1 ring-black/5 ${styles.container}`}
+           style={{ borderLeftColor: undefined }}>
+        <div className="flex items-start gap-3">
+          <span className={`shrink-0 ${styles.icon}`}>{getIconSvg(type)}</span>
+          <div className="flex-1 text-sm leading-5">
+            <p className="font-medium">{message}</p>
+          </div>
+          <button
+            onClick={() => {
+              setVisible(false);
+              if (onClose) onClose();
+            }}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Schließen"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
         </div>
-        <button 
-          onClick={() => {
-            setVisible(false);
-            if (onClose) onClose();
-          }}
-          className="text-gray-500 hover:text-gray-700 transition-colors"
-          aria-label="Close"
-        >
-          ×
-        </button>
       </div>
     </div>
   );
