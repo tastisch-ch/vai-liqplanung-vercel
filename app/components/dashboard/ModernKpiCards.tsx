@@ -162,11 +162,11 @@ export function ModernKpiCards({
 
       {/* Open Transactions Summary - Full Width */}
       <div className="col-span-full">
-        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
+        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 overflow-visible">
           <h3 className="text-lg font-semibold text-gray-800 mb-6">Offene Transaktionen</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-emerald-200 rounded-lg">
                     <svg className="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,14 +178,14 @@ export function ModernKpiCards({
                     <p className="text-sm text-emerald-600">{openIncoming.count} Transaktionen</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-2xl font-bold text-emerald-700">{formatCHF(openIncoming.sum)}</p>
                 </div>
               </div>
             </div>
             
             <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-red-200 rounded-lg">
                     <svg className="w-5 h-5 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +197,7 @@ export function ModernKpiCards({
                     <p className="text-sm text-red-600">{openOutgoing.count} Transaktionen</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-2xl font-bold text-red-700">{formatCHF(openOutgoing.sum)}</p>
                 </div>
               </div>
