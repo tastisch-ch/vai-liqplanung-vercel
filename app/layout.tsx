@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./globals-tooltip.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import dynamic from 'next/dynamic';
+import PullToRefresh from "@/components/layout/PullToRefresh";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +43,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const PullToRefresh = (dynamic(() => import('@/components/layout/PullToRefresh'), { ssr: false })) as any;
   return (
     <html lang="de">
       <head>
