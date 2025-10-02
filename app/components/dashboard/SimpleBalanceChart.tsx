@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 
 interface Point { date: string; balance: number }
-interface Props { isLoading: boolean; points: Point[] }
+interface Props { isLoading: boolean; points: Point[]; startBalance?: number }
 
 const valueFormatter = (number: number) => formatCHF(number);
 const axisFormatter = (n: number) =>
@@ -20,7 +20,7 @@ const axisFormatter = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-export function SimpleBalanceChart({ isLoading, points }: Props) {
+export function SimpleBalanceChart({ isLoading, points, startBalance }: Props) {
 
   if (isLoading) {
     return (
@@ -51,7 +51,7 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   });
 
   // Get current balance (heute/Startpunkt)
-  const currentBalance = points[0]?.balance || 0;
+  const currentBalance = (startBalance !== undefined ? startBalance : points[0]?.balance) || 0;
   // End-of-month forecast
   const today = new Date();
   const eomDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
