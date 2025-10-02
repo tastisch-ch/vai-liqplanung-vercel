@@ -691,6 +691,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
           user_id: userId,
           is_invoice: true,
           invoice_id: invoiceId,
+          invoice_status: 'open',
+          last_seen_at: new Date().toISOString(),
           kategorie: 'Standard',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -709,11 +711,11 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     }
   }
 
-  // Determine removals: existing invoices not present in current file
-  const removedIds: string[] = [];
+  // Determine invoices no longer present: mark as paid instead of delete
+  const markPaidIds: string[] = [];
   for (const inv of existingForUser || []) {
     const invId = (inv as any).invoice_id as string | null;
-    if (invId && !seenIds.has(invId)) removedIds.push((inv as any).id);
+    if (invId && !seenIds.has(invId)) markPaidIds.push((inv as any).id);
   }
 
   // Execute DB operations
@@ -724,19 +726,19 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   for (const upd of toUpdate) {
     const { error: updErr } = await supabase
       .from('buchungen')
-      .update({ date: upd.date, amount: upd.amount, details: upd.details, updated_at: new Date().toISOString() })
+      .update({ date: upd.date, amount: upd.amount, details: upd.details, invoice_status: 'open', last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', upd.id);
     if (updErr) throw updErr;
   }
-  if (removedIds.length > 0) {
-    const { error: delErr } = await supabase
+  if (markPaidIds.length > 0) {
+    const { error: payErr } = await supabase
       .from('buchungen')
-      .delete()
-      .in('id', removedIds);
-    if (delErr) throw delErr;
+      .update({ invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .in('id', markPaidIds);
+    if (payErr) throw payErr;
   }
 
-    return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: removedIds.length };
+    return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: 0, markedPaidCount: markPaidIds.length };
   } catch (error) {
     console.error('Error in upsertExcelInvoices:', error);
     throw error;
