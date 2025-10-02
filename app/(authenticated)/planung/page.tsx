@@ -440,6 +440,7 @@ export default function Planung() {
           </div>
         ) : (
           <>
+          <div className="max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-6rem)] overflow-x-hidden">
           <TableRoot>
             <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10 px-1">
               <div>
@@ -451,7 +452,7 @@ export default function Planung() {
                 Transaktion
               </Button>
             </div>
-            <Table className="mt-4 hidden md:table">
+            <Table className="mt-4 hidden md:table table-fixed w-full">
               <TableHead>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
                   <TableHeaderCell>Datum</TableHeaderCell>
@@ -490,7 +491,7 @@ export default function Planung() {
                   return (
                     <TableRow key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
                       <TableCell className="text-gray-500">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
-                      <TableCell className="text-gray-900 max-w-[32rem] truncate" title={transaction.details}>{transaction.details}</TableCell>
+                      <TableCell className="text-gray-900 max-w-[40ch] truncate whitespace-nowrap overflow-hidden text-ellipsis" title={transaction.details}>{transaction.details}</TableCell>
                       <TableCell className="text-gray-600">{categoryBadge}</TableCell>
                       <TableCell className={cx("text-right tabular-nums font-medium", amountClass)}>
                         <span className="mr-1">{isIncome ? '+' : '-'}</span>
@@ -515,6 +516,7 @@ export default function Planung() {
               </TableBody>
             </Table>
           </TableRoot>
+          </div>
           {/* Mobile compact list */}
           <div className="md:hidden space-y-2 mt-4">
             {filteredTransactions.map((tx) => {
