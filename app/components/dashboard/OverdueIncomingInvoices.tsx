@@ -27,11 +27,11 @@ export function OverdueIncomingInvoices({ items }: Props) {
       <div className="flex items-baseline gap-2 text-gray-900">
         <span className="text-2xl font-bold">{formatCHF(total)}</span>
       </div>
-      <div className="mt-6 flex justify-between text-xs text-gray-500">
+      <div className="mt-6 hidden sm:flex justify-between text-xs text-gray-500">
         <span>Rechnung & Kunde</span>
         <span>Betrag</span>
       </div>
-      <ul role="list" className="mt-2 space-y-2">
+      <ul role="list" className="mt-2 space-y-3">
         {items.slice(0, 8).map((t) => {
           const invoice = (t as any).invoice_id || extractInvoiceFromDetails(t.details);
           const customer = extractCustomerFromDetails(t.details);
@@ -42,20 +42,20 @@ export function OverdueIncomingInvoices({ items }: Props) {
           return (
             <li
               key={t.id}
-              className="relative flex w-full items-center space-x-3 rounded-lg bg-gray-50 p-2 hover:bg-gray-100"
+              className="relative flex w-full flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg bg-gray-50 p-3 hover:bg-gray-100"
             >
-              <span className={`inline-flex min-w-16 sm:min-w-20 justify-center rounded ${badgeColor} px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-white whitespace-nowrap`}>
-                {invoice ? String(invoice).toUpperCase() : '–'}
-              </span>
-              <p className="flex w-full items-center justify-between space-x-4 truncate text-sm font-medium">
-                <span className="truncate text-gray-700">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={`inline-flex min-w-16 sm:min-w-20 justify-center rounded ${badgeColor} px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold text-white whitespace-nowrap`}>
+                  {invoice ? String(invoice).toUpperCase() : '–'}
+                </span>
+                <span className="truncate text-sm text-gray-700">
                   {customer || t.details}
                   <span className="ml-2 text-xs text-gray-500">({overdueDays} Tage überfällig)</span>
                 </span>
-                <span className="pr-1.5 text-gray-900 font-semibold">
-                  {formatCHF(t.amount)}
-                </span>
-              </p>
+              </div>
+              <div className="mt-2 sm:mt-0 text-sm sm:text-base font-semibold text-gray-900 sm:pl-3">
+                {formatCHF(t.amount)}
+              </div>
             </li>
           );
         })}
