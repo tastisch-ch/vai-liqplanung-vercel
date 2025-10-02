@@ -491,7 +491,7 @@ export default function Planung() {
                   return (
                     <TableRow key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
                       <TableCell className="text-gray-500">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
-                      <TableCell className="text-gray-900 max-w-[40ch] truncate whitespace-nowrap overflow-hidden text-ellipsis" title={transaction.details}>{transaction.details}</TableCell>
+                      <TableCell className="text-gray-900 max-w-[60vw] truncate whitespace-nowrap overflow-hidden text-ellipsis" title={transaction.details}>{transaction.details}</TableCell>
                       <TableCell className="text-gray-600">{categoryBadge}</TableCell>
                       <TableCell className={cx("text-right tabular-nums font-medium", amountClass)}>
                         <span className="mr-1">{isIncome ? '+' : '-'}</span>
