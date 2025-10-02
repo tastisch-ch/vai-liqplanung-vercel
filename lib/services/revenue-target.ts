@@ -10,13 +10,34 @@ export type RevenueTarget = {
 };
 
 export async function getRevenueTarget(year: number): Promise<RevenueTarget | null> {
+  // Try strict single-row fetch first
   const { data, error } = await supabase
     .from('revenue_targets')
     .select('year,target_amount,updated_at,updated_by,updated_by_email')
     .eq('year', year)
-    .maybeSingle();
-  if (error) return null;
-  return data as any;
+    .single();
+
+  if (!error && data) return data as any;
+
+  if (error) {
+    const code = (error as any)?.code;
+    // If no rows or too many rows, fall back to latest by updated_at
+    if (code === 'PGRST116' || code === 'PGRST117') {
+      const { data: fallback, error: fallbackErr } = await supabase
+        .from('revenue_targets')
+        .select('year,target_amount,updated_at,updated_by,updated_by_email')
+        .eq('year', year)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!fallbackErr && fallback) return fallback as any;
+      return null;
+    }
+    // Bubble up unexpected errors to be logged by callers
+    throw error;
+  }
+
+  return null;
 }
 
 export async function upsertRevenueTarget(year: number, amount: number, user?: { id?: string | null; email?: string | null }) {
@@ -53,9 +74,10 @@ export async function getRevenueProgress(year: number) {
   const target = await getRevenueTarget(year);
   if (!target) return { target: 0, achieved: 0, remaining: 0, progress: 0 };
   const achieved = await sumIncomingForYear(year);
-  const remaining = Math.max(0, target.target_amount - achieved);
-  const progress = target.target_amount > 0 ? Math.min(100, (achieved / target.target_amount) * 100) : 0;
-  return { target: target.target_amount, achieved, remaining, progress };
+  const targetAmount = Number((target as any).target_amount ?? 0);
+  const remaining = Math.max(0, targetAmount - achieved);
+  const progress = targetAmount > 0 ? Math.min(100, (achieved / targetAmount) * 100) : 0;
+  return { target: targetAmount, achieved, remaining, progress };
 }
 
 
