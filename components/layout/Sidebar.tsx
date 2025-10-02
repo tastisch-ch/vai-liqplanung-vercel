@@ -12,7 +12,7 @@ import { User } from '@supabase/supabase-js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import Image from 'next/image';
-import { getRevenueProgress, getRevenueTarget, upsertRevenueTarget, sumIncomingForYear } from '@/lib/services/revenue-target';
+import { upsertRevenueTarget } from '@/lib/services/revenue-target';
 import { supabase } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -150,42 +150,16 @@ export default function Sidebar() {
       try {
         setRevLoading(true);
 
-        // 1) Directly read the latest target row for the current year
-        const { data: rt, error: rtErr } = await supabase
-          .from('revenue_targets')
-          .select('year,target_amount,updated_at')
-          .eq('year', currentYear)
-          .order('updated_at', { ascending: false })
-          .limit(1);
-        if (rtErr) console.error('[Revenue] year-filtered read error:', rtErr);
-        const row = !rtErr && Array.isArray(rt) && rt.length > 0 ? (rt[0] as any) : null;
-        const targetAmount = row ? Number(row.target_amount ?? 0) : 0;
-        console.log('[Revenue] target row:', row, 'parsed target:', targetAmount);
+        const res = await fetch(`/api/revenue/progress?year=${currentYear}`, { cache: 'no-store' });
+        const json = await res.json();
+        console.log('[Revenue] api result:', json);
+        if (!res.ok) throw new Error(json?.error || 'API error');
 
-        setRevTarget(targetAmount);
-        setRevInput(formatCHF(targetAmount));
-
-        // 2) Compute achieved and derived values
-        const achieved = await sumIncomingForYear(currentYear);
-        console.log('[Revenue] achieved:', achieved);
-        setRevAchieved(achieved);
-
-        const remaining = Math.max(0, targetAmount - achieved);
-        const progress = targetAmount > 0 ? Math.min(100, (achieved / targetAmount) * 100) : 0;
-        setRevRemaining(remaining);
-        setRevProgress(progress);
-
-        // Secondary fallback: read latest row without year filter to detect grant/RLS issues
-        if (!row) {
-          const { data: rt2, error: rt2Err } = await supabase
-            .from('revenue_targets')
-            .select('year,target_amount,updated_at')
-            .order('updated_at', { ascending: false })
-            .limit(1);
-          if (rt2Err) console.error('[Revenue] unfiltered read error:', rt2Err);
-          const row2 = !rt2Err && Array.isArray(rt2) && rt2.length > 0 ? (rt2[0] as any) : null;
-          console.log('[Revenue] unfiltered latest row:', row2);
-        }
+        setRevTarget(Number(json.target || 0));
+        setRevAchieved(Number(json.achieved || 0));
+        setRevRemaining(Number(json.remaining || 0));
+        setRevProgress(Number(json.progress || 0));
+        setRevInput(formatCHF(Number(json.target || 0)));
 
       } catch (error) {
         logError(error, 'Error loading revenue progress');
@@ -212,12 +186,15 @@ export default function Sidebar() {
     try {
       const amount = parseCHF(revInput) ?? 0;
       await upsertRevenueTarget(currentYear, amount, { id: user?.id, email: user?.email || null });
-      // reload
-      const progress = await getRevenueProgress(currentYear);
-      setRevTarget(progress.target);
-      setRevAchieved(progress.achieved);
-      setRevRemaining(progress.remaining);
-      setRevProgress(progress.progress);
+      // reload via API
+      const res = await fetch(`/api/revenue/progress?year=${currentYear}`, { cache: 'no-store' });
+      const json = await res.json();
+      console.log('[Revenue] api result after upsert:', json);
+      if (!res.ok) throw new Error(json?.error || 'API error');
+      setRevTarget(Number(json.target || 0));
+      setRevAchieved(Number(json.achieved || 0));
+      setRevRemaining(Number(json.remaining || 0));
+      setRevProgress(Number(json.progress || 0));
       setIsRevEditing(false);
     } catch (error) {
       logError(error, 'Error updating revenue target');
