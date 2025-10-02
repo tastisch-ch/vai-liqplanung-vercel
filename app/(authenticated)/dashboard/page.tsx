@@ -189,7 +189,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-visible">
         <div className="lg:col-span-2">
-          <div>
+          <div className="min-h-[14rem]">
             <SimpleBalanceChart isLoading={isLoading} points={forecastPoints} />
           </div>
         </div>
