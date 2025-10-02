@@ -20,7 +20,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   themeColor: "#CEFF65",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" }
+    ],
     shortcut: "/favicon.ico",
     apple: "/icon-192.png",
   },
