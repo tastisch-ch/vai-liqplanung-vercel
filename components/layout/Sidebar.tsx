@@ -13,6 +13,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import Image from 'next/image';
 import { getRevenueProgress, getRevenueTarget, upsertRevenueTarget } from '@/lib/services/revenue-target';
+import { supabase } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
@@ -148,11 +149,39 @@ export default function Sidebar() {
       try {
         setRevLoading(true);
         const progress = await getRevenueProgress(currentYear);
+        try { console.debug('[Revenue] progress', progress); } catch {}
         setRevTarget(progress.target);
         setRevAchieved(progress.achieved);
         setRevRemaining(progress.remaining);
         setRevProgress(progress.progress);
         setRevInput(formatCHF(progress.target));
+
+        // Fallback: If target is 0, try direct read (guards against 406/object Accept edge cases)
+        if (!progress.target) {
+          const { data, error } = await supabase
+            .from('revenue_targets')
+            .select('year,target_amount,updated_at')
+            .eq('year', currentYear)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const row = data[0] as any;
+            const targetAmount = Number(row.target_amount ?? 0);
+            try { console.debug('[Revenue] fallback row', row, 'parsed target', targetAmount); } catch {}
+            if (targetAmount > 0) {
+              setRevTarget(targetAmount);
+              // Recompute derived values with the direct target
+              const achievedNow = progress.achieved; // already computed
+              const remainingNow = Math.max(0, targetAmount - achievedNow);
+              const progressNow = targetAmount > 0 ? Math.min(100, (achievedNow / targetAmount) * 100) : 0;
+              setRevRemaining(remainingNow);
+              setRevProgress(progressNow);
+              setRevInput(formatCHF(targetAmount));
+            }
+          } else {
+            try { console.debug('[Revenue] fallback select error', error); } catch {}
+          }
+        }
       } catch (error) {
         logError(error, 'Error loading revenue progress');
       } finally {
