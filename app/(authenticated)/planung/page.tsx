@@ -525,7 +525,7 @@ export default function Planung() {
               return (
                 <div key={tx.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
                   {/* Zeile 1: Details */}
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50 truncate" title={tx.details}>{tx.details}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50 line-clamp-2 break-anywhere" title={tx.details}>{tx.details}</div>
                   {/* Zeile 2: Betrag */}
                   <div className={`mt-1 tabular-nums text-base font-semibold ${amountClass}`}>
                     <span className="mr-1">{isIncome ? '+' : '-'}</span>{formatCHF(Math.abs(tx.amount))}
