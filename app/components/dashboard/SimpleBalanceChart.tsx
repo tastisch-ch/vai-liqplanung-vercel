@@ -60,11 +60,24 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
   const domainMin = minV - pad;
   const domainMax = maxV + pad;
 
+  const days = points.length;
+
   return (
-    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 overflow-hidden">
-      <h3 className="mb-2 text-sm text-gray-600">Kontostand-Prognose</h3>
+    <div className="relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-gray-100 transition-shadow duration-300 hover:border-emerald-200 overflow-visible">
+      {/* Header aligned with Overdue card */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 3v18M21 21H3"/>
+            <path d="M5 14l5-5 4 4 5-7"/>
+          </svg>
+          <dt className="text-sm font-medium text-gray-600">Kontostand-Prognose</dt>
+        </div>
+        <span className="text-xs text-gray-500">{days} Tage</span>
+      </div>
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
-      <div className="mt-6 hidden h-64 sm:block">
+      {/* Desktop chart */}
+      <div className="mt-4 hidden h-56 sm:block">
         <ResponsiveContainer width="100%" height="100%">
           <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -84,7 +97,8 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-6 h-56 sm:hidden">
+      {/* Mobile chart (simpler axis like the Overdue card style) */}
+      <div className="mt-4 h-48 sm:hidden">
         <ResponsiveContainer width="100%" height="100%">
           <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
