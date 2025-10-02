@@ -150,6 +150,17 @@ export default function Sidebar() {
       try {
         setRevLoading(true);
 
+        // Ensure session is available before querying (RLS)
+        let tries = 0;
+        while (tries < 5) {
+          const sess = await supabase.auth.getSession();
+          const hasSession = !!sess.data.session;
+          console.log('[Revenue] session?', hasSession, 'try', tries + 1);
+          if (hasSession) break;
+          await new Promise((r) => setTimeout(r, 200));
+          tries++;
+        }
+
         // 1) Directly read the latest target row for the current year
         const { data: rt, error: rtErr } = await supabase
           .from('revenue_targets')
