@@ -50,8 +50,21 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
     return { date: label, 'Kontostand': p.balance };
   });
 
-  // Get current balance
+  // Get current balance (heute/Startpunkt)
   const currentBalance = points[0]?.balance || 0;
+  // End-of-month forecast
+  const today = new Date();
+  const eomDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  let eomBalance = points[points.length - 1]?.balance || currentBalance;
+  for (let i = 0; i < points.length; i++) {
+    const d = new Date(points[i].date);
+    if (d.getTime() <= eomDate.getTime()) {
+      eomBalance = points[i].balance;
+    } else {
+      break;
+    }
+  }
+  const deltaToToday = eomBalance - currentBalance;
   // Domain calc with 10% padding and include 0
   const values = points.map(p => p.balance);
   const minV = Math.min(...values, 0);
@@ -75,7 +88,9 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
         </div>
         <span className="text-xs text-gray-500">{days} Tage</span>
       </div>
-      <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
+      {/* EOM-Prognose klar ausweisen */}
+      <p className="text-2xl font-semibold text-gray-900">{formatCHF(eomBalance)}</p>
+      <div className="text-xs text-gray-500 mt-1">am {eomDate.toLocaleDateString('de-CH')} – Δ {deltaToToday >= 0 ? '+' : ''}{formatCHF(deltaToToday)} vs. heute</div>
       {/* Desktop chart */}
       <div className="mt-4 hidden h-56 sm:block">
         <div className="rounded-xl overflow-hidden h-full">
