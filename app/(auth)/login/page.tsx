@@ -203,6 +203,9 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
             className="w-full px-4 h-11 text-base border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400"
           />
         </div>
@@ -218,6 +221,9 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              inputMode="text"
+              autoCapitalize="none"
+              autoCorrect="off"
               className="w-full pr-10 px-4 h-11 text-base border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400"
             />
             <button

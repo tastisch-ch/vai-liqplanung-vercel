@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./globals-tooltip.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import dynamic from 'next/dynamic';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,9 +43,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const PullToRefresh = (dynamic(() => import('@/components/layout/PullToRefresh'), { ssr: false })) as any;
   return (
     <html lang="de">
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href="/icon-512.png" sizes="512x512" />
@@ -52,6 +56,7 @@ export default function RootLayout({
       <body className={`min-h-screen bg-gray-50 antialiased ${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
           <main>
+            <PullToRefresh />
             {children}
           </main>
         </AuthProvider>
