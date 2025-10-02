@@ -29,7 +29,6 @@
   --color-link: var(--color-primary);
   --color-link-hover: #023331;
   --color-highlight: var(--color-accent);
-  --mobile-nav-h: 56px;
 }
 
 @theme inline {
@@ -66,14 +65,7 @@ body {
 }
 
 /* Mobile nav helpers */
-.mobile-nav {
-  height: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.pb-mobile-nav {
-  padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));
-}
+/* removed custom fixed sizing to restore simpler padding-based approach */
 
 /* Utility classes for Vaios brand colors */
 .bg-vaios-primary {
