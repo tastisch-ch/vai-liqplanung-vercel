@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#0B0B0B',
     theme_color: '#CEFF65',
     icons: [
-      { src: '/assets/vaios-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }
+      { src: '/assets/vaios-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' }
     ]
   };
 }
