@@ -157,6 +157,7 @@ export default function Sidebar() {
           .eq('year', currentYear)
           .order('updated_at', { ascending: false })
           .limit(1);
+        if (rtErr) console.error('[Revenue] year-filtered read error:', rtErr);
         const row = !rtErr && Array.isArray(rt) && rt.length > 0 ? (rt[0] as any) : null;
         const targetAmount = row ? Number(row.target_amount ?? 0) : 0;
         console.log('[Revenue] target row:', row, 'parsed target:', targetAmount);
@@ -173,6 +174,18 @@ export default function Sidebar() {
         const progress = targetAmount > 0 ? Math.min(100, (achieved / targetAmount) * 100) : 0;
         setRevRemaining(remaining);
         setRevProgress(progress);
+
+        // Secondary fallback: read latest row without year filter to detect grant/RLS issues
+        if (!row) {
+          const { data: rt2, error: rt2Err } = await supabase
+            .from('revenue_targets')
+            .select('year,target_amount,updated_at')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (rt2Err) console.error('[Revenue] unfiltered read error:', rt2Err);
+          const row2 = !rt2Err && Array.isArray(rt2) && rt2.length > 0 ? (rt2[0] as any) : null;
+          console.log('[Revenue] unfiltered latest row:', row2);
+        }
 
       } catch (error) {
         logError(error, 'Error loading revenue progress');
