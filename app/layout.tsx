@@ -21,12 +21,14 @@ export const metadata: Metadata = {
   themeColor: "#CEFF65",
   icons: {
     icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
-      { url: "/icon-512.png", type: "image/png", sizes: "512x512" }
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.ico", type: "image/x-icon" },
     ],
-    shortcut: "/favicon.ico",
-    apple: "/icon-192.png",
+    shortcut: ["/favicon.ico"],
+    apple: [
+      { url: "/icon-512.png", sizes: "512x512" },
+    ],
   },
 };
 
