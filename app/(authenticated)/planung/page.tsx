@@ -194,6 +194,9 @@ export default function Planung() {
     // This ensures consistent date handling with fixkosten generation
     let filtered = allTransactions.filter(tx => tx.date >= startDate);
     
+    // Exclude paid invoices from future planning (already settled)
+    filtered = filtered.filter(tx => !(tx.is_invoice && (tx as any).invoice_status === 'paid'));
+
     // Then filter by transaction type
     filtered = filtered.filter(tx => {
       if (tx.kategorie?.toLowerCase() === 'fixkosten') return showFixkosten;

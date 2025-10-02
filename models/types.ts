@@ -14,6 +14,12 @@ export interface Buchung {
   isOverridden?: boolean;
   overrideNotes?: string;
   is_simulation?: boolean;
+  // Invoice lifecycle (optional; present for imported invoices)
+  is_invoice?: boolean;
+  invoice_id?: string | null;
+  invoice_status?: 'open' | 'paid' | 'canceled' | string;
+  paid_at?: Date | string | null;
+  last_seen_at?: Date | string | null;
 }
 
 export interface Fixkosten {
