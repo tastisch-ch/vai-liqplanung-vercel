@@ -78,35 +78,41 @@ export function SimpleBalanceChart({ isLoading, points }: Props) {
       <p className="text-2xl font-semibold text-gray-900">{formatCHF(currentBalance)}</p>
       {/* Desktop chart */}
       <div className="mt-4 hidden h-56 sm:block">
-        <ResponsiveContainer width="100%" height="100%">
-          <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
-            <YAxis
-              width={64}
-              tickFormatter={axisFormatter as any}
-              tick={{ fontSize: 12 }}
-              domain={[domainMin, domainMax]}
-              scale="linear"
-              allowDecimals={false}
-              tickCount={5}
-            />
-            <RTooltip content={<CustomTooltip data={chartData} />} />
-            <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
-          </RLineChart>
-        </ResponsiveContainer>
+        <div className="rounded-xl overflow-hidden border border-gray-100">
+          <ResponsiveContainer width="100%" height="100%">
+            <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis
+                width={56}
+                tickFormatter={axisFormatter as any}
+                tick={{ fontSize: 12 }}
+                domain={[domainMin, domainMax]}
+                scale="linear"
+                allowDecimals={false}
+                tickCount={5}
+                axisLine={false}
+                tickLine={false}
+              />
+              <RTooltip content={<CustomTooltip data={chartData} />} />
+              <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
+            </RLineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Mobile chart (simpler axis like the Overdue card style) */}
       <div className="mt-4 h-48 sm:hidden">
-        <ResponsiveContainer width="100%" height="100%">
-          <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} />
-            <RTooltip content={<CustomTooltip data={chartData} />} />
-            <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
-          </RLineChart>
-        </ResponsiveContainer>
+        <div className="rounded-lg overflow-hidden border border-gray-100">
+          <ResponsiveContainer width="100%" height="100%">
+            <RLineChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+              <RTooltip content={<CustomTooltip data={chartData} />} />
+              <Line type="monotone" dataKey="Kontostand" stroke="#2563eb" strokeWidth={2.25} dot={false} isAnimationActive={false} />
+            </RLineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
