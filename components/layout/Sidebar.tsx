@@ -446,7 +446,7 @@ export default function Sidebar() {
         <div className="p-3 border-b border-gray-200">
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} mb-2`}>
             <h3 className="font-semibold text-gray-700 flex items-center gap-2 whitespace-nowrap">
-              <svg className="h-5 w-5 text-violet-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 20l9-16-9 4-9-4 9 16z"/>
               </svg>
               {!collapsed && `Ertragsziel ${currentYear}`}

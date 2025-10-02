@@ -46,6 +46,7 @@ export default function RootLayout({
     <html lang="de">
       <head>
         <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href="/icon-512.png" sizes="512x512" />
       </head>
       <body className={`min-h-screen bg-gray-50 antialiased ${geistSans.variable} ${geistMono.variable}`}>
