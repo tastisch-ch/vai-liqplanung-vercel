@@ -58,7 +58,7 @@ export default function MobileNav() {
     );
   };
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200 pb-safe-bottom">
+    <nav className="fixed left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200 pb-safe-bottom" style={{ bottom: '0dvh' }}>
       {/* Status row */}
       <div className="px-3 pt-1 pb-1 flex items-center justify-center gap-4 text-xs text-gray-700">
         <div className="flex items-center gap-2">
