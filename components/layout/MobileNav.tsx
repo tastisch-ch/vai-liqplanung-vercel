@@ -24,7 +24,7 @@ const tabs = [
 export default function MobileNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur border-t border-gray-200 pb-safe-bottom">
       <ul className="flex items-stretch justify-around py-2">
         {tabs.map((t) => {
           const active = pathname?.startsWith(t.path);

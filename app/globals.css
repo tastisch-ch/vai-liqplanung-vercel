@@ -59,6 +59,11 @@ body {
   }
 }
 
+/* Safe area helpers for iOS browsers */
+.pb-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem);
+}
+
 /* Utility classes for Vaios brand colors */
 .bg-vaios-primary {
   background-color: var(--color-primary);
