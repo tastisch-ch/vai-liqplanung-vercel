@@ -4,6 +4,7 @@ import ClientOnly from "@/components/auth/ClientOnly";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 // AuthNav header removed; sidebar hosts nav + user now
 import Sidebar from "@/components/layout/Sidebar";
+import MobileNav from "@/components/layout/MobileNav";
 import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/client-auth";
@@ -78,18 +79,18 @@ export default function AuthenticatedLayout({
           <div className="hidden md:block sticky top-0 self-start z-10">
             <Sidebar />
           </div>
-          <div className="block md:hidden">
-            <Sidebar />
-          </div>
           <div className="flex-grow">
             {/* Main content */}
-            <main className="p-4 md:p-6 w-full">
+            <main className="p-4 md:p-6 w-full pb-20 md:pb-6">
               <div className="mx-auto max-w-7xl">
                 {children}
               </div>
             </main>
           </div>
-          
+          {/* Mobile bottom navigation */}
+          <div className="md:hidden">
+            <MobileNav />
+          </div>
         </div>
         </NotificationProvider>
       </AuthProvider>
