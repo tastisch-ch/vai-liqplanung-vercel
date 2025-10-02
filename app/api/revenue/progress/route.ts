@@ -1,12 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { startOfYear, endOfYear } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const year = Number(searchParams.get('year') || new Date().getFullYear());
-    const supabase = createRouteHandlerSupabaseClient(request);
+    // Prefer server-session client; if no session, fall back to service-role client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const sessionClient = createRouteHandlerSupabaseClient(request);
+
+    // Detect session by trying a cheap call
+    let useAdmin = false;
+    try {
+      // @ts-ignore we only need to detect if this throws due to anon role
+      const { data: me } = await sessionClient.auth.getUser();
+      useAdmin = !me?.user && !!serviceKey; // no session but we do have a service key
+    } catch {
+      useAdmin = !!serviceKey;
+    }
+
+    // Choose client
+    const supabase = useAdmin ? createClient(supabaseUrl, serviceKey) : sessionClient;
 
     // Read latest revenue target for the year
     const { data: targetRows, error: targetErr } = await supabase
