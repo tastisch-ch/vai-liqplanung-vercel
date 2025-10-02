@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const year = Number(searchParams.get('year') || new Date().getFullYear());
     // Prefer server-session client; if no session, fall back to service-role client
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
     const sessionClient = createRouteHandlerSupabaseClient(request);
 
     // Detect session by trying a cheap call
