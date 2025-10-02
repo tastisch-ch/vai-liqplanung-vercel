@@ -440,7 +440,7 @@ export default function Planung() {
           </div>
         ) : (
           <>
-          <div className="max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-6rem)] overflow-x-hidden">
+          <div className="max-w-[100vw] md:max-w-[calc(100vw-6rem)] overflow-x-hidden">
           <TableRoot>
             <div className="sm:flex sm:items-center sm:justify-between sm:space-x-10 px-1">
               <div>
@@ -455,12 +455,12 @@ export default function Planung() {
             <Table className="mt-4 hidden md:table table-fixed w-full">
               <TableHead>
                 <TableRow className="border-b border-gray-200 dark:border-gray-800">
-                  <TableHeaderCell>Datum</TableHeaderCell>
-                  <TableHeaderCell>Beschreibung</TableHeaderCell>
-                  <TableHeaderCell>Kategorie</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Betrag</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Kontostand</TableHeaderCell>
-                  <TableHeaderCell className="text-right">Aktionen</TableHeaderCell>
+                  <TableHeaderCell className="w-[8rem]">Datum</TableHeaderCell>
+                  <TableHeaderCell className="w-[1fr]">Beschreibung</TableHeaderCell>
+                  <TableHeaderCell className="w-[10rem]">Kategorie</TableHeaderCell>
+                  <TableHeaderCell className="text-right w-[8rem]">Betrag</TableHeaderCell>
+                  <TableHeaderCell className="text-right w-[10rem]">Kontostand</TableHeaderCell>
+                  <TableHeaderCell className="text-right w-[8rem]">Aktionen</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
