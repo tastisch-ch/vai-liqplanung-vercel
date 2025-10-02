@@ -19,6 +19,8 @@ const getSupabaseClient = () => {
         persistSession: true,
         autoRefreshToken: true, 
         detectSessionInUrl: true,
+        // Use the SAME storage key as client-auth to share the session
+        storageKey: 'sb:session',
         // Add more generous timeouts to prevent resource errors
         flowType: 'pkce'
       },
