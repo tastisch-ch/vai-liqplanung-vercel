@@ -52,7 +52,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       error: 'error',
       loading: 'loading',
     } as const;
-    tremorToast({ title: message, variant: variantMap[type], duration });
+    const { dismiss } = tremorToast({ title: message, variant: variantMap[type], duration });
+    if (duration > 0) { setTimeout(() => dismiss(), duration); }
   };
 
   const hideNotification = () => setNotificationProps(prev => ({ ...prev, isVisible: false }));
