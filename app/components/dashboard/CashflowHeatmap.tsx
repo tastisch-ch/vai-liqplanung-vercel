@@ -88,7 +88,7 @@ export function CashflowHeatmap({ transactions, initialMonth }: Props) {
   const monthLabel = format(month, 'MMMM yyyy', { locale: de });
 
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-950 shadow-sm overflow-hidden">
+    <div className="relative bg-white dark:bg-neutral-950 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-100 dark:border-white/10 transition-shadow duration-300 hover:border-emerald-200 overflow-visible">
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-4 py-3">
         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Cashflow-Heatmap</div>
         <div className="flex items-center gap-2">
