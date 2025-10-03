@@ -53,7 +53,11 @@ function toast(props: Omit<Toast, "id">) {
   });
   const duration = props.duration ?? 3000;
   if (duration > 0) {
-    setTimeout(() => dismiss(), duration);
+    const timer = setTimeout(() => dismiss(), duration);
+    // ensure timer cleared on manual dismiss
+    const originalDismiss = dismiss;
+    // override dismiss for this scope
+    (dismiss as any) = () => { clearTimeout(timer); originalDismiss(); };
   }
   return { id, dismiss, update: (p: Partial<Toast>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } }) };
 }
