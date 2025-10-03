@@ -16,6 +16,7 @@ import { upsertRevenueTarget } from '@/lib/services/revenue-target';
 import { supabase } from '@/lib/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -271,25 +272,13 @@ export default function Sidebar() {
 
   const renderLinks = (links: NavLink[]) => (
     <ul className="space-y-1">
-      {links.map((link) => (
-        <li key={link.path}>
-          <Link 
+      {links.map((link) => {
+        const linkNode = (
+          <Link
             href={link.path}
             className={`relative flex items-center px-3 py-2 text-sm rounded-md
               ${pathname === link.path ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
             title={collapsed ? `${link.name} — ${link.description}` : undefined}
-            onMouseEnter={(e)=>{
-              if (!collapsed) return;
-              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              setTooltip({
-                x: rect.right + 8,
-                y: rect.top + rect.height/2,
-                name: link.name,
-                desc: link.description,
-                visible: true,
-              });
-            }}
-            onMouseLeave={()=>{ if (tooltip.visible) setTooltip(prev=>({...prev, visible:false})); }}
           >
             <span className="mr-3 text-gray-600 flex-shrink-0">{renderIcon(link.icon)}</span>
             {!collapsed && (
@@ -299,8 +288,31 @@ export default function Sidebar() {
               </div>
             )}
           </Link>
-        </li>
-      ))}
+        );
+
+        return (
+          <li key={link.path}>
+            {collapsed ? (
+              <Tooltip.Provider delayDuration={150}>
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    {linkNode}
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content side="right" align="center" sideOffset={8} className="z-[9999] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-lg">
+                      <div className="font-medium whitespace-nowrap">{link.name}</div>
+                      <div className="text-xs text-gray-500 whitespace-nowrap">{link.description}</div>
+                      <Tooltip.Arrow className="fill-white" />
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </Tooltip.Provider>
+            ) : (
+              linkNode
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 
