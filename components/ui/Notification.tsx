@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import { Toast, ToastActions, ToastIcon } from '@tremor/react';
 
 type NotificationType = 'success' | 'error' | 'info' | 'loading';
 
@@ -13,119 +13,40 @@ interface NotificationProps {
   onClose?: () => void;
 }
 
-const getTypeStyles = (type: NotificationType) => {
-  // Tremor-like: white card, subtle ring, colored left border + icon
-  switch (type) {
-    case 'success':
-      return {
-        container: 'bg-white text-emerald-900 border-emerald-500',
-        icon: 'text-emerald-600'
-      };
-    case 'error':
-      return {
-        container: 'bg-white text-rose-900 border-rose-500',
-        icon: 'text-rose-600'
-      };
-    case 'info':
-      return {
-        container: 'bg-white text-sky-900 border-sky-500',
-        icon: 'text-sky-600'
-      };
-    case 'loading':
-      return {
-        container: 'bg-white text-gray-800 border-gray-400',
-        icon: 'text-gray-500'
-      };
-    default:
-      return {
-        container: 'bg-white text-gray-800 border-gray-400',
-        icon: 'text-gray-500'
-      };
-  }
-};
+export default function Notification({ message, type, duration = 4000, isVisible, onClose }: NotificationProps) {
+  if (!isVisible) return null;
 
-const getIconSvg = (type: NotificationType) => {
-  switch (type) {
-    case 'success':
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
-      );
-    case 'error':
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-      );
-    case 'info':
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-      );
-    case 'loading':
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5 animate-spin" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" className="opacity-25" />
-          <path d="M12 2a10 10 0 0 1 10 10" className="opacity-75" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-};
-
-export default function Notification({
-  message,
-  type,
-  duration = 5000,
-  isVisible,
-  onClose
-}: NotificationProps) {
-  const [visible, setVisible] = useState(isVisible);
-  const styles = getTypeStyles(type);
-
-  useEffect(() => {
-    setVisible(isVisible);
-    
-    if (isVisible && duration > 0) {
-      const timer = setTimeout(() => {
-        setVisible(false);
-        if (onClose) onClose();
-      }, duration);
-      
-      return () => clearTimeout(timer);
+  const tone = useMemo(() => {
+    switch (type) {
+      case 'success':
+        return 'success';
+      case 'error':
+        return 'error';
+      case 'info':
+        return 'info';
+      case 'loading':
+        return 'neutral';
+      default:
+        return 'info';
     }
-  }, [isVisible, duration, onClose]);
+  }, [type]);
 
-  if (!visible) return null;
+  const handleClose = useCallback(() => {
+    if (onClose) onClose();
+  }, [onClose]);
+
+  // Auto close timer handled manually to keep API compatible
+  if (duration > 0) {
+    setTimeout(handleClose, duration);
+  }
 
   return (
-    <div
-      className={`fixed top-4 right-4 z-50 max-w-sm pointer-events-auto animate-[toast-in_180ms_ease-out]`}
-      role={type === 'loading' ? 'status' : 'alert'}
-      aria-live="polite"
-    >
-      <div className={`p-4 rounded-xl border-l-4 shadow-lg ring-1 ring-black/5 ${styles.container}`}
-           style={{ borderLeftColor: undefined }}>
-        <div className="flex items-start gap-3">
-          <span className={`shrink-0 ${styles.icon}`}>{getIconSvg(type)}</span>
-          <div className="flex-1 text-sm leading-5">
-            <p className="font-medium">{message}</p>
-          </div>
-          <button
-            onClick={() => {
-              setVisible(false);
-              if (onClose) onClose();
-            }}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Schließen"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-          </button>
-        </div>
-      </div>
+    <div className="fixed top-4 right-4 z-50">
+      <Toast className="shadow-lg" onClose={handleClose} tone={tone as any}>
+        <ToastIcon />
+        <div className="text-sm font-medium">{message}</div>
+        <ToastActions />
+      </Toast>
     </div>
   );
 }
@@ -145,11 +66,11 @@ interface NotificationContextProps {
 const NotificationContext = createContext<NotificationContextProps | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [notificationProps, setNotificationProps] = useState({
+  const [notificationProps, setNotificationProps] = React.useState({
     message: '',
     type: 'info' as NotificationType,
     isVisible: false,
-    duration: 5000
+    duration: 4000
   });
 
   const showNotification = (message: string, type: NotificationType, duration = 5000) => {
@@ -161,9 +82,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
-  const hideNotification = () => {
-    setNotificationProps(prev => ({ ...prev, isVisible: false }));
-  };
+  const hideNotification = () => setNotificationProps(prev => ({ ...prev, isVisible: false }));
 
   return (
     <NotificationContext.Provider
