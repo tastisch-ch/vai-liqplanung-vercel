@@ -120,7 +120,8 @@ const Toast = React.forwardRef<
           "data-[state=closed]:animate-hide",
           className,
         )}
-        {...props}
+        // ensure Radix handles autoclose itself (overridable per Root)
+        {...(props as any)}
       >
         {Icon}
         <div className="flex min-w-0 flex-1 items-center">

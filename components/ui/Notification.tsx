@@ -53,8 +53,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       error: 'error',
       loading: 'loading',
     } as const;
-    const { dismiss } = toast({ title: message, variant: variantMap[type], duration });
-    if (duration > 0) { setTimeout(() => dismiss(), duration); }
+    toast({ title: message, variant: variantMap[type], duration });
   };
 
   const hideNotification = () => setNotificationProps(prev => ({ ...prev, isVisible: false }));
