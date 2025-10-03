@@ -36,6 +36,9 @@ export default function PlanningFilters() {
     return [
       { label: 'Nächste 7 Tage', dateRange: { from: tomorrow, to: addDays(tomorrow, 7) } },
       { label: '1 Monat', dateRange: { from: tomorrow, to: addMonths(tomorrow, 1) } },
+      { label: '6 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 6) } },
+      { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
+      { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
       { label: 'Restlicher Monat', dateRange: { from: tomorrow, to: endOfMonth(tomorrow) } },
       { label: 'Heute → nächste Lohnzahlung (25.)', dateRange: { from: todayStart, to: nextPayroll() } },
     ];
