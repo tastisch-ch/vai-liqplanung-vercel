@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Tremor raw helpers (minimal)
-export function cx(...inputs: Array<string | false | undefined>) {
+export function cx(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
