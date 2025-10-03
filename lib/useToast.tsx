@@ -41,7 +41,8 @@ function dispatch(action: any) {
 
 function toast(props: Omit<Toast, "id">) {
   const id = genId();
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
+  let timer: any;
+  const dismiss = () => { if (timer) clearTimeout(timer); dispatch({ type: "DISMISS_TOAST", toastId: id }); };
   dispatch({
     type: "ADD_TOAST",
     toast: {
@@ -52,13 +53,7 @@ function toast(props: Omit<Toast, "id">) {
     },
   });
   const duration = props.duration ?? 3000;
-  if (duration > 0) {
-    const timer = setTimeout(() => dismiss(), duration);
-    // ensure timer cleared on manual dismiss
-    const originalDismiss = dismiss;
-    // override dismiss for this scope
-    (dismiss as any) = () => { clearTimeout(timer); originalDismiss(); };
-  }
+  if (duration > 0) { timer = setTimeout(() => dismiss(), duration); }
   return { id, dismiss, update: (p: Partial<Toast>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } }) };
 }
 

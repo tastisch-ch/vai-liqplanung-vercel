@@ -139,7 +139,7 @@ const Toast = React.forwardRef<
         </div>
         {!disableDismiss && (
           <ToastPrimitives.Close asChild aria-label="Close">
-            <button className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50 text-gray-500 hover:text-gray-700">
+            <button type="button" className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50 text-gray-500 hover:text-gray-700">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             </button>
           </ToastPrimitives.Close>
