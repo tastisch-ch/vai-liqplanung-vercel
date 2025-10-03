@@ -20,6 +20,7 @@ import { OverdueIncomingInvoices } from '@/app/components/dashboard/OverdueIncom
 import { CostStructureDonut } from '@/app/components/dashboard/CostStructureDonut';
 import { UpcomingLargeOutflows } from '@/app/components/dashboard/UpcomingLargeOutflows';
 import { SimulationEffectsCard } from '@/app/components/dashboard/SimulationEffectsCard';
+import CashflowHeatmap from '@/app/components/dashboard/CashflowHeatmap';
 
 export default function DashboardPage() {
   const auth = useAuth();
@@ -195,7 +196,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Charts after balance chart temporarily removed */}
+      {/* Cashflow Heatmap */}
+      <div className="grid grid-cols-1 gap-6">
+        <CashflowHeatmap transactions={enhanced} />
+      </div>
       
       {/* Overdue incoming invoices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
