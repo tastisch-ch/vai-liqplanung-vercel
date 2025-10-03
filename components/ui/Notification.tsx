@@ -38,10 +38,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     duration: 2000
   });
 
-  const showNotification = (message: string, type: NotificationType, duration = 2000) => {
+  const showNotification = (message: string, type: NotificationType, duration = 3000) => {
     // Keep context state for backwards compatibility
     setNotificationProps({ message, type, isVisible: true, duration });
     // Bridge to Tremor toast system
+    if (type === 'loading') {
+      // Suppress loading toasts per UX feedback
+      return;
+    }
     const variantMap: Record<NotificationType, 'info' | 'success' | 'warning' | 'error' | 'loading'> = {
       info: 'info',
       success: 'success',
