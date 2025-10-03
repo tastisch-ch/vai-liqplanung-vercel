@@ -131,7 +131,7 @@ export function CashflowHeatmap({ transactions, initialMonth }: Props) {
                 key={day.date.toISOString()}
                 type="button"
                 onClick={() => openDay(day)}
-                className={`relative h-12 sm:h-14 rounded-md border ${inMonth ? 'border-gray-100 dark:border-white/5' : 'border-transparent opacity-60'} ${cls} hover:brightness-95 transition`}
+                className={`relative h-12 sm:h-14 rounded-md border ${inMonth ? 'border-gray-100 dark:border-white/5' : 'border-transparent opacity-60'} ${cls} hover:brightness-95 transition cursor-pointer`}
               >
                 <div className="absolute top-1 left-1 text-[11px] font-medium">
                   <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${isNow ? 'ring-2 ring-black/70 dark:ring-white/70' : ''}`}>
