@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useCallback, useEffect } from 'react';
 import { Toast, ToastActions, ToastIcon } from '@tremor/react';
 
 type NotificationType = 'success' | 'error' | 'info' | 'loading';
@@ -13,7 +13,7 @@ interface NotificationProps {
   onClose?: () => void;
 }
 
-export default function Notification({ message, type, duration = 4000, isVisible, onClose }: NotificationProps) {
+export default function Notification({ message, type, duration = 2000, isVisible, onClose }: NotificationProps) {
   if (!isVisible) return null;
 
   const tone = useMemo(() => {
@@ -35,10 +35,14 @@ export default function Notification({ message, type, duration = 4000, isVisible
     if (onClose) onClose();
   }, [onClose]);
 
-  // Auto close timer handled manually to keep API compatible
-  if (duration > 0) {
-    setTimeout(handleClose, duration);
-  }
+  // Auto close timer handled via effect to avoid multiple timers on re-render
+  useEffect(() => {
+    if (!isVisible) return;
+    if (duration > 0) {
+      const t = setTimeout(handleClose, duration);
+      return () => clearTimeout(t);
+    }
+  }, [duration, isVisible, handleClose]);
 
   return (
     <div className="fixed top-4 right-4 z-50">
@@ -70,7 +74,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     message: '',
     type: 'info' as NotificationType,
     isVisible: false,
-    duration: 4000
+    duration: 2000
   });
 
   const showNotification = (message: string, type: NotificationType, duration = 5000) => {
