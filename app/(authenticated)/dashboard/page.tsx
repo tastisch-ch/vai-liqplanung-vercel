@@ -21,7 +21,6 @@ import { CostStructureDonut } from '@/app/components/dashboard/CostStructureDonu
 import { UpcomingLargeOutflows } from '@/app/components/dashboard/UpcomingLargeOutflows';
 import { SimulationEffectsCard } from '@/app/components/dashboard/SimulationEffectsCard';
 import CashflowHeatmap from '@/app/components/dashboard/CashflowHeatmap';
-import VarianceWaterfall from '@/app/components/dashboard/VarianceWaterfall';
 
 export default function DashboardPage() {
   const auth = useAuth();
@@ -202,10 +201,6 @@ export default function DashboardPage() {
         <CashflowHeatmap transactions={enhanced} />
       </div>
 
-      {/* Variance Waterfall */}
-      <div className="grid grid-cols-1 gap-6">
-        <VarianceWaterfall />
-      </div>
       
       {/* Overdue incoming invoices */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
