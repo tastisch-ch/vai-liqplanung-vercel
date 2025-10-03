@@ -277,6 +277,7 @@ export default function Sidebar() {
             href={link.path}
             className={`relative flex items-center px-3 py-2 text-sm rounded-md
               ${pathname === link.path ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+            title={collapsed ? `${link.name} — ${link.description}` : undefined}
             onMouseEnter={(e)=>{
               if (!collapsed) return;
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
