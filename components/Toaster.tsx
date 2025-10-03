@@ -9,8 +9,8 @@ const Toaster = () => {
 
   return (
     <ToastProvider swipeDirection="right" duration={3000}>
-      {toasts.map(({ id, duration, ...props }) => (
-        <Toast key={id} {...(props as any)} onOpenChange={(open) => { if (!open) dismiss(id); }} />
+      {toasts.map(({ id, open, ...props }) => (
+        <Toast key={id} open onOpenChange={(o)=>{ if(!o) dismiss(id); }} {...(props as any)} />
       ))}
       <ToastViewport />
     </ToastProvider>

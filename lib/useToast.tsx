@@ -51,6 +51,10 @@ function toast(props: Omit<Toast, "id">) {
       onOpenChange: (open: boolean) => { if (!open) dismiss(); },
     },
   });
+  const duration = props.duration ?? 3000;
+  if (duration > 0) {
+    setTimeout(() => dismiss(), duration);
+  }
   return { id, dismiss, update: (p: Partial<Toast>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } }) };
 }
 
