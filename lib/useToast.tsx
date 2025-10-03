@@ -1,6 +1,6 @@
 "use client";
 
-// Tremor toast state util per docs
+// Tremor toast state util (closely following docs)
 import * as React from "react";
 
 type Variant = "info" | "success" | "warning" | "error" | "loading";
@@ -19,20 +19,40 @@ type State = { toasts: Toast[] };
 
 const memoryState: State = { toasts: [] };
 const listeners: Array<(state: State) => void> = [];
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function genId() { return Math.random().toString(36).slice(2); }
 
 function dispatch(action: any) {
   switch (action.type) {
-    case "ADD_TOAST":
+    case "ADD_TOAST": {
       memoryState.toasts = [...memoryState.toasts, action.toast];
       break;
-    case "UPDATE_TOAST":
-      memoryState.toasts = memoryState.toasts.map((t) => t.id === action.toast.id ? { ...t, ...action.toast } : t);
+    }
+    case "UPDATE_TOAST": {
+      memoryState.toasts = memoryState.toasts.map((t) =>
+        t.id === action.toast.id ? { ...t, ...action.toast } : t,
+      );
       break;
+    }
     case "DISMISS_TOAST": {
       const id = action.toastId as string | undefined;
-      memoryState.toasts = id ? memoryState.toasts.filter((t) => t.id !== id) : [];
+      if (id) {
+        memoryState.toasts = memoryState.toasts.map((t) =>
+          t.id === id ? { ...t, open: false } : t,
+        );
+      } else {
+        memoryState.toasts = memoryState.toasts.map((t) => ({ ...t, open: false }));
+      }
+      break;
+    }
+    case "REMOVE_TOAST": {
+      const id = action.toastId as string | undefined;
+      if (id) {
+        memoryState.toasts = memoryState.toasts.filter((t) => t.id !== id);
+      } else {
+        memoryState.toasts = [];
+      }
       break;
     }
   }
@@ -41,8 +61,16 @@ function dispatch(action: any) {
 
 function toast(props: Omit<Toast, "id">) {
   const id = genId();
-  let timer: any;
-  const dismiss = () => { if (timer) clearTimeout(timer); dispatch({ type: "DISMISS_TOAST", toastId: id }); };
+  const dismiss = () => {
+    dispatch({ type: "DISMISS_TOAST", toastId: id });
+    const timeout = timers.get(id);
+    if (timeout) clearTimeout(timeout);
+    timers.set(
+      id,
+      setTimeout(() => dispatch({ type: "REMOVE_TOAST", toastId: id }), 200),
+    );
+  };
+  const duration = props.duration ?? 3000;
   dispatch({
     type: "ADD_TOAST",
     toast: {
@@ -52,9 +80,14 @@ function toast(props: Omit<Toast, "id">) {
       onOpenChange: (open: boolean) => { if (!open) dismiss(); },
     },
   });
-  const duration = props.duration ?? 3000;
-  if (duration > 0) { timer = setTimeout(() => dismiss(), duration); }
-  return { id, dismiss, update: (p: Partial<Toast>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } }) };
+  if (duration > 0) {
+    timers.set(
+      id,
+      setTimeout(() => dismiss(), duration),
+    );
+  }
+  const update = (p: Partial<Toast>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } });
+  return { id, dismiss, update };
 }
 
 function useToast() {
