@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { DateRangePicker, type DateRange } from '@/components/DatePicker';
-import { addMonths } from 'date-fns';
+import { addMonths, addDays, endOfMonth } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -14,6 +14,7 @@ import { SearchInput } from '@/components/SearchInput';
 export default function PlanningFilters() {
   // Default: 6 Monate ab morgen (heute wird ignoriert)
   const tomorrow = React.useMemo(() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(0,0,0,0); return d; }, []);
+  const todayStart = React.useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
   const defaultRange: DateRange = React.useMemo(() => ({ from: tomorrow, to: addMonths(tomorrow, 6) }), [tomorrow]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(defaultRange);
   
@@ -23,11 +24,22 @@ export default function PlanningFilters() {
     const ev = new CustomEvent('planning:date-range', { detail: dateRange });
     window.dispatchEvent(ev);
   }, [dateRange]);
-  const presets = React.useMemo(() => ([
-    { label: '6 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 6) } },
-    { label: '9 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 9) } },
-    { label: '12 Monate', dateRange: { from: tomorrow, to: addMonths(tomorrow, 12) } },
-  ]), [tomorrow]);
+  const presets = React.useMemo(() => {
+    const nextPayroll = () => {
+      const now = new Date();
+      const thisMonth25 = new Date(now.getFullYear(), now.getMonth(), 25);
+      thisMonth25.setHours(0,0,0,0);
+      const to = now.getDate() <= 25 ? thisMonth25 : new Date(now.getFullYear(), now.getMonth() + 1, 25);
+      to.setHours(0,0,0,0);
+      return to;
+    };
+    return [
+      { label: 'Nächste 7 Tage', dateRange: { from: tomorrow, to: addDays(tomorrow, 7) } },
+      { label: '1 Monat', dateRange: { from: tomorrow, to: addMonths(tomorrow, 1) } },
+      { label: 'Restlicher Monat', dateRange: { from: tomorrow, to: endOfMonth(tomorrow) } },
+      { label: 'Heute → nächste Lohnzahlung (25.)', dateRange: { from: todayStart, to: nextPayroll() } },
+    ];
+  }, [tomorrow, todayStart]);
   const categoryOptions = React.useMemo(() => ['Fixkosten','Lohn','Standard','Manual','Simulation'] as const, []);
   const [categories, setCategories] = React.useState<string[]>([...categoryOptions]);
   const [isCatOpen, setIsCatOpen] = React.useState(false);
