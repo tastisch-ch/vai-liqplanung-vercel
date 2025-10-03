@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useCallback, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { Toaster } from '@/components/Toaster';
+import { toast as tremorToast } from '@/lib/useToast';
 
 type NotificationType = 'success' | 'error' | 'info' | 'loading';
 
@@ -13,41 +14,7 @@ interface NotificationProps {
   onClose?: () => void;
 }
 
-export default function Notification({ message, type, duration = 2000, isVisible, onClose }: NotificationProps) {
-  if (!isVisible) return null;
-
-  const color = useMemo(() => {
-    switch (type) {
-      case 'success':
-        return 'emerald';
-      case 'error':
-        return 'rose';
-      case 'info':
-        return 'sky';
-      case 'loading':
-        return 'gray';
-      default:
-        return 'sky';
-    }
-  }, [type]);
-
-  const handleClose = useCallback(() => {
-    if (onClose) onClose();
-  }, [onClose]);
-
-  // Auto close timer handled via effect to avoid multiple timers on re-render
-  useEffect(() => {
-    if (!isVisible) return;
-    if (duration > 0) {
-      const t = setTimeout(handleClose, duration);
-      return () => clearTimeout(t);
-    }
-  }, [duration, isVisible, handleClose]);
-
-  return (
-    <Toaster />
-  );
-}
+export default function Notification(_: NotificationProps) { return null; }
 
 // Helper context for managing notifications
 interface NotificationContextProps {
@@ -71,13 +38,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     duration: 2000
   });
 
-  const showNotification = (message: string, type: NotificationType, duration = 5000) => {
-    setNotificationProps({
-      message,
-      type,
-      isVisible: true,
-      duration
-    });
+  const showNotification = (message: string, type: NotificationType, duration = 2000) => {
+    // Keep context state for backwards compatibility
+    setNotificationProps({ message, type, isVisible: true, duration });
+    // Bridge to Tremor toast system
+    const variantMap: Record<NotificationType, 'info' | 'success' | 'warning' | 'error' | 'loading'> = {
+      info: 'info',
+      success: 'success',
+      error: 'error',
+      loading: 'loading',
+    } as const;
+    tremorToast({ title: message, variant: variantMap[type], duration });
   };
 
   const hideNotification = () => setNotificationProps(prev => ({ ...prev, isVisible: false }));
@@ -91,10 +62,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }}
     >
       {children}
-      <Notification
-        {...notificationProps}
-        onClose={hideNotification}
-      />
+      {/* Mount Tremor Toaster globally so it can display any queued toasts */}
+      <Toaster />
     </NotificationContext.Provider>
   );
 };
