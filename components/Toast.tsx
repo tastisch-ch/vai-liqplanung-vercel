@@ -25,7 +25,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={forwardedRef}
     className={cx(
-      "fixed right-0 top-0 z-[9999] m-0 flex w-full max-w-[100vw] list-none flex-col gap-2 p-[var(--viewport-padding)] [--viewport-padding:_15px] sm:max-w-md sm:gap-4",
+      "fixed right-0 top-0 z-[9999] m-0 flex w-full max-w-[96vw] list-none flex-col gap-2 p-[var(--viewport-padding)] [--viewport-padding:_12px] sm:max-w-sm",
       className,
     )}
     {...props}
@@ -112,7 +112,7 @@ const Toast = React.forwardRef<
       <ToastPrimitives.Root
         ref={forwardedRef}
         className={cx(
-          "flex items-center gap-3 w-full overflow-hidden rounded-md border shadow-lg shadow-black/5",
+          "flex items-center gap-3 w-full overflow-hidden rounded-md border shadow-lg shadow-black/5 max-w-[22rem]",
           "bg-white px-3 py-2", // compact height
           "border-gray-200",
           "data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none",
