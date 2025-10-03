@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { Toaster } from '@/components/Toaster';
-import { toast as tremorToast } from '@/lib/useToast';
+import { useToast } from '@/lib/useToast';
 
 type NotificationType = 'success' | 'error' | 'info' | 'loading';
 
@@ -31,6 +31,7 @@ interface NotificationContextProps {
 const NotificationContext = createContext<NotificationContextProps | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { toast } = useToast();
   const [notificationProps, setNotificationProps] = React.useState({
     message: '',
     type: 'info' as NotificationType,
@@ -52,7 +53,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       error: 'error',
       loading: 'loading',
     } as const;
-    const { dismiss } = tremorToast({ title: message, variant: variantMap[type], duration });
+    const { dismiss } = toast({ title: message, variant: variantMap[type], duration });
     if (duration > 0) { setTimeout(() => dismiss(), duration); }
   };
 
