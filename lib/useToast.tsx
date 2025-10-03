@@ -64,7 +64,7 @@ function toast(props: Omit<ToastItem, "id">) {
     },
   });
   // auto close
-  const duration = props.duration ?? 2000;
+  const duration = props.duration ?? 3000;
   if (duration > 0) setTimeout(dismiss, duration);
   return { id, dismiss, update: (p: Partial<ToastItem>) => dispatch({ type: "UPDATE_TOAST", toast: { ...p, id } }) };
 }

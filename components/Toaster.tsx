@@ -8,10 +8,10 @@ const Toaster = () => {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider swipeDirection="right">
-      {toasts.map(({ id, ...props }) => {
-        return <Toast key={id} {...(props as any)} />;
-      })}
+    <ToastProvider swipeDirection="right" duration={3000}>
+      {toasts.map(({ id, ...props }) => (
+        <Toast key={id} {...(props as any)} />
+      ))}
       <ToastViewport />
     </ToastProvider>
   );

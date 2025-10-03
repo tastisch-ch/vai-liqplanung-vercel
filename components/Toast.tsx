@@ -112,8 +112,8 @@ const Toast = React.forwardRef<
       <ToastPrimitives.Root
         ref={forwardedRef}
         className={cx(
-          "flex h-fit min-h-16 w-full overflow-hidden rounded-md border shadow-lg shadow-black/5",
-          "bg-white",
+          "flex items-center gap-3 w-full overflow-hidden rounded-md border shadow-lg shadow-black/5",
+          "bg-white px-3 py-2", // compact height
           "border-gray-200",
           "data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none",
           "data-[state=open]:animate-slide-left-and-fade",
@@ -122,64 +122,28 @@ const Toast = React.forwardRef<
         )}
         {...props}
       >
-        <div
-          className={cx(
-            "flex flex-1 items-start gap-3 p-4",
-            !disableDismiss || action ? "border-r border-gray-200" : "",
-          )}
-        >
-          {Icon}
-          <div className="flex flex-col gap-1">
+        {Icon}
+        <div className="flex min-w-0 flex-1 items-center">
+          <div className="min-w-0">{/* text block */}
             {title && (
-              <ToastPrimitives.Title className="text-sm font-semibold text-gray-900">
+              <ToastPrimitives.Title className="text-sm font-semibold text-gray-900 truncate">
                 {title}
               </ToastPrimitives.Title>
             )}
             {description && (
-              <ToastPrimitives.Description className="text-sm text-gray-600">
+              <ToastPrimitives.Description className="text-sm text-gray-600 truncate">
                 {description}
               </ToastPrimitives.Description>
             )}
           </div>
         </div>
-        <div className="flex flex-col">
-          {action && (
-            <>
-              <ToastPrimitives.Action
-                altText={action.altText}
-                className={cx(
-                  "flex flex-1 items-center justify-center px-6 text-sm font-semibold transition-colors",
-                  "hover:bg-gray-50",
-                  "text-gray-800",
-                  "active:bg-gray-100",
-                  { "text-red-600": variant === "error" },
-                )}
-                onClick={(event) => {
-                  event.preventDefault();
-                  action.onClick();
-                }}
-                type="button"
-              >
-                {action.label}
-              </ToastPrimitives.Action>
-              <div className="h-px w-full bg-gray-200" />
-            </>
-          )}
-          {!disableDismiss && (
-            <ToastPrimitives.Close
-              className={cx(
-                "flex flex-1 items-center justify-center px-6 text-sm transition-colors",
-                "text-gray-600",
-                "hover:bg-gray-50",
-                "active:bg-gray-100",
-                action ? "h-1/2" : "h-full",
-              )}
-              aria-label="Close"
-            >
-              Close
-            </ToastPrimitives.Close>
-          )}
-        </div>
+        {!disableDismiss && (
+          <ToastPrimitives.Close asChild aria-label="Close">
+            <button className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50 text-gray-500 hover:text-gray-700">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          </ToastPrimitives.Close>
+        )}
       </ToastPrimitives.Root>
     );
   },
