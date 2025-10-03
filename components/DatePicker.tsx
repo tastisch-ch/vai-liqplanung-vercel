@@ -108,7 +108,18 @@ export function DateRangePicker({ value, onChange, fromDate, toDate, enableYearN
               <div className="w-40 flex flex-col gap-1 pr-3 border-r border-gray-200 dark:border-gray-800">
                 <div className="text-xs text-gray-500 mb-1">{translations?.range ?? 'Range'}</div>
                 {presets.map((p)=> (
-                  <button key={p.label} className="text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800" onClick={()=> setTemp(p.dateRange)}>{p.label}</button>
+                  <button
+                    key={p.label}
+                    type="button"
+                    className="text-left text-sm px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                    onClick={()=> {
+                      setTemp(p.dateRange);
+                      onChange?.(p.dateRange);
+                      setOpen(false);
+                    }}
+                  >
+                    {p.label}
+                  </button>
                 ))}
               </div>
             )}
