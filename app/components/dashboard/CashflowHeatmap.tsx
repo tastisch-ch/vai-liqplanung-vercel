@@ -145,8 +145,8 @@ export function CashflowHeatmap({ transactions, initialMonth }: Props) {
                     <div className="absolute bottom-1 right-1 text-[10px] font-semibold tabular-nums sm:hidden">
                       {day.net > 0 ? '+' : '−'}{Math.abs(day.net) >= 1000 ? `${Math.round(Math.abs(day.net)/1000)}k` : Math.round(Math.abs(day.net))}
                     </div>
-                    {/* Tablet/Desktop (bigger, no abbreviation) */}
-                    <div className="absolute bottom-1 right-1 hidden sm:block text-xs md:text-sm lg:text-base font-bold tabular-nums">
+                    {/* Tablet/Desktop (medium size, no abbreviation) */}
+                    <div className="absolute bottom-1 right-1 hidden sm:block text-sm font-semibold tabular-nums">
                       {day.net > 0 ? '+' : '−'}{formatInt(Math.abs(day.net))}
                     </div>
                   </>
