@@ -40,12 +40,25 @@ export async function GET(request: NextRequest) {
 
       const remaining = Math.max(0, targetAmount - achieved);
       const progress = targetAmount > 0 ? Math.min(100, (achieved / targetAmount) * 100) : 0;
+
+      // Open invoices sum (Geplant): incoming invoices still open in current year
+      const { data: openInvoices, error: openErr } = await client
+        .from('buchungen')
+        .select('amount,direction,is_invoice,invoice_status,date')
+        .eq('is_invoice', true)
+        .eq('invoice_status', 'open')
+        .eq('direction', 'Incoming')
+        .gte('date', from)
+        .lte('date', to);
+      if (openErr) throw openErr;
+      const openInvoicesSum = (openInvoices || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
       return {
         year,
         target: targetAmount,
         achieved,
         remaining,
         progress,
+        open_invoices_sum: openInvoicesSum,
         updated_at: targetRow?.updated_at ?? null,
         updated_by_email: targetRow?.updated_by_email ?? null,
       };
