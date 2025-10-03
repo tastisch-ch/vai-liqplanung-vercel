@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useMemo, useCallback, useEffect } from 'react';
-import { Toast, ToastActions, ToastIcon } from '@tremor/react';
+import { Callout } from '@tremor/react';
 
 type NotificationType = 'success' | 'error' | 'info' | 'loading';
 
@@ -16,18 +16,18 @@ interface NotificationProps {
 export default function Notification({ message, type, duration = 2000, isVisible, onClose }: NotificationProps) {
   if (!isVisible) return null;
 
-  const tone = useMemo(() => {
+  const color = useMemo(() => {
     switch (type) {
       case 'success':
-        return 'success';
+        return 'emerald';
       case 'error':
-        return 'error';
+        return 'rose';
       case 'info':
-        return 'info';
+        return 'sky';
       case 'loading':
-        return 'neutral';
+        return 'gray';
       default:
-        return 'info';
+        return 'sky';
     }
   }, [type]);
 
@@ -45,12 +45,17 @@ export default function Notification({ message, type, duration = 2000, isVisible
   }, [duration, isVisible, handleClose]);
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <Toast className="shadow-lg" onClose={handleClose} tone={tone as any}>
-        <ToastIcon />
-        <div className="text-sm font-medium">{message}</div>
-        <ToastActions />
-      </Toast>
+    <div className="fixed top-4 right-4 z-50 max-w-sm">
+      <div className="relative">
+        <Callout title={message} color={color as any} className="shadow-lg" />
+        <button
+          aria-label="Schließen"
+          onClick={handleClose}
+          className="absolute -right-2 -top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-gray-600 shadow ring-1 ring-black/5 hover:text-gray-800"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
+      </div>
     </div>
   );
 }
