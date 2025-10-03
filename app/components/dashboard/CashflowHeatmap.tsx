@@ -86,6 +86,7 @@ export function CashflowHeatmap({ transactions, initialMonth }: Props) {
   };
 
   const monthLabel = format(month, 'MMMM yyyy', { locale: de });
+  const formatInt = (n: number) => new Intl.NumberFormat('de-CH', { maximumFractionDigits: 0 }).format(n);
 
   return (
     <div className="relative bg-white dark:bg-neutral-950 rounded-2xl shadow-lg hover:shadow-2xl border border-gray-100 dark:border-white/10 transition-shadow duration-300 hover:border-emerald-200 overflow-visible">
@@ -139,9 +140,16 @@ export function CashflowHeatmap({ transactions, initialMonth }: Props) {
                   </span>
                 </div>
                 {day.net !== 0 && (
-                  <div className="absolute bottom-1 right-1 text-[10px] font-semibold tabular-nums">
-                    {day.net > 0 ? '+' : '−'}{Math.abs(day.net) >= 1000 ? `${Math.round(Math.abs(day.net)/1000)}k` : Math.round(Math.abs(day.net))}
-                  </div>
+                  <>
+                    {/* Mobile (keep small with k-abbreviation) */}
+                    <div className="absolute bottom-1 right-1 text-[10px] font-semibold tabular-nums sm:hidden">
+                      {day.net > 0 ? '+' : '−'}{Math.abs(day.net) >= 1000 ? `${Math.round(Math.abs(day.net)/1000)}k` : Math.round(Math.abs(day.net))}
+                    </div>
+                    {/* Tablet/Desktop (bigger, no abbreviation) */}
+                    <div className="absolute bottom-1 right-1 hidden sm:block text-xs md:text-sm lg:text-base font-bold tabular-nums">
+                      {day.net > 0 ? '+' : '−'}{formatInt(Math.abs(day.net))}
+                    </div>
+                  </>
                 )}
               </button>
             );
