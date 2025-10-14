@@ -197,7 +197,9 @@ export default function Planung() {
     // Exclude invoices already settled from future planning
     filtered = filtered.filter(tx => {
       const status = (tx as any).invoice_status as string | undefined;
-      return status !== 'paid' && status !== 'canceled';
+      const paidAt = (tx as any).paid_at as string | Date | undefined | null;
+      const isSettled = status === 'paid' || status === 'canceled' || !!paidAt;
+      return !isSettled;
     });
 
     // Then filter by transaction type

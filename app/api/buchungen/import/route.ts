@@ -704,6 +704,13 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         const detailsChanged = (existing.details || '') !== normalized.details;
         if (amountChanged || dateChanged || detailsChanged) {
           toUpdate.push({ id: existing.id, date: normalized.date, amount: normalized.amount, details: normalized.details });
+        } else {
+          // No field changed -> still present in the feed: refresh last_seen_at to keep it open
+          const { error: seenErr } = await supabase
+            .from('buchungen')
+            .update({ last_seen_at: new Date().toISOString(), invoice_status: 'open', updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+          if (seenErr) throw seenErr;
         }
       }
     } catch (err) {
@@ -715,7 +722,10 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   const markPaidIds: string[] = [];
   for (const inv of existingForUser || []) {
     const invId = (inv as any).invoice_id as string | null;
-    if (invId && !seenIds.has(invId)) markPaidIds.push((inv as any).id);
+    const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
+    const missingByInvoiceId = invId && !seenIds.has(invId);
+    const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
+    if (missingByInvoiceId || missingByDetails) markPaidIds.push((inv as any).id);
   }
 
   // Execute DB operations
