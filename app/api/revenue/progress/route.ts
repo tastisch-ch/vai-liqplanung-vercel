@@ -29,13 +29,20 @@ export async function GET(request: NextRequest) {
       const to = endOfYear(new Date(year, 11, 31)).toISOString();
       const { data: amounts, error: amtErr } = await client
         .from('buchungen')
-        .select('amount,direction,is_simulation,date')
+        .select('amount,direction,is_simulation,is_invoice,invoice_status,date')
         .gte('date', from)
         .lte('date', to);
       if (amtErr) throw amtErr;
 
       const achieved = (amounts || [])
         .filter((r: any) => r.direction === 'Incoming' && !r.is_simulation)
+        .filter((r: any) => {
+          // Count as achieved if it's not an invoice OR the invoice is paid
+          if (r.is_invoice === true) {
+            return r.invoice_status === 'paid';
+          }
+          return true;
+        })
         .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
 
       const remaining = Math.max(0, targetAmount - achieved);
@@ -46,10 +53,10 @@ export async function GET(request: NextRequest) {
         .from('buchungen')
         .select('amount,direction,is_invoice,invoice_status,date')
         .eq('is_invoice', true)
-        .eq('invoice_status', 'open')
         .eq('direction', 'Incoming')
         .gte('date', from)
-        .lte('date', to);
+        .lte('date', to)
+        .or('invoice_status.is.null,invoice_status.eq.open');
       if (openErr) throw openErr;
       const openInvoicesSum = (openInvoices || []).reduce((s: number, r: any) => s + Number(r.amount || 0), 0);
       return {

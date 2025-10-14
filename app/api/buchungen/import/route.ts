@@ -725,7 +725,19 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
     const missingByInvoiceId = invId && !seenIds.has(invId);
     const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
-    if (missingByInvoiceId || missingByDetails) markPaidIds.push((inv as any).id);
+    if (missingByInvoiceId || missingByDetails) {
+      // Only mark as paid if we've previously seen it (has last_seen_at) to avoid false positives on first run
+      const hasSeen = !!(inv as any).last_seen_at;
+      if (hasSeen) markPaidIds.push((inv as any).id);
+      else {
+        // Initialize last_seen_at for legacy rows so next import can mark properly
+        const { error: legacySeenErr } = await supabase
+          .from('buchungen')
+          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(), is_invoice: true, invoice_status: (inv as any).invoice_status || 'open' })
+          .eq('id', (inv as any).id);
+        if (legacySeenErr) throw legacySeenErr;
+      }
+    }
   }
 
   // Execute DB operations
