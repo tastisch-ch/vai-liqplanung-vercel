@@ -34,14 +34,16 @@ export async function GET(request: NextRequest) {
         .lte('date', to);
       if (amtErr) throw amtErr;
 
+      const todayIso = new Date().toISOString();
       const achieved = (amounts || [])
         .filter((r: any) => r.direction === 'Incoming' && !r.is_simulation)
         .filter((r: any) => {
-          // Count as achieved if it's not an invoice OR the invoice is paid
+          // Paid invoices always count
           if (r.is_invoice === true) {
             return r.invoice_status === 'paid';
           }
-          return true;
+          // Non-invoice income counts as achieved only if it's in the past or today
+          return String(r.date) <= todayIso;
         })
         .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
 
