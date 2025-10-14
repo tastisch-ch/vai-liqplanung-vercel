@@ -37,11 +37,20 @@ export async function loadBuchungen(userId?: string): Promise<Buchung[]> {
       throw new Error(`Failed to load transactions: ${error.message}`);
     }
     
-    // Convert dates and shift past due dates for Incoming transactions
+    // Convert dates safely (parse YYYY-MM-DD as local to avoid UTC shift) and shift past due dates for Incoming
     return (data || []).map(item => {
+      const raw = item.date as unknown as string;
+      let parsed: Date;
+      const isoYmd = /^\d{4}-\d{2}-\d{2}$/;
+      if (typeof raw === 'string' && isoYmd.test(raw)) {
+        const [y, m, d] = raw.split('-').map(Number);
+        parsed = new Date(y, (m as number) - 1, d as number);
+      } else {
+        parsed = new Date(item.date);
+      }
       const transaction = {
         ...item,
-        date: new Date(item.date),
+        date: parsed,
       } as Buchung;
       
       // Apply the dynamic date shifting for past due dates
