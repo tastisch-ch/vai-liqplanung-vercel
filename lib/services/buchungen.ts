@@ -74,7 +74,7 @@ export function shiftPastDueDateIfNeeded(transaction: Buchung): Buchung {
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
   
-  if (transaction.date < today) {
+  if (transaction.date <= today) {
     // For past due dates, shift to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
