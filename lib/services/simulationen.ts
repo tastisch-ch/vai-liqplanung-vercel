@@ -29,11 +29,33 @@ export async function loadSimulationen(userId?: string): Promise<Simulation[]> {
       throw new Error(`Failed to load simulations: ${error.message}`);
     }
     
-    return (data || []).map(item => ({
-      ...item,
-      date: new Date(item.date),
-      end_date: item.end_date ? new Date(item.end_date) : null,
-    })) as Simulation[];
+    // Parse YYYY-MM-DD as local dates to avoid UTC shifting into previous day
+    const isoYmd = /^\d{4}-\d{2}-\d{2}$/;
+    return (data || []).map(item => {
+      const rawDate = item.date as unknown as string;
+      const rawEnd = (item as any).end_date as string | null;
+      let parsedDate: Date;
+      if (typeof rawDate === 'string' && isoYmd.test(rawDate)) {
+        const [y, m, d] = rawDate.split('-').map(Number);
+        parsedDate = new Date(y, (m as number) - 1, d as number);
+      } else {
+        parsedDate = new Date(item.date);
+      }
+      let parsedEnd: Date | null = null;
+      if (rawEnd) {
+        if (isoYmd.test(rawEnd)) {
+          const [y2, m2, d2] = rawEnd.split('-').map(Number);
+          parsedEnd = new Date(y2, (m2 as number) - 1, d2 as number);
+        } else {
+          parsedEnd = new Date(rawEnd);
+        }
+      }
+      return {
+        ...item,
+        date: parsedDate,
+        end_date: parsedEnd,
+      } as Simulation;
+    });
   } catch (error: any) {
     if (error.message && error.message.includes('Failed to load simulations')) {
       throw error;
