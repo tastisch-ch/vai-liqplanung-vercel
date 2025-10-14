@@ -34,17 +34,9 @@ export async function GET(request: NextRequest) {
         .lte('date', to);
       if (amtErr) throw amtErr;
 
-      const todayIso = new Date().toISOString();
+      // Achieved = all incoming invoices in the selected year (regardless of status)
       const achieved = (amounts || [])
-        .filter((r: any) => r.direction === 'Incoming' && !r.is_simulation)
-        .filter((r: any) => {
-          // Paid invoices always count
-          if (r.is_invoice === true) {
-            return r.invoice_status === 'paid';
-          }
-          // Non-invoice income counts as achieved only if it's in the past or today
-          return String(r.date) <= todayIso;
-        })
+        .filter((r: any) => r.direction === 'Incoming' && r.is_invoice === true && !r.is_simulation)
         .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
 
       const remaining = Math.max(0, targetAmount - achieved);
