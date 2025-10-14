@@ -6,6 +6,7 @@ import { loadBuchungen, enhanceTransactions, filterTransactions } from "@/lib/se
 import { loadFixkosten, convertFixkostenToBuchungen } from "@/lib/services/fixkosten";
 import { loadMitarbeiter } from "@/lib/services/mitarbeiter";
 import { loadLohnkosten, convertLohnkostenToBuchungen } from "@/lib/services/lohnkosten";
+import { loadSimulationen, convertSimulationenToBuchungen } from "@/lib/services/simulationen";
 import { getUserSettings } from "@/lib/services/user-settings";
 import { getCurrentBalance } from "@/lib/services/daily-balance";
 import { EnhancedTransaction } from "@/models/types";
@@ -83,13 +84,14 @@ export default function Planung() {
     
     try {
       // Load current balance and other data
-      const [currentBalanceData, settings, buchungen, fixkosten, lohnkostenData, overridesData] = await Promise.all([
+      const [currentBalanceData, settings, buchungen, fixkosten, lohnkostenData, overridesData, simulationen] = await Promise.all([
         getCurrentBalance(),
         getUserSettings(user.id),
         loadBuchungen(user.id),
         loadFixkosten(user.id),
         loadLohnkosten(user.id),
-        loadFixkostenOverrides(user.id)
+        loadFixkostenOverrides(user.id),
+        loadSimulationen(user.id)
       ]);
       
       // Store current balance for filter recalculations
@@ -102,11 +104,13 @@ export default function Planung() {
       // Always load all transactions, filtering happens in applyFilters
       const fixkostenBuchungen = convertFixkostenToBuchungen(startDate, endDate, fixkosten, overridesData);
       const lohnBuchungen = convertLohnkostenToBuchungen(startDate, endDate, lohnkostenData.map(item => item.mitarbeiter));
+      const simulationBuchungen = convertSimulationenToBuchungen(startDate, endDate, simulationen);
       
       allTransactions = [
         ...allTransactions,
         ...fixkostenBuchungen,
-        ...lohnBuchungen
+        ...lohnBuchungen,
+        ...simulationBuchungen
       ];
       
       // Enhance transactions with running balance
