@@ -527,7 +527,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
 
     const { data: existingForUser, error: loadUserErr } = await supabase
       .from('buchungen')
-      .select('id, invoice_id, amount, date, details, is_invoice')
+      .select('id, invoice_id, amount, date, details, is_invoice, kategorie, is_simulation, direction, last_seen_at, invoice_status, paid_at')
       .eq('user_id', userId);
 
     if (loadMatchErr) throw loadMatchErr;
@@ -724,9 +724,10 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const invId = (inv as any).invoice_id as string | null;
     const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
     const isSimulation = ((inv as any).kategorie === 'Simulation') || ((inv as any).is_simulation === true);
+    const isIncoming = ((inv as any).direction === 'Incoming');
     const missingByInvoiceId = invId && !seenIds.has(invId);
     const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
-    if ((missingByInvoiceId || missingByDetails) && !isSimulation) {
+    if ((missingByInvoiceId || missingByDetails) && !isSimulation && isIncoming) {
       // Only mark as paid if we've previously seen it (has last_seen_at) to avoid false positives on first run
       const hasSeen = !!(inv as any).last_seen_at;
       if (hasSeen) markPaidIds.push((inv as any).id);
@@ -757,7 +758,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const { error: payErr } = await supabase
       .from('buchungen')
       .update({ invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .in('id', markPaidIds);
+      .in('id', markPaidIds)
+      .eq('direction', 'Incoming');
     if (payErr) throw payErr;
   }
 
