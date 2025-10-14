@@ -51,7 +51,7 @@ export default function Planung() {
   const [endDate, setEndDate] = useState<Date>(() => {
     const now = new Date();
     const futureDate = new Date(now);
-    futureDate.setMonth(now.getMonth() + 3);
+    futureDate.setMonth(now.getMonth() + 6);
     return futureDate;
   });
   
