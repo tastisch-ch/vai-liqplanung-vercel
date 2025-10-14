@@ -198,8 +198,10 @@ export default function Planung() {
     // This ensures consistent date handling with fixkosten generation
     let filtered = allTransactions.filter(tx => tx.date >= startDate);
     
-    // Exclude invoices already settled from future planning
+    // Exclude invoices already settled from future planning (but never exclude simulations)
     filtered = filtered.filter(tx => {
+      const isSimulation = tx.kategorie === 'Simulation' || (tx as any).is_simulation === true;
+      if (isSimulation) return true;
       const status = (tx as any).invoice_status as string | undefined;
       const paidAt = (tx as any).paid_at as string | Date | undefined | null;
       const isSettled = status === 'paid' || status === 'canceled' || !!paidAt;

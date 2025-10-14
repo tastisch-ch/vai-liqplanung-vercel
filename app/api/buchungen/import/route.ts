@@ -723,9 +723,10 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   for (const inv of existingForUser || []) {
     const invId = (inv as any).invoice_id as string | null;
     const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
+    const isSimulation = ((inv as any).kategorie === 'Simulation') || ((inv as any).is_simulation === true);
     const missingByInvoiceId = invId && !seenIds.has(invId);
     const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
-    if (missingByInvoiceId || missingByDetails) {
+    if ((missingByInvoiceId || missingByDetails) && !isSimulation) {
       // Only mark as paid if we've previously seen it (has last_seen_at) to avoid false positives on first run
       const hasSeen = !!(inv as any).last_seen_at;
       if (hasSeen) markPaidIds.push((inv as any).id);
@@ -733,7 +734,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         // Initialize last_seen_at for legacy rows so next import can mark properly
         const { error: legacySeenErr } = await supabase
           .from('buchungen')
-          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(), is_invoice: true, invoice_status: (inv as any).invoice_status || 'open' })
+          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(), invoice_status: (inv as any).invoice_status || 'open' })
           .eq('id', (inv as any).id);
         if (legacySeenErr) throw legacySeenErr;
       }
@@ -755,7 +756,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   if (markPaidIds.length > 0) {
     const { error: payErr } = await supabase
       .from('buchungen')
-      .update({ is_invoice: true, invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .in('id', markPaidIds);
     if (payErr) throw payErr;
   }
