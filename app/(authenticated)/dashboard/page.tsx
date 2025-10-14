@@ -82,7 +82,17 @@ export default function DashboardPage() {
     const runwayMonths = firstNegative
       ? Math.max(0, (firstNegative.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) / 30
       : Infinity;
-    const openIncoming = enhanced.filter(t => (t as any).is_invoice && t.direction === 'Incoming');
+    // Align with Planung: count future incoming; invoices only if not settled
+    const openIncoming = enhanced.filter(t => {
+      if (t.direction !== 'Incoming') return false;
+      const isInv = (t as any).is_invoice === true;
+      if (isInv) {
+        const status = (t as any).invoice_status as string | undefined;
+        const paidAt = (t as any).paid_at as string | undefined | null;
+        return (!status || status === 'open') && !paidAt && t.date >= today;
+      }
+      return t.date >= today;
+    });
     // Outgoing summary should include all future Outgoing (incl. Fixkosten), regardless of is_invoice
     const openOutgoing = enhanced.filter(t => t.direction === 'Outgoing' && t.date >= today && t.date <= horizon);
     return {
@@ -130,10 +140,16 @@ export default function DashboardPage() {
   // monthlyData removed with charts
 
   const today = startOfDay(new Date());
-  const overdueIncoming = useMemo(
-    () => enhanced.filter(t => t.direction === 'Incoming' && (t as any).shifted === true),
-    [enhanced]
-  );
+  const overdueIncoming = useMemo(() => {
+    return enhanced.filter(t => {
+      if (t.direction !== 'Incoming') return false;
+      const isInvoice = (t as any).is_invoice === true;
+      const status = (t as any).invoice_status as string | undefined;
+      const paidAt = (t as any).paid_at as string | undefined | null;
+      const original = (t as any).original_date ? new Date((t as any).original_date) : t.date;
+      return isInvoice && (!status || status === 'open') && !paidAt && original < today;
+    });
+  }, [enhanced]);
   const lmStart = startOfMonth(subMonths(today, 1));
   const lmEnd = endOfMonth(subMonths(today, 1));
   const costStructure = useMemo(() => {
