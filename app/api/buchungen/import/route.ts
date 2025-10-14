@@ -733,7 +733,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   if (markPaidIds.length > 0) {
     const { error: payErr } = await supabase
       .from('buchungen')
-      .update({ invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ is_invoice: true, invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .in('id', markPaidIds);
     if (payErr) throw payErr;
   }
