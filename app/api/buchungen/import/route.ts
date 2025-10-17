@@ -599,6 +599,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
 
   const toInsert: any[] = [];
   const toUpdate: { id: string; date: string; amount: number; details: string }[] = [];
+  const toReopen: string[] = [];
   const seenIds = new Set<string>();
 
   for (const row of jsonData) {
@@ -680,18 +681,22 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
           modified: false,
         });
       } else {
-        // If already paid, do not update fields and keep paid_at as is
-        const alreadyPaid = !!(existing.paid_at);
-        if (alreadyPaid) {
-          // Skip any updates to paid invoices
+        // If invoice reappears while it was marked paid -> reopen
+        const wasPaid = !!(existing.paid_at);
+        const amountChanged = Math.abs((existing as any).amount - normalized.amount) > 0.005;
+        const dateChanged = new Date((existing as any).date).getTime() !== new Date(normalized.date).getTime();
+        const detailsChanged = (((existing as any).details || '') !== normalized.details);
+
+        if (wasPaid) {
+          toReopen.push((existing as any).id);
+          if (amountChanged || dateChanged || detailsChanged) {
+            toUpdate.push({ id: (existing as any).id, date: normalized.date, amount: normalized.amount, details: normalized.details });
+          }
         } else {
-          const amountChanged = Math.abs((existing as any).amount - normalized.amount) > 0.005;
-          const dateChanged = new Date((existing as any).date).getTime() !== new Date(normalized.date).getTime();
-          const detailsChanged = (((existing as any).details || '') !== normalized.details);
           if (amountChanged || dateChanged || detailsChanged) {
             toUpdate.push({ id: (existing as any).id, date: normalized.date, amount: normalized.amount, details: normalized.details });
           } else {
-            // No field changed -> still present in the feed: refresh last_seen_at to keep it open
+            // No field changed -> still present in the feed: refresh last_seen_at to keep it open (not counted as update)
             const { error: seenErr } = await supabase
               .from('buchungen')
               .update({ last_seen_at: new Date().toISOString(), invoice_status: 'open', updated_at: new Date().toISOString() })
@@ -726,6 +731,15 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const { error: insErr } = await supabase.from('buchungen').insert(toInsert);
     if (insErr) throw insErr;
   }
+  if (toReopen.length > 0) {
+    const { error: reopenErr } = await supabase
+      .from('buchungen')
+      .update({ invoice_status: 'open', paid_at: null, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .in('id', toReopen)
+      .eq('direction', 'Incoming')
+      .eq('is_invoice', true);
+    if (reopenErr) throw reopenErr;
+  }
   for (const upd of toUpdate) {
     const { error: updErr } = await supabase
       .from('buchungen')
@@ -744,7 +758,9 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     if (payErr) throw payErr;
   }
 
-    return { newCount: toInsert.length, updatedCount: toUpdate.length, removedCount: 0, markedPaidCount: markPaidIds.length };
+    // Count: updated includes field changes + paid/unpaid toggles; last_seen refreshes are not counted
+    const updatedCount = toUpdate.length + markPaidIds.length + toReopen.length;
+    return { newCount: toInsert.length, updatedCount, removedCount: 0, markedPaidCount: markPaidIds.length, reopenedCount: toReopen.length };
   } catch (error) {
     console.error('Error in upsertExcelInvoices:', error);
     throw error;
