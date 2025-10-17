@@ -518,44 +518,15 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   const supabase = createRouteHandlerSupabaseClient(request);
 
   try {
-    // Load existing invoices (global for matching) and user-specific for removals
-    console.log('Loading existing invoices (global + per-user)');
+    // Load existing invoices globally (matching + removals)
+    console.log('Loading existing invoices (global)');
 
     const { data: existingForMatching, error: loadMatchErr } = await supabase
       .from('buchungen')
-      .select('id, invoice_id, amount, date, details, is_invoice, user_id, invoice_status, paid_at');
-
-    const { data: existingForUser, error: loadUserErr } = await supabase
-      .from('buchungen')
-      .select('id, invoice_id, amount, date, details, is_invoice, kategorie, is_simulation, direction, last_seen_at, invoice_status, paid_at')
-      .eq('user_id', userId);
+      .select('id, invoice_id, amount, date, details, is_invoice, user_id, invoice_status, paid_at, kategorie, is_simulation, direction, last_seen_at');
 
     if (loadMatchErr) throw loadMatchErr;
-    if (loadUserErr) throw loadUserErr;
-
-    // Also check specifically for the invoice_id that's causing the constraint violation (debug)
-    const { data: conflictingRecord, error: conflictErr } = await supabase
-      .from('buchungen')
-      .select('id, invoice_id, amount, date, details, is_invoice, user_id')
-      .eq('invoice_id', 'desitin pharma gmbh des')
-      .eq('user_id', userId);
-      
-    console.log('Conflicting record check:', { conflictingRecord, conflictErr });
-    
-    console.log('Loaded for matching:', existingForMatching?.length || 0, 'for user:', existingForUser?.length || 0);
-    
-    if (loadUserErr) {
-      console.error('Error loading user invoices:', loadUserErr as any);
-      // If columns don't exist, treat as empty result
-      if ((loadUserErr as any).code === '42703') {
-        console.log('invoice_id or is_invoice columns do not exist, treating as empty');
-        const existingByInvoiceId = new Map();
-        return { newCount: 0, updatedCount: 0, removedCount: 0 };
-      }
-      throw new Error(`Failed to load user invoices: ${(loadUserErr as any)?.message || String(loadUserErr)}`);
-    }
-    
-    console.log('Found', existingForUser?.length || 0, 'existing user invoices');
+    console.log('Loaded for matching:', existingForMatching?.length || 0);
 
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string; invoice_status?: string | null; paid_at?: string | null; user_id?: string }>();
   for (const inv of existingForMatching || []) {
@@ -626,15 +597,6 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
     console.log('Extracted', jsonData.length, 'rows from Excel file');
 
-  // Per-user map for safe updates and paid checks
-  const userByInvoiceKey = new Map<string, any>();
-  for (const inv of existingForUser || []) {
-    const invId = (inv as any).invoice_id as string | null;
-    const details = (inv as any).details as string | null;
-    if (invId) userByInvoiceKey.set(String(invId).trim().toLowerCase(), inv);
-    if (details) userByInvoiceKey.set(String(details).trim().toLowerCase(), inv);
-  }
-
   const toInsert: any[] = [];
   const toUpdate: { id: string; date: string; amount: number; details: string }[] = [];
   const seenIds = new Set<string>();
@@ -702,8 +664,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         direction: 'Incoming' as const,
       };
 
-      const userExisting = userByInvoiceKey.get(invoiceId);
-      if (!userExisting) {
+      const existing = existingByInvoiceId.get(invoiceId);
+      if (!existing) {
         toInsert.push({
           id: uuidv4(),
           ...normalized,
@@ -719,22 +681,21 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
         });
       } else {
         // If already paid, do not update fields and keep paid_at as is
-        const alreadyPaid = !!((userExisting as any).paid_at);
+        const alreadyPaid = !!(existing.paid_at);
         if (alreadyPaid) {
           // Skip any updates to paid invoices
         } else {
-          const amountChanged = Math.abs((userExisting as any).amount - normalized.amount) > 0.005;
-          const dateChanged = new Date((userExisting as any).date).getTime() !== new Date(normalized.date).getTime();
-          const detailsChanged = (((userExisting as any).details || '') !== normalized.details);
+          const amountChanged = Math.abs((existing as any).amount - normalized.amount) > 0.005;
+          const dateChanged = new Date((existing as any).date).getTime() !== new Date(normalized.date).getTime();
+          const detailsChanged = (((existing as any).details || '') !== normalized.details);
           if (amountChanged || dateChanged || detailsChanged) {
-            toUpdate.push({ id: (userExisting as any).id, date: normalized.date, amount: normalized.amount, details: normalized.details });
+            toUpdate.push({ id: (existing as any).id, date: normalized.date, amount: normalized.amount, details: normalized.details });
           } else {
             // No field changed -> still present in the feed: refresh last_seen_at to keep it open
             const { error: seenErr } = await supabase
               .from('buchungen')
               .update({ last_seen_at: new Date().toISOString(), invoice_status: 'open', updated_at: new Date().toISOString() })
-              .eq('id', (userExisting as any).id)
-              .eq('user_id', userId);
+              .eq('id', (existing as any).id);
             if (seenErr) throw seenErr;
           }
         }
@@ -744,9 +705,9 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     }
   }
 
-  // Determine invoices no longer present: mark as paid immediately (Incoming only, non-simulations)
+  // Determine invoices no longer present (globally): mark as paid immediately (Incoming only, non-simulations)
   const markPaidIds: string[] = [];
-  for (const inv of existingForUser || []) {
+  for (const inv of existingForMatching || []) {
     const invIdRaw = (inv as any).invoice_id as string | null;
     const invId = invIdRaw ? String(invIdRaw).trim().toLowerCase() : null;
     const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
@@ -756,7 +717,6 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const missingByInvoiceId = invId && !seenIds.has(invId);
     const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
     if ((missingByInvoiceId || missingByDetails) && !isSimulation && isIncoming && !alreadyPaid) {
-      // Immediately mark as paid; do not rely on last_seen_at prerequisite
       markPaidIds.push((inv as any).id);
     }
   }
@@ -770,8 +730,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     const { error: updErr } = await supabase
       .from('buchungen')
       .update({ date: upd.date, amount: upd.amount, details: upd.details, invoice_status: 'open', last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', upd.id)
-      .eq('user_id', userId);
+      .eq('id', upd.id);
     if (updErr) throw updErr;
   }
   if (markPaidIds.length > 0) {
@@ -781,7 +740,6 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
       .update({ invoice_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .in('id', markPaidIds)
       .eq('direction', 'Incoming')
-      .eq('user_id', userId)
       .eq('is_invoice', true);
     if (payErr) throw payErr;
   }
