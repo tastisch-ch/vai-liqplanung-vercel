@@ -733,27 +733,19 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     }
   }
 
-  // Determine invoices no longer present: mark as paid instead of delete
+  // Determine invoices no longer present: mark as paid immediately (Incoming only, non-simulations)
   const markPaidIds: string[] = [];
   for (const inv of existingForUser || []) {
     const invId = (inv as any).invoice_id as string | null;
     const detailsKey = ((inv as any).details || '').toString().trim().toLowerCase();
     const isSimulation = ((inv as any).kategorie === 'Simulation') || ((inv as any).is_simulation === true);
     const isIncoming = ((inv as any).direction === 'Incoming');
+    const alreadyPaid = !!(inv as any).paid_at;
     const missingByInvoiceId = invId && !seenIds.has(invId);
     const missingByDetails = !invId && detailsKey && !seenIds.has(detailsKey);
-    if ((missingByInvoiceId || missingByDetails) && !isSimulation && isIncoming) {
-      // Only mark as paid if we've previously seen it (has last_seen_at) to avoid false positives on first run
-      const hasSeen = !!(inv as any).last_seen_at;
-      if (hasSeen) markPaidIds.push((inv as any).id);
-      else {
-        // Initialize last_seen_at for legacy rows so next import can mark properly
-        const { error: legacySeenErr } = await supabase
-          .from('buchungen')
-          .update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(), invoice_status: (inv as any).invoice_status || 'open' })
-          .eq('id', (inv as any).id);
-        if (legacySeenErr) throw legacySeenErr;
-      }
+    if ((missingByInvoiceId || missingByDetails) && !isSimulation && isIncoming && !alreadyPaid) {
+      // Immediately mark as paid; do not rely on last_seen_at prerequisite
+      markPaidIds.push((inv as any).id);
     }
   }
 
