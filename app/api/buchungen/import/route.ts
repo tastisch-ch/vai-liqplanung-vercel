@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 import { parseDateFallback } from '@/lib/date-utils';
 import { parseCHF } from '@/lib/currency';
 import * as XLSX from 'xlsx';
+import { Buffer } from 'node:buffer';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -579,11 +581,18 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel
+    // Read Excel (Node Buffer to avoid ArrayBuffer allocation issues on edge)
     console.log('Reading Excel file...');
     const arrayBuffer = await file.arrayBuffer();
-    const data = new Uint8Array(arrayBuffer);
-    const workbook = XLSX.read(data, { type: 'array' });
+    let workbook: XLSX.WorkBook;
+    try {
+      const nodeBuffer = Buffer.from(arrayBuffer);
+      workbook = XLSX.read(nodeBuffer, { type: 'buffer' });
+    } catch (e) {
+      // Fallback to binary string
+      const binary = Buffer.from(arrayBuffer).toString('binary');
+      workbook = XLSX.read(binary, { type: 'binary' });
+    }
     
     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
       throw new Error('Excel file contains no sheets');
