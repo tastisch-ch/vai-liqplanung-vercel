@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 import { parseDateFallback } from '@/lib/date-utils';
 import { parseCHF } from '@/lib/currency';
@@ -523,11 +524,14 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     // Load existing invoices globally (matching + removals)
     console.log('Loading existing invoices (global)');
 
-    const { data: existingForMatching, error: loadMatchErr } = await supabase
+    let { data: existingForMatching, error: loadMatchErr } = await supabase
       .from('buchungen')
       .select('id, invoice_id, amount, date, details, is_invoice, user_id, invoice_status, paid_at, kategorie, is_simulation, direction, last_seen_at');
 
-    if (loadMatchErr) throw loadMatchErr;
+    if (loadMatchErr) {
+      console.warn('Loading existing invoices failed (non-fatal), continuing with empty set:', loadMatchErr.message);
+      existingForMatching = [] as any[];
+    }
     console.log('Loaded for matching:', existingForMatching?.length || 0);
 
   const existingByInvoiceId = new Map<string, { id: string; amount: number; date: string; details: string; invoice_status?: string | null; paid_at?: string | null; user_id?: string }>();
@@ -706,11 +710,15 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
             toUpdate.push({ id: (existing as any).id, date: normalized.date, amount: normalized.amount, details: normalized.details });
           } else {
             // No field changed -> still present in the feed: refresh last_seen_at to keep it open (not counted as update)
-            const { error: seenErr } = await supabase
-              .from('buchungen')
-              .update({ last_seen_at: new Date().toISOString(), invoice_status: 'open', updated_at: new Date().toISOString() })
-              .eq('id', (existing as any).id);
-            if (seenErr) throw seenErr;
+            try {
+              const { error: seenErr } = await supabase
+                .from('buchungen')
+                .update({ last_seen_at: new Date().toISOString(), invoice_status: 'open', updated_at: new Date().toISOString() })
+                .eq('id', (existing as any).id);
+              if (seenErr) console.warn('last_seen refresh failed (non-fatal):', seenErr.message);
+            } catch (e) {
+              console.warn('last_seen refresh threw (non-fatal):', e instanceof Error ? e.message : e);
+            }
           }
         }
       }
