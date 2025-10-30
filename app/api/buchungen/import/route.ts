@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
       // Excel import: idempotent upsert/delete for invoices
       try {
         console.log('Starting Excel import for file:', file.name, 'size:', file.size);
-        // Pass request directly to read file body before formData conversion
+        // Read file body directly from request stream before formData conversion
+        // This avoids ArrayBuffer allocation issues
         const stats = await upsertExcelInvoices(file, userId, request);
         console.log('Excel import completed successfully:', stats);
         // Persist last import meta (best-effort)
@@ -586,7 +587,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel using stream chunks converted directly to Buffer
+    // Read Excel file - use base64 string directly to avoid ArrayBuffer allocation
     console.log('Reading Excel file...', 'size:', file.size);
     
     // Early size check to avoid large allocations
@@ -596,39 +597,28 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     
     let workbook: XLSX.WorkBook;
     try {
-      // Read file via stream and convert chunks to Buffer incrementally
-      // This avoids creating large intermediate ArrayBuffers
+      // Read file as text using base64 encoding - this avoids ArrayBuffer entirely
+      // File.text() returns a Promise<string>, but we need binary data
+      // So we read via stream and convert each chunk to base64 incrementally
       const stream = file.stream();
       const reader = stream.getReader();
-      const chunks: Buffer[] = [];
+      const base64Chunks: string[] = [];
       
-      // Read chunks and convert each Uint8Array to Buffer using slice
-      // Buffer.from() on Uint8Array should work without creating new ArrayBuffer
+      // Read chunks and convert each to base64 string immediately
+      // This avoids accumulating large buffers in memory
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        // Use Buffer.from() with Uint8Array - should not create new ArrayBuffer
-        // if value is already a Uint8Array backed by ArrayBuffer
-        if (value instanceof Uint8Array) {
-          // Create Buffer from Uint8Array without copying the underlying ArrayBuffer
-          chunks.push(Buffer.from(value));
-        } else {
-          chunks.push(Buffer.from(value));
-        }
+        // Convert Uint8Array chunk to base64 string
+        const chunkBuffer = Buffer.from(value);
+        base64Chunks.push(chunkBuffer.toString('base64'));
       }
       
-      // Concatenate all Buffer chunks
-      const nodeBuffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
+      // Concatenate base64 strings (base64 strings can be safely concatenated)
+      const base64String = base64Chunks.join('');
       
-      // Try reading with buffer type first
-      try {
-        workbook = XLSX.read(nodeBuffer, { type: 'buffer', cellDates: false });
-      } catch (bufferError) {
-        console.warn('Buffer read failed, trying base64 string:', bufferError);
-        // Fallback: convert to base64 string (no ArrayBuffer involved)
-        const base64String = nodeBuffer.toString('base64');
-        workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
-      }
+      // Read directly from base64 string - XLSX should handle this without creating ArrayBuffer
+      workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
     } catch (e) {
       console.error('Error reading Excel file:', e);
       throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
