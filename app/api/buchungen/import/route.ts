@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { createRouteHandlerSupabaseClient } from '@/lib/supabase/server';
 import { parseDateFallback } from '@/lib/date-utils';
 import { parseCHF } from '@/lib/currency';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Buffer } from 'node:buffer';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -375,145 +375,6 @@ async function processHTMLImport(htmlData: string, userId: string, request: Next
   return { data: processedRows, duplicates: duplicateCount };
 }
 
-/**
- * Process Excel file with invoice data
- */
-async function processExcelImport(file: File, userId: string, request: NextRequest) {
-  // Get existing transactions to check for duplicates
-  const supabase = createRouteHandlerSupabaseClient(request);
-  const { data: existingTransactions } = await supabase
-    .from('buchungen')
-    .select('details, direction, amount, date')
-    .eq('user_id', userId);
-  
-  // Read the Excel file
-  const arrayBuffer = await file.arrayBuffer();
-  const data = new Uint8Array(arrayBuffer);
-  const workbook = XLSX.read(data, { type: 'array' });
-  
-  // Get the first sheet
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-  
-  console.log(`Extracted ${jsonData.length} rows from Excel file`);
-  if (jsonData.length > 0) {
-    console.log('Sample row:', JSON.stringify(jsonData[0]).substring(0, 200) + '...');
-  }
-  
-  // Expected columns for invoice data
-  const processedRows = [];
-  let duplicateCount = 0;
-  
-  for (const row of jsonData) {
-    try {
-      // Try to find expected columns with different possible names
-      const dateDue = findValueFromPossibleKeys(row, [
-        'Zahlbar bis', 'Fällig am', 'Fälligkeit', 'Datum', 'Zahlungsziel'
-      ]);
-      
-      const customer = findValueFromPossibleKeys(row, [
-        'Kunde', 'Kundenname', 'Firma', 'Name', 'Empfänger'
-      ]);
-      
-      const customerNumber = findValueFromPossibleKeys(row, [
-        'Kundennummer', 'KundenNr', 'Kunden-Nr', 'Nummer', 'Nr'
-      ]);
-      
-      const amount = findValueFromPossibleKeys(row, [
-        'Brutto', 'Betrag', 'Summe', 'Total', 'Rechnungsbetrag'
-      ]);
-      
-      // Parse values safely
-      // IMPORTANT: Don't use Excel dates directly, they cause timezone issues
-      let finalDate = new Date();
-      
-      // Log the original dateDue value for debugging
-      console.log('Original dateDue value:', {
-        value: dateDue,
-        type: typeof dateDue,
-        valueAsString: String(dateDue)
-      });
-      
-      // Handle Excel numeric dates (Excel stores dates as numbers)
-      if (dateDue !== null && dateDue !== undefined) {
-        if (typeof dateDue === 'number') {
-          // Convert Excel date number to JavaScript Date
-          // Excel dates are number of days since 1900-01-01
-          // But there's a leap year bug, so we need to adjust
-          try {
-            // Adjust for Excel's leap year bug (Excel thinks 1900 was a leap year)
-            const excelEpoch = new Date(1899, 11, 30);
-            const msPerDay = 24 * 60 * 60 * 1000;
-            finalDate = new Date(excelEpoch.getTime() + dateDue * msPerDay);
-            console.log(`Converted Excel numeric date ${dateDue} to ${finalDate.toISOString()}`);
-          } catch (error) {
-            console.error('Error converting Excel date number:', error);
-            // Use today's date as fallback
-            finalDate = new Date();
-          }
-        } else {
-          // Try to parse string date
-          const parsedDate = parseDateFallback(String(dateDue));
-          if (parsedDate) {
-            finalDate = parsedDate;
-            console.log(`Parsed string date "${dateDue}" to ${finalDate.toISOString()}`);
-          } else {
-            console.warn(`Could not parse date string "${dateDue}", using today's date`);
-            // Use today's date as fallback
-            finalDate = new Date();
-          }
-        }
-      } else {
-        console.warn('No date value found, using today\'s date');
-        // No date provided, use today's date
-        finalDate = new Date();
-      }
-      
-      // Parse amount safely
-      let parsedAmount = 0;
-      if (amount) {
-        if (typeof amount === 'string') {
-          // Remove currency symbols and other non-numeric characters
-          parsedAmount = parseFloat(amount.replace(/[^\d.-]/g, ''));
-        } else {
-          parsedAmount = Number(amount);
-        }
-      }
-      
-      if (customer && !isNaN(parsedAmount)) {
-        // Create description from customer and number
-        const details = customerNumber 
-          ? `${customer} ${customerNumber}`
-          : `${customer}`;
-        
-        // Check if this is a duplicate 
-        const isDuplicate = checkIfDuplicate(
-          existingTransactions || [],
-          details,
-          'Incoming',
-          Math.abs(parsedAmount),
-          finalDate
-        );
-        
-        if (isDuplicate) {
-          duplicateCount++;
-          continue;
-        }
-        
-        processedRows.push({
-          date: finalDate.toISOString(),
-          details: details,
-          amount: Math.abs(parsedAmount),
-          direction: 'Incoming' // Always incoming for invoices
-        });
-      }
-    } catch (rowError) {
-      console.error('Error processing Excel row:', rowError);
-    }
-  }
-  
-  return { data: processedRows, duplicates: duplicateCount };
-}
 
 /**
  * Excel upsert/delete for invoices keyed by a stable invoice_id derived from details
@@ -589,38 +450,34 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel file - use base64 string if available, otherwise read from file
-    let workbook: XLSX.WorkBook;
+    // Read Excel file - use exceljs instead of XLSX to avoid ArrayBuffer allocation issues
+    let workbook: ExcelJS.Workbook;
     
     if (fileBase64) {
-      // Use base64 string directly - XLSX will handle it
-      // Calculate approximate file size from base64 (base64 is ~33% larger than binary)
+      // Use base64 string - convert to Buffer for exceljs
       const approximateSize = (fileBase64.length * 3) / 4;
       console.log('Reading Excel from base64 string, length:', fileBase64.length, 'approximate size:', approximateSize, 'bytes');
       
-      // Check if file is too large (5MB limit for serverless memory constraints)
       if (approximateSize > 5 * 1024 * 1024) {
-        throw new Error(`Excel file too large: ${(approximateSize / 1024 / 1024).toFixed(2)}MB (max 5MB). XLSX library requires full file in memory.`);
+        throw new Error(`Excel file too large: ${(approximateSize / 1024 / 1024).toFixed(2)}MB (max 5MB)`);
       }
       
       try {
-        workbook = XLSX.read(fileBase64, { type: 'base64', cellDates: false });
+        const buffer = Buffer.from(fileBase64, 'base64');
+        workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer as any);
+        console.log('Excel loaded from base64, sheets:', workbook.worksheets.length);
       } catch (e) {
         console.error('Error reading Excel from base64:', e);
-        if (e instanceof RangeError && e.message.includes('Array buffer allocation')) {
-          throw new Error(`Excel file too large for serverless memory limits. File size: ${(approximateSize / 1024 / 1024).toFixed(2)}MB. Please reduce file size or split into smaller files.`);
-        }
         throw new Error(`Failed to read Excel file from base64: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     } else if (file) {
-      // Read Excel file directly as Buffer - avoid base64 conversion which causes memory issues
-      console.log('Reading Excel file directly...', {
+      console.log('Reading Excel file with exceljs...', {
         fileName: file.name,
         fileSize: file.size,
         fileSizeMB: (file.size / 1024 / 1024).toFixed(4),
         fileType: file.type,
         nodeVersion: process.version,
-        nodeEnv: process.env.NODE_ENV,
         memoryUsage: process.memoryUsage ? {
           rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
           heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB',
@@ -628,50 +485,17 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
         } : 'N/A'
       });
       
-      // Early size check to avoid large allocations
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit for serverless
+      if (file.size > 5 * 1024 * 1024) {
         throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 5MB)`);
       }
       
       try {
-        console.log('Step 1: Starting to read file stream...');
-        // Read file via stream and convert directly to Uint8Array without Buffer
-        // XLSX can read directly from Uint8Array, avoiding Buffer.allocUnsafe() issues
-        const stream = file.stream();
-        const reader = stream.getReader();
-        const chunks: Uint8Array[] = [];
-        let totalBytesRead = 0;
-        
-        console.log('Step 2: Reading chunks from stream...');
-        // Read chunks and keep as Uint8Array
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value instanceof Uint8Array) {
-            totalBytesRead += value.length;
-            chunks.push(value);
-            console.log(`Step 2.${chunks.length}: Read chunk ${chunks.length}, size: ${value.length} bytes, total: ${totalBytesRead} bytes`);
-          }
-        }
-        
-        console.log(`Step 3: Concatenating ${chunks.length} chunks into single Uint8Array...`);
-        // Concatenate Uint8Array chunks into single array
-        let combinedLength = 0;
-        for (const chunk of chunks) {
-          combinedLength += chunk.length;
-        }
-        const combinedArray = new Uint8Array(combinedLength);
-        let offset = 0;
-        for (const chunk of chunks) {
-          combinedArray.set(chunk, offset);
-          offset += chunk.length;
-        }
-        console.log(`Step 4: Uint8Array created, size: ${combinedArray.length} bytes`);
-        
-        console.log('Step 5: Calling XLSX.read() with Uint8Array (type: array)...');
-        // Read directly from Uint8Array - this avoids Buffer.allocUnsafe() in XLSX
-        workbook = XLSX.read(combinedArray, { type: 'array', cellDates: false });
-        console.log('Step 6: XLSX.read() completed successfully, sheets:', workbook.SheetNames?.length || 0);
+        // ExcelJS needs a Buffer, not a stream - read file as Buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer as any);
+        console.log('Excel loaded successfully, sheets:', workbook.worksheets.length);
       } catch (e) {
         console.error('Error reading Excel file:', {
           error: e instanceof Error ? e.message : String(e),
@@ -683,25 +507,53 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
             heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
           } : 'N/A'
         });
-        if (e instanceof RangeError && e.message.includes('Array buffer allocation')) {
-          throw new Error(`Excel file too large for serverless memory limits. File size: ${(file.size / 1024 / 1024).toFixed(2)}MB. XLSX library requires full file in memory.`);
-        }
         throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     } else {
       throw new Error('No file or base64 string provided');
     }
     
-    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    if (!workbook.worksheets || workbook.worksheets.length === 0) {
       throw new Error('Excel file contains no sheets');
     }
     
-    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const worksheet = workbook.worksheets[0];
     if (!worksheet) {
       throw new Error('Failed to read first sheet from Excel file');
     }
     
-    const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+    // Convert ExcelJS worksheet to JSON array
+    const jsonData: any[] = [];
+    const headerRow: string[] = [];
+    let isFirstRow = true;
+    
+    worksheet.eachRow((row, rowNumber) => {
+      if (isFirstRow) {
+        // First row is headers
+        row.eachCell((cell, colNumber) => {
+          headerRow[colNumber - 1] = cell.text || '';
+        });
+        isFirstRow = false;
+      } else {
+        // Data rows
+        const rowData: any = {};
+        row.eachCell((cell, colNumber) => {
+          const header = headerRow[colNumber - 1];
+          if (header) {
+            // Handle different cell types
+            if (cell.value instanceof Date) {
+              rowData[header] = cell.value;
+            } else if (typeof cell.value === 'number') {
+              rowData[header] = cell.value;
+            } else {
+              rowData[header] = cell.text || '';
+            }
+          }
+        });
+        jsonData.push(rowData);
+      }
+    });
+    
     console.log('Extracted', jsonData.length, 'rows from Excel file');
 
   const toInsert: any[] = [];
