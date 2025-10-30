@@ -585,17 +585,48 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel (Node Buffer to avoid ArrayBuffer allocation issues on edge)
+    // Read Excel (Node Buffer via stream to avoid ArrayBuffer allocation issues)
     console.log('Reading Excel file...');
-    const arrayBuffer = await file.arrayBuffer();
+    
+    // Early size check to avoid large allocations
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 10MB)`);
+    }
+    
     let workbook: XLSX.WorkBook;
     try {
-      const nodeBuffer = Buffer.from(arrayBuffer);
+      // Read file via stream to avoid large ArrayBuffer allocation
+      const stream = file.stream();
+      const chunks: Uint8Array[] = [];
+      const reader = stream.getReader();
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      
+      // Combine chunks into single Buffer without intermediate ArrayBuffer
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const nodeBuffer = Buffer.allocUnsafe(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        nodeBuffer.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
       workbook = XLSX.read(nodeBuffer, { type: 'buffer' });
     } catch (e) {
-      // Fallback to binary string
-      const binary = Buffer.from(arrayBuffer).toString('binary');
-      workbook = XLSX.read(binary, { type: 'binary' });
+      console.error('Error reading Excel via stream, trying fallback:', e);
+      // Fallback: last resort - this may still fail for very large files
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const binary = Buffer.from(arrayBuffer).toString('binary');
+        workbook = XLSX.read(binary, { type: 'binary' });
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      }
     }
     
     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
