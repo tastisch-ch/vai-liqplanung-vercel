@@ -247,6 +247,15 @@ export default function DatenImport() {
       return;
     }
 
+    // Check file size - serverless memory limits require small files
+    const maxSize = 5 * 1024 * 1024; // 5MB limit
+    if (file.size > maxSize) {
+      const msg = `Excel-Datei zu groß: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 5MB). Bitte reduzieren Sie die Dateigröße oder teilen Sie sie in kleinere Dateien auf.`;
+      setImportError(msg);
+      showNotification(msg, 'error');
+      return;
+    }
+
     setIsImporting(true);
     setImportError(null);
     setImportSuccess(null);

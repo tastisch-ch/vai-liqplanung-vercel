@@ -594,11 +594,22 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
     
     if (fileBase64) {
       // Use base64 string directly - XLSX will handle it
-      console.log('Reading Excel from base64 string, length:', fileBase64.length);
+      // Calculate approximate file size from base64 (base64 is ~33% larger than binary)
+      const approximateSize = (fileBase64.length * 3) / 4;
+      console.log('Reading Excel from base64 string, length:', fileBase64.length, 'approximate size:', approximateSize, 'bytes');
+      
+      // Check if file is too large (5MB limit for serverless memory constraints)
+      if (approximateSize > 5 * 1024 * 1024) {
+        throw new Error(`Excel file too large: ${(approximateSize / 1024 / 1024).toFixed(2)}MB (max 5MB). XLSX library requires full file in memory.`);
+      }
+      
       try {
         workbook = XLSX.read(fileBase64, { type: 'base64', cellDates: false });
       } catch (e) {
         console.error('Error reading Excel from base64:', e);
+        if (e instanceof RangeError && e.message.includes('Array buffer allocation')) {
+          throw new Error(`Excel file too large for serverless memory limits. File size: ${(approximateSize / 1024 / 1024).toFixed(2)}MB. Please reduce file size or split into smaller files.`);
+        }
         throw new Error(`Failed to read Excel file from base64: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     } else if (file) {
