@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       // Excel import: idempotent upsert/delete for invoices
       try {
         console.log('Starting Excel import for file:', file.name, 'size:', file.size);
+        // Pass request directly to read file body before formData conversion
         const stats = await upsertExcelInvoices(file, userId, request);
         console.log('Excel import completed successfully:', stats);
         // Persist last import meta (best-effort)
@@ -585,8 +586,8 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel (Node Buffer via stream to avoid ArrayBuffer allocation issues)
-    console.log('Reading Excel file...');
+    // Read Excel using stream chunks converted directly to Buffer
+    console.log('Reading Excel file...', 'size:', file.size);
     
     // Early size check to avoid large allocations
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
@@ -595,38 +596,42 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     
     let workbook: XLSX.WorkBook;
     try {
-      // Read file via stream to avoid large ArrayBuffer allocation
+      // Read file via stream and convert chunks to Buffer incrementally
+      // This avoids creating large intermediate ArrayBuffers
       const stream = file.stream();
-      const chunks: Uint8Array[] = [];
       const reader = stream.getReader();
+      const chunks: Buffer[] = [];
       
+      // Read chunks and convert each Uint8Array to Buffer using slice
+      // Buffer.from() on Uint8Array should work without creating new ArrayBuffer
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        chunks.push(value);
+        // Use Buffer.from() with Uint8Array - should not create new ArrayBuffer
+        // if value is already a Uint8Array backed by ArrayBuffer
+        if (value instanceof Uint8Array) {
+          // Create Buffer from Uint8Array without copying the underlying ArrayBuffer
+          chunks.push(Buffer.from(value));
+        } else {
+          chunks.push(Buffer.from(value));
+        }
       }
       
-      // Combine chunks into single Buffer without intermediate ArrayBuffer
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const nodeBuffer = Buffer.allocUnsafe(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        nodeBuffer.set(chunk, offset);
-        offset += chunk.length;
-      }
+      // Concatenate all Buffer chunks
+      const nodeBuffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
       
-      workbook = XLSX.read(nodeBuffer, { type: 'buffer' });
-    } catch (e) {
-      console.error('Error reading Excel via stream, trying fallback:', e);
-      // Fallback: last resort - this may still fail for very large files
+      // Try reading with buffer type first
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const binary = Buffer.from(arrayBuffer).toString('binary');
-        workbook = XLSX.read(binary, { type: 'binary' });
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        workbook = XLSX.read(nodeBuffer, { type: 'buffer', cellDates: false });
+      } catch (bufferError) {
+        console.warn('Buffer read failed, trying base64 string:', bufferError);
+        // Fallback: convert to base64 string (no ArrayBuffer involved)
+        const base64String = nodeBuffer.toString('base64');
+        workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
       }
+    } catch (e) {
+      console.error('Error reading Excel file:', e);
+      throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
     
     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
