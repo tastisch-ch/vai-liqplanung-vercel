@@ -263,9 +263,42 @@ export default function DatenImport() {
         setAuthDebug(`Auth refresh error: ${authError instanceof Error ? authError.message : 'Unknown error'}`);
       }
 
+      // Convert file to base64 on client side to avoid ArrayBuffer allocation issues on server
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Convert to base64 string chunk by chunk to avoid large allocations
+      const chunkSize = 8192; // 8KB chunks
+      const base64Chunks: string[] = [];
+      const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      
+      const uint8ToBase64 = (uint8: Uint8Array): string => {
+        let result = '';
+        let i = 0;
+        while (i < uint8.length) {
+          const a = uint8[i++];
+          const b = i < uint8.length ? uint8[i++] : 0;
+          const c = i < uint8.length ? uint8[i++] : 0;
+          const bitmap = (a << 16) | (b << 8) | c;
+          result += base64Chars.charAt((bitmap >> 18) & 63);
+          result += base64Chars.charAt((bitmap >> 12) & 63);
+          result += i - 2 < uint8.length ? base64Chars.charAt((bitmap >> 6) & 63) : '=';
+          result += i - 1 < uint8.length ? base64Chars.charAt(bitmap & 63) : '=';
+        }
+        return result;
+      };
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, Math.min(i + chunkSize, uint8Array.length));
+        base64Chunks.push(uint8ToBase64(chunk));
+      }
+      
+      const base64String = base64Chunks.join('');
+      
       const formData = new FormData();
       formData.append('type', 'excel');
-      formData.append('file', file);
+      formData.append('fileBase64', base64String);
+      formData.append('fileName', file.name);
 
       const response = await fetch('/api/buchungen/import', {
         method: 'POST',

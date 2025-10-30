@@ -83,8 +83,10 @@ export async function POST(request: NextRequest) {
     const importType = formData.get('type') as string;
     const importData = formData.get('data') as string;
     const file = formData.get('file') as File | null;
+    const fileBase64 = formData.get('fileBase64') as string | null;
+    const fileName = formData.get('fileName') as string | null;
     
-    console.log('Processing import:', { importType, hasData: !!importData, hasFile: !!file });
+    console.log('Processing import:', { importType, hasData: !!importData, hasFile: !!file, hasFileBase64: !!fileBase64 });
     
     let processedData = [];
     let duplicateCount = 0;
@@ -95,13 +97,13 @@ export async function POST(request: NextRequest) {
       const { data, duplicates } = await processHTMLImport(importData, userId, request);
       processedData = data;
       duplicateCount = duplicates;
-    } else if (importType === 'excel' && file) {
+    } else if (importType === 'excel' && (file || fileBase64)) {
       // Excel import: idempotent upsert/delete for invoices
       try {
-        console.log('Starting Excel import for file:', file.name, 'size:', file.size);
-        // Read file body directly from request stream before formData conversion
-        // This avoids ArrayBuffer allocation issues
-        const stats = await upsertExcelInvoices(file, userId, request);
+        const fileToUse = file || (fileBase64 ? { name: fileName || 'import.xlsx', size: (fileBase64.length * 3) / 4 } : null);
+        console.log('Starting Excel import for file:', fileToUse?.name, 'size:', fileToUse?.size, 'hasBase64:', !!fileBase64);
+        // Use base64 string if available, otherwise use file object
+        const stats = await upsertExcelInvoices(fileBase64 ? undefined : (file || undefined), userId, request, fileBase64 || undefined);
         console.log('Excel import completed successfully:', stats);
         // Persist last import meta (best-effort)
         try {
@@ -519,7 +521,7 @@ async function processExcelImport(file: File, userId: string, request: NextReque
  * - Changed: update amount/date/details (keep id)
  * - Missing: delete rows that are not present in this import (paid invoices)
  */
-async function upsertExcelInvoices(file: File, userId: string, request: NextRequest) {
+async function upsertExcelInvoices(file: File | undefined, userId: string, request: NextRequest, fileBase64?: string) {
   const supabase = createRouteHandlerSupabaseClient(request);
 
   try {
@@ -587,62 +589,77 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel file - convert Uint8Array chunks directly to base64 without Buffer
-    console.log('Reading Excel file...', 'size:', file.size);
-    
-    // Early size check to avoid large allocations
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 10MB)`);
-    }
-    
+    // Read Excel file - use base64 string if available, otherwise read from file
     let workbook: XLSX.WorkBook;
-    try {
-      // Read file via stream and convert each Uint8Array chunk directly to base64
-      // WITHOUT using Buffer.from() which creates ArrayBuffer
-      const stream = file.stream();
-      const reader = stream.getReader();
-      const base64Chunks: string[] = [];
+    
+    if (fileBase64) {
+      // Use base64 string directly - XLSX will handle it
+      console.log('Reading Excel from base64 string, length:', fileBase64.length);
+      try {
+        workbook = XLSX.read(fileBase64, { type: 'base64', cellDates: false });
+      } catch (e) {
+        console.error('Error reading Excel from base64:', e);
+        throw new Error(`Failed to read Excel file from base64: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      }
+    } else if (file) {
+      // Read Excel file - convert Uint8Array chunks directly to base64 without Buffer
+      console.log('Reading Excel file...', 'size:', file.size);
       
-      // Base64 encoding table
-      const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-      
-      // Helper function to convert Uint8Array to base64 without Buffer
-      const uint8ToBase64 = (uint8: Uint8Array): string => {
-        let result = '';
-        let i = 0;
-        while (i < uint8.length) {
-          const a = uint8[i++];
-          const b = i < uint8.length ? uint8[i++] : 0;
-          const c = i < uint8.length ? uint8[i++] : 0;
-          
-          const bitmap = (a << 16) | (b << 8) | c;
-          result += base64Chars.charAt((bitmap >> 18) & 63);
-          result += base64Chars.charAt((bitmap >> 12) & 63);
-          result += i - 2 < uint8.length ? base64Chars.charAt((bitmap >> 6) & 63) : '=';
-          result += i - 1 < uint8.length ? base64Chars.charAt(bitmap & 63) : '=';
-        }
-        return result;
-      };
-      
-      // Read chunks and convert each to base64 string immediately
-      // WITHOUT ever creating an ArrayBuffer or Buffer
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value instanceof Uint8Array) {
-          // Convert Uint8Array directly to base64 without Buffer
-          base64Chunks.push(uint8ToBase64(value));
-        }
+      // Early size check to avoid large allocations
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 10MB)`);
       }
       
-      // Concatenate base64 strings
-      const base64String = base64Chunks.join('');
-      
-      // Read directly from base64 string - XLSX should handle this
-      workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
-    } catch (e) {
-      console.error('Error reading Excel file:', e);
-      throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      try {
+        // Read file via stream and convert each Uint8Array chunk directly to base64
+        // WITHOUT using Buffer.from() which creates ArrayBuffer
+        const stream = file.stream();
+        const reader = stream.getReader();
+        const base64Chunks: string[] = [];
+        
+        // Base64 encoding table
+        const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        
+        // Helper function to convert Uint8Array to base64 without Buffer
+        const uint8ToBase64 = (uint8: Uint8Array): string => {
+          let result = '';
+          let i = 0;
+          while (i < uint8.length) {
+            const a = uint8[i++];
+            const b = i < uint8.length ? uint8[i++] : 0;
+            const c = i < uint8.length ? uint8[i++] : 0;
+            
+            const bitmap = (a << 16) | (b << 8) | c;
+            result += base64Chars.charAt((bitmap >> 18) & 63);
+            result += base64Chars.charAt((bitmap >> 12) & 63);
+            result += i - 2 < uint8.length ? base64Chars.charAt((bitmap >> 6) & 63) : '=';
+            result += i - 1 < uint8.length ? base64Chars.charAt(bitmap & 63) : '=';
+          }
+          return result;
+        };
+        
+        // Read chunks and convert each to base64 string immediately
+        // WITHOUT ever creating an ArrayBuffer or Buffer
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value instanceof Uint8Array) {
+            // Convert Uint8Array directly to base64 without Buffer
+            base64Chunks.push(uint8ToBase64(value));
+          }
+        }
+        
+        // Concatenate base64 strings
+        const base64String = base64Chunks.join('');
+        
+        // Read directly from base64 string - XLSX should handle this
+        workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
+      } catch (e) {
+        console.error('Error reading Excel file:', e);
+        throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      }
+    } else {
+      throw new Error('No file or base64 string provided');
     }
     
     if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
