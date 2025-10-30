@@ -635,34 +635,42 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
       
       try {
         console.log('Step 1: Starting to read file stream...');
-        // Read file via stream and convert directly to Buffer without intermediate ArrayBuffer
+        // Read file via stream and convert directly to Uint8Array without Buffer
+        // XLSX can read directly from Uint8Array, avoiding Buffer.allocUnsafe() issues
         const stream = file.stream();
         const reader = stream.getReader();
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         let totalBytesRead = 0;
         
         console.log('Step 2: Reading chunks from stream...');
-        // Read chunks and convert each to Buffer immediately
+        // Read chunks and keep as Uint8Array
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           if (value instanceof Uint8Array) {
             totalBytesRead += value.length;
-            // Convert Uint8Array directly to Buffer
-            const chunkBuffer = Buffer.from(value);
-            chunks.push(chunkBuffer);
+            chunks.push(value);
             console.log(`Step 2.${chunks.length}: Read chunk ${chunks.length}, size: ${value.length} bytes, total: ${totalBytesRead} bytes`);
           }
         }
         
-        console.log(`Step 3: Concatenating ${chunks.length} chunks into single Buffer...`);
-        // Concatenate Buffer chunks
-        const nodeBuffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
-        console.log(`Step 4: Buffer created, size: ${nodeBuffer.length} bytes`);
+        console.log(`Step 3: Concatenating ${chunks.length} chunks into single Uint8Array...`);
+        // Concatenate Uint8Array chunks into single array
+        let combinedLength = 0;
+        for (const chunk of chunks) {
+          combinedLength += chunk.length;
+        }
+        const combinedArray = new Uint8Array(combinedLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          combinedArray.set(chunk, offset);
+          offset += chunk.length;
+        }
+        console.log(`Step 4: Uint8Array created, size: ${combinedArray.length} bytes`);
         
-        console.log('Step 5: Calling XLSX.read()...');
-        // Read directly from Buffer - XLSX should handle this
-        workbook = XLSX.read(nodeBuffer, { type: 'buffer', cellDates: false });
+        console.log('Step 5: Calling XLSX.read() with Uint8Array (type: array)...');
+        // Read directly from Uint8Array - this avoids Buffer.allocUnsafe() in XLSX
+        workbook = XLSX.read(combinedArray, { type: 'array', cellDates: false });
         console.log('Step 6: XLSX.read() completed successfully, sheets:', workbook.SheetNames?.length || 0);
       } catch (e) {
         console.error('Error reading Excel file:', {
