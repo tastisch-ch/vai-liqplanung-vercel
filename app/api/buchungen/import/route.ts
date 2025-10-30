@@ -587,7 +587,7 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
   
   console.log('Existing invoices by ID:', Array.from(existingByInvoiceId.keys()));
 
-    // Read Excel file - use base64 string directly to avoid ArrayBuffer allocation
+    // Read Excel file - convert Uint8Array chunks directly to base64 without Buffer
     console.log('Reading Excel file...', 'size:', file.size);
     
     // Early size check to avoid large allocations
@@ -597,27 +597,48 @@ async function upsertExcelInvoices(file: File, userId: string, request: NextRequ
     
     let workbook: XLSX.WorkBook;
     try {
-      // Read file as text using base64 encoding - this avoids ArrayBuffer entirely
-      // File.text() returns a Promise<string>, but we need binary data
-      // So we read via stream and convert each chunk to base64 incrementally
+      // Read file via stream and convert each Uint8Array chunk directly to base64
+      // WITHOUT using Buffer.from() which creates ArrayBuffer
       const stream = file.stream();
       const reader = stream.getReader();
       const base64Chunks: string[] = [];
       
+      // Base64 encoding table
+      const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      
+      // Helper function to convert Uint8Array to base64 without Buffer
+      const uint8ToBase64 = (uint8: Uint8Array): string => {
+        let result = '';
+        let i = 0;
+        while (i < uint8.length) {
+          const a = uint8[i++];
+          const b = i < uint8.length ? uint8[i++] : 0;
+          const c = i < uint8.length ? uint8[i++] : 0;
+          
+          const bitmap = (a << 16) | (b << 8) | c;
+          result += base64Chars.charAt((bitmap >> 18) & 63);
+          result += base64Chars.charAt((bitmap >> 12) & 63);
+          result += i - 2 < uint8.length ? base64Chars.charAt((bitmap >> 6) & 63) : '=';
+          result += i - 1 < uint8.length ? base64Chars.charAt(bitmap & 63) : '=';
+        }
+        return result;
+      };
+      
       // Read chunks and convert each to base64 string immediately
-      // This avoids accumulating large buffers in memory
+      // WITHOUT ever creating an ArrayBuffer or Buffer
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        // Convert Uint8Array chunk to base64 string
-        const chunkBuffer = Buffer.from(value);
-        base64Chunks.push(chunkBuffer.toString('base64'));
+        if (value instanceof Uint8Array) {
+          // Convert Uint8Array directly to base64 without Buffer
+          base64Chunks.push(uint8ToBase64(value));
+        }
       }
       
-      // Concatenate base64 strings (base64 strings can be safely concatenated)
+      // Concatenate base64 strings
       const base64String = base64Chunks.join('');
       
-      // Read directly from base64 string - XLSX should handle this without creating ArrayBuffer
+      // Read directly from base64 string - XLSX should handle this
       workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
     } catch (e) {
       console.error('Error reading Excel file:', e);
