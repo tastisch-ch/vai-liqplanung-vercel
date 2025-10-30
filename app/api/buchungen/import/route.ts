@@ -614,7 +614,19 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
       }
     } else if (file) {
       // Read Excel file directly as Buffer - avoid base64 conversion which causes memory issues
-      console.log('Reading Excel file directly...', 'size:', file.size);
+      console.log('Reading Excel file directly...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileSizeMB: (file.size / 1024 / 1024).toFixed(4),
+        fileType: file.type,
+        nodeVersion: process.version,
+        nodeEnv: process.env.NODE_ENV,
+        memoryUsage: process.memoryUsage ? {
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB',
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+        } : 'N/A'
+      });
       
       // Early size check to avoid large allocations
       if (file.size > 5 * 1024 * 1024) { // 5MB limit for serverless
@@ -622,28 +634,47 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
       }
       
       try {
+        console.log('Step 1: Starting to read file stream...');
         // Read file via stream and convert directly to Buffer without intermediate ArrayBuffer
         const stream = file.stream();
         const reader = stream.getReader();
         const chunks: Buffer[] = [];
+        let totalBytesRead = 0;
         
+        console.log('Step 2: Reading chunks from stream...');
         // Read chunks and convert each to Buffer immediately
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           if (value instanceof Uint8Array) {
+            totalBytesRead += value.length;
             // Convert Uint8Array directly to Buffer
-            chunks.push(Buffer.from(value));
+            const chunkBuffer = Buffer.from(value);
+            chunks.push(chunkBuffer);
+            console.log(`Step 2.${chunks.length}: Read chunk ${chunks.length}, size: ${value.length} bytes, total: ${totalBytesRead} bytes`);
           }
         }
         
+        console.log(`Step 3: Concatenating ${chunks.length} chunks into single Buffer...`);
         // Concatenate Buffer chunks
         const nodeBuffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
+        console.log(`Step 4: Buffer created, size: ${nodeBuffer.length} bytes`);
         
+        console.log('Step 5: Calling XLSX.read()...');
         // Read directly from Buffer - XLSX should handle this
         workbook = XLSX.read(nodeBuffer, { type: 'buffer', cellDates: false });
+        console.log('Step 6: XLSX.read() completed successfully, sheets:', workbook.SheetNames?.length || 0);
       } catch (e) {
-        console.error('Error reading Excel file:', e);
+        console.error('Error reading Excel file:', {
+          error: e instanceof Error ? e.message : String(e),
+          stack: e instanceof Error ? e.stack : undefined,
+          name: e instanceof Error ? e.name : undefined,
+          memoryUsage: process.memoryUsage ? {
+            rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+            heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB',
+            heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+          } : 'N/A'
+        });
         if (e instanceof RangeError && e.message.includes('Array buffer allocation')) {
           throw new Error(`Excel file too large for serverless memory limits. File size: ${(file.size / 1024 / 1024).toFixed(2)}MB. XLSX library requires full file in memory.`);
         }
