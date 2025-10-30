@@ -613,60 +613,40 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
         throw new Error(`Failed to read Excel file from base64: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     } else if (file) {
-      // Read Excel file - convert Uint8Array chunks directly to base64 without Buffer
-      console.log('Reading Excel file...', 'size:', file.size);
+      // Read Excel file directly as Buffer - avoid base64 conversion which causes memory issues
+      console.log('Reading Excel file directly...', 'size:', file.size);
       
       // Early size check to avoid large allocations
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 10MB)`);
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit for serverless
+        throw new Error(`Excel file too large: ${(file.size / 1024 / 1024).toFixed(2)}MB (max 5MB)`);
       }
       
       try {
-        // Read file via stream and convert each Uint8Array chunk directly to base64
-        // WITHOUT using Buffer.from() which creates ArrayBuffer
+        // Read file via stream and convert directly to Buffer without intermediate ArrayBuffer
         const stream = file.stream();
         const reader = stream.getReader();
-        const base64Chunks: string[] = [];
+        const chunks: Buffer[] = [];
         
-        // Base64 encoding table
-        const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-        
-        // Helper function to convert Uint8Array to base64 without Buffer
-        const uint8ToBase64 = (uint8: Uint8Array): string => {
-          let result = '';
-          let i = 0;
-          while (i < uint8.length) {
-            const a = uint8[i++];
-            const b = i < uint8.length ? uint8[i++] : 0;
-            const c = i < uint8.length ? uint8[i++] : 0;
-            
-            const bitmap = (a << 16) | (b << 8) | c;
-            result += base64Chars.charAt((bitmap >> 18) & 63);
-            result += base64Chars.charAt((bitmap >> 12) & 63);
-            result += i - 2 < uint8.length ? base64Chars.charAt((bitmap >> 6) & 63) : '=';
-            result += i - 1 < uint8.length ? base64Chars.charAt(bitmap & 63) : '=';
-          }
-          return result;
-        };
-        
-        // Read chunks and convert each to base64 string immediately
-        // WITHOUT ever creating an ArrayBuffer or Buffer
+        // Read chunks and convert each to Buffer immediately
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           if (value instanceof Uint8Array) {
-            // Convert Uint8Array directly to base64 without Buffer
-            base64Chunks.push(uint8ToBase64(value));
+            // Convert Uint8Array directly to Buffer
+            chunks.push(Buffer.from(value));
           }
         }
         
-        // Concatenate base64 strings
-        const base64String = base64Chunks.join('');
+        // Concatenate Buffer chunks
+        const nodeBuffer = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         
-        // Read directly from base64 string - XLSX should handle this
-        workbook = XLSX.read(base64String, { type: 'base64', cellDates: false });
+        // Read directly from Buffer - XLSX should handle this
+        workbook = XLSX.read(nodeBuffer, { type: 'buffer', cellDates: false });
       } catch (e) {
         console.error('Error reading Excel file:', e);
+        if (e instanceof RangeError && e.message.includes('Array buffer allocation')) {
+          throw new Error(`Excel file too large for serverless memory limits. File size: ${(file.size / 1024 / 1024).toFixed(2)}MB. XLSX library requires full file in memory.`);
+        }
         throw new Error(`Failed to read Excel file: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     } else {
