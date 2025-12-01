@@ -174,12 +174,120 @@ export async function matchBuchungToFixkostenServer(
     // Load existing overrides to avoid duplicates
     const existingOverrides = await loadFixkostenOverridesServer(supabase);
     
-    // Normalize buchung details for comparison
-    const normalizeText = (text: string) => 
-      text.toLowerCase()
+    // Enhanced text normalization and matching
+    const normalizeText = (text: string) => {
+      return text
+        .toLowerCase()
+        // Normalize Umlaute
+        .replace(/ä/g, 'ae')
+        .replace(/ö/g, 'oe')
+        .replace(/ü/g, 'ue')
+        .replace(/ß/g, 'ss')
+        // Remove common prefixes/suffixes that banks add
+        .replace(/^(zahlung|payment|überweisung|transfer|lastschrift|debit)\s*/i, '')
+        .replace(/\s*(zahlung|payment|überweisung|transfer|lastschrift|debit)$/i, '')
+        // Remove IBANs, account numbers, reference numbers
+        .replace(/iban\s*:?\s*[a-z0-9\s]+/gi, '')
+        .replace(/ch\d{2}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{1}/gi, '') // Swiss IBAN format
+        .replace(/ref\s*:?\s*[a-z0-9\s\-]+/gi, '')
+        .replace(/referenz\s*:?\s*[a-z0-9\s\-]+/gi, '')
+        .replace(/refnr\s*:?\s*[a-z0-9\s\-]+/gi, '')
+        // Remove dates
+        .replace(/\d{1,2}\.\d{1,2}\.\d{2,4}/g, '')
+        .replace(/\d{4}-\d{2}-\d{2}/g, '')
+        // Remove common separators and normalize whitespace
+        .replace(/[^\w\s]/g, ' ')
         .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/[^\w\s]/g, '');
+        .trim();
+    };
+    
+    // Extract key words (remove common stop words)
+    const extractKeyWords = (text: string): string[] => {
+      const stopWords = new Set([
+        'ag', 'gmbh', 'ltd', 'inc', 'corp', 'co', 'und', 'der', 'die', 'das',
+        'von', 'zu', 'für', 'mit', 'bei', 'auf', 'in', 'an', 'am', 'zum',
+        'the', 'and', 'or', 'of', 'for', 'with', 'at', 'in', 'on', 'to',
+        'sa', 'sarl', 'bv', 'nv', 'oy', 'ab', 'as', 'oyj'
+      ]);
+      
+      return text
+        .split(/\s+/)
+        .filter(word => word.length >= 2 && !stopWords.has(word))
+        .map(word => word.replace(/[^\w]/g, ''))
+        .filter(word => word.length > 0);
+    };
+    
+    // Calculate text similarity score
+    const calculateTextSimilarity = (text1: string, text2: string): number => {
+      const normalized1 = normalizeText(text1);
+      const normalized2 = normalizeText(text2);
+      
+      // Exact match after normalization
+      if (normalized1 === normalized2) {
+        return 1.0;
+      }
+      
+      // Check if one contains the other (common case: bank adds extra info)
+      if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+        return 0.9;
+      }
+      
+      // Extract key words
+      const words1 = extractKeyWords(text1);
+      const words2 = extractKeyWords(text2);
+      
+      if (words1.length === 0 || words2.length === 0) {
+        return 0;
+      }
+      
+      // Count matching words (with fuzzy matching)
+      let matches = 0;
+      const matchedWords2 = new Set<string>();
+      
+      for (const word1 of words1) {
+        for (const word2 of words2) {
+          if (matchedWords2.has(word2)) continue;
+          
+          // Exact match
+          if (word1 === word2) {
+            matches++;
+            matchedWords2.add(word2);
+            break;
+          }
+          
+          // Substring match (one word contains the other)
+          if (word1.length >= 4 && word2.length >= 4) {
+            if (word1.includes(word2) || word2.includes(word1)) {
+              matches++;
+              matchedWords2.add(word2);
+              break;
+            }
+          }
+          
+          // Levenshtein-like: check if words are similar (max 1 char difference for short words, 2 for longer)
+          const maxDiff = word1.length <= 4 ? 1 : 2;
+          if (Math.abs(word1.length - word2.length) <= maxDiff) {
+            let diff = 0;
+            const minLen = Math.min(word1.length, word2.length);
+            for (let i = 0; i < minLen; i++) {
+              if (word1[i] !== word2[i]) diff++;
+            }
+            diff += Math.abs(word1.length - word2.length);
+            if (diff <= maxDiff) {
+              matches++;
+              matchedWords2.add(word2);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Calculate similarity score: matches / average word count
+      const avgWords = (words1.length + words2.length) / 2;
+      const similarity = matches / Math.max(avgWords, 1);
+      
+      return similarity;
+    };
     
     const buchungNormalized = normalizeText(buchung.details);
     
@@ -215,24 +323,18 @@ export async function matchBuchungToFixkostenServer(
         continue;
       }
       
-      // Check text similarity (fuzzy match)
-      const fixkostenNormalized = normalizeText(fixkostenTx.details);
+      // Check text similarity (enhanced fuzzy match)
+      const textSimilarity = calculateTextSimilarity(buchung.details, fixkostenTx.details);
       
-      // Simple similarity check: check if significant words match
-      const buchungWords = buchungNormalized.split(/\s+/).filter(w => w.length > 3);
-      const fixkostenWords = fixkostenNormalized.split(/\s+/).filter(w => w.length > 3);
+      // Require minimum similarity score (0.3 = at least 30% of key words match)
+      // This is more lenient to catch cases where bank adds extra info
+      const minSimilarity = 0.3;
       
-      // Count matching words
-      const matchingWords = buchungWords.filter(word => 
-        fixkostenWords.some(fw => fw.includes(word) || word.includes(fw))
-      );
-      
-      // Require at least 1 matching significant word OR exact normalized match
-      const hasTextMatch = matchingWords.length > 0 || buchungNormalized === fixkostenNormalized;
-      
-      if (!hasTextMatch) {
+      if (textSimilarity < minSimilarity) {
         continue;
       }
+      
+      console.log(`Text match found: "${buchung.details}" vs "${fixkostenTx.details}" (similarity: ${(textSimilarity * 100).toFixed(1)}%)`);
       
       // Found a match! Extract fixkosten ID from transaction ID
       // Transaction ID format: `fixkosten_${fixkosten.id}_${date}`
