@@ -587,7 +587,7 @@ export async function matchBuchungToFixkosten(
       // Require minimum similarity score
       // Lower threshold when amount and date match perfectly (high confidence)
       const amountMatchPerfect = amountDiff < 0.01; // Exact match (within 1 cent)
-      const dateMatchClose = dateDiff <= 5 * 24 * 60 * 60 * 1000; // Within 5 days (increased from 3)
+      const dateMatchClose = dateDiff <= 7 * 24 * 60 * 60 * 1000; // Within 7 days
       
       // If amount matches perfectly and date is close, be very lenient with text
       // This handles cases where bank adds lots of extra text
