@@ -433,20 +433,52 @@ export async function matchBuchungToFixkosten(
       const shorterWords = words1.length <= words2.length ? words1 : words2;
       const longerWords = words1.length > words2.length ? words1 : words2;
       const longerText = words1.length > words2.length ? normalized1 : normalized2;
+      const shorterText = words1.length <= words2.length ? normalized1 : normalized2;
       
       // If shorter text has 2-4 words, check if most/all appear in longer text
       if (shorterWords.length >= 2 && shorterWords.length <= 4) {
         let foundInLonger = 0;
+        const foundWords: string[] = [];
+        
         for (const shortWord of shorterWords) {
           // Check if word appears in longer text (as substring, not just as word)
           if (longerText.includes(shortWord)) {
             foundInLonger++;
+            foundWords.push(shortWord);
           } else {
-            // Also check if any longer word contains this word
-            const found = longerWords.some(longWord => 
-              longWord.includes(shortWord) || shortWord.includes(longWord)
-            );
-            if (found) foundInLonger++;
+            // Also check if any longer word contains this word (substring match)
+            const found = longerWords.some(longWord => {
+              if (longWord.includes(shortWord) || shortWord.includes(longWord)) {
+                return true;
+              }
+              // Also check if words share significant substrings (for compound words)
+              if (shortWord.length >= 8 && longWord.length >= 8) {
+                // Check if they share a significant prefix or suffix
+                const minLen = Math.min(shortWord.length, longWord.length);
+                for (let len = Math.min(6, minLen); len >= 4; len--) {
+                  if (shortWord.substring(0, len) === longWord.substring(0, len) ||
+                      shortWord.substring(shortWord.length - len) === longWord.substring(longWord.length - len)) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+            if (found) {
+              foundInLonger++;
+              foundWords.push(shortWord);
+            }
+          }
+        }
+        
+        // More lenient matching: if at least 1 word matches and it's a short name (2 words), accept it
+        // This handles cases like "Zuerich Betriebshaftpflicht" where "Zuerich" matches
+        if (shorterWords.length === 2 && foundInLonger >= 1) {
+          // Check if the matching word is significant (not just a common word)
+          const significantWords = ['zuerich', 'zurich', 'basel', 'bern', 'genf', 'lausanne', 'versicherung', 'insurance'];
+          const matchedWord = foundWords[0];
+          if (significantWords.some(sig => matchedWord.includes(sig) || sig.includes(matchedWord))) {
+            return 0.65; // Accept match with significant word
           }
         }
         
@@ -555,10 +587,18 @@ export async function matchBuchungToFixkosten(
       // Require minimum similarity score
       // Lower threshold when amount and date match perfectly (high confidence)
       const amountMatchPerfect = amountDiff < 0.01; // Exact match (within 1 cent)
-      const dateMatchClose = dateDiff <= 3 * 24 * 60 * 60 * 1000; // Within 3 days
+      const dateMatchClose = dateDiff <= 5 * 24 * 60 * 60 * 1000; // Within 5 days (increased from 3)
       
-      // If amount matches perfectly and date is close, be more lenient with text
-      const minSimilarity = (amountMatchPerfect && dateMatchClose) ? 0.25 : 0.3;
+      // If amount matches perfectly and date is close, be very lenient with text
+      // This handles cases where bank adds lots of extra text
+      let minSimilarity = 0.3;
+      if (amountMatchPerfect && dateMatchClose) {
+        minSimilarity = 0.2; // Very lenient - only need 20% text match
+      } else if (amountMatchPerfect) {
+        minSimilarity = 0.25; // Lenient if amount matches
+      } else if (dateMatchClose) {
+        minSimilarity = 0.28; // Slightly lenient if date is close
+      }
       
       if (textSimilarity < minSimilarity) {
         continue;

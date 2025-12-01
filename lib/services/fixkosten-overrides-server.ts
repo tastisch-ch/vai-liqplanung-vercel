@@ -246,20 +246,55 @@ export async function matchBuchungToFixkostenServer(
       const shorterWords = words1.length <= words2.length ? words1 : words2;
       const longerWords = words1.length > words2.length ? words1 : words2;
       const longerText = words1.length > words2.length ? normalized1 : normalized2;
+      const shorterText = words1.length <= words2.length ? normalized1 : normalized2;
       
       // If shorter text has 2-4 words, check if most/all appear in longer text
       if (shorterWords.length >= 2 && shorterWords.length <= 4) {
         let foundInLonger = 0;
+        const foundWords: string[] = [];
+        
         for (const shortWord of shorterWords) {
           // Check if word appears in longer text (as substring, not just as word)
           if (longerText.includes(shortWord)) {
             foundInLonger++;
+            foundWords.push(shortWord);
           } else {
-            // Also check if any longer word contains this word
-            const found = longerWords.some(longWord => 
-              longWord.includes(shortWord) || shortWord.includes(longWord)
-            );
-            if (found) foundInLonger++;
+            // Also check if any longer word contains this word (substring match)
+            const found = longerWords.some(longWord => {
+              if (longWord.includes(shortWord) || shortWord.includes(longWord)) {
+                return true;
+              }
+              // Also check if words share significant substrings (for compound words)
+              if (shortWord.length >= 8 && longWord.length >= 8) {
+                // Check if they share a significant prefix or suffix
+                const minLen = Math.min(shortWord.length, longWord.length);
+                for (let len = Math.min(6, minLen); len >= 4; len--) {
+                  if (shortWord.substring(0, len) === longWord.substring(0, len) ||
+                      shortWord.substring(shortWord.length - len) === longWord.substring(longWord.length - len)) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+            if (found) {
+              foundInLonger++;
+              foundWords.push(shortWord);
+            }
+          }
+        }
+        
+        console.log(`[MATCH DEBUG] Short text: "${shorterText}", Found ${foundInLonger}/${shorterWords.length} words: [${foundWords.join(', ')}]`);
+        
+        // More lenient matching: if at least 1 word matches and it's a short name (2 words), accept it
+        // This handles cases like "Zuerich Betriebshaftpflicht" where "Zuerich" matches
+        if (shorterWords.length === 2 && foundInLonger >= 1) {
+          // Check if the matching word is significant (not just a common word)
+          const significantWords = ['zuerich', 'zurich', 'basel', 'bern', 'genf', 'lausanne', 'versicherung', 'insurance'];
+          const matchedWord = foundWords[0];
+          if (significantWords.some(sig => matchedWord.includes(sig) || sig.includes(matchedWord))) {
+            console.log(`[MATCH DEBUG] Accepting match based on significant word: "${matchedWord}"`);
+            return 0.65; // Accept match with significant word
           }
         }
         
@@ -344,6 +379,8 @@ export async function matchBuchungToFixkostenServer(
       existingOverrides
     );
     
+    console.log(`[MATCH DEBUG] Checking ${fixkostenTransactions.length} fixkosten transactions for buchung: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString().split('T')[0]})`);
+    
     // Find matching fixkosten transaction
     for (const fixkostenTx of fixkostenTransactions) {
       // Check amount match (within 1% tolerance)
@@ -351,14 +388,17 @@ export async function matchBuchungToFixkostenServer(
       const amountTolerance = buchung.amount * 0.01;
       
       if (amountDiff > amountTolerance) {
+        console.log(`[MATCH DEBUG] Amount mismatch: ${fixkostenTx.amount} vs ${buchung.amount} (diff: ${amountDiff.toFixed(2)}, tolerance: ${amountTolerance.toFixed(2)})`);
         continue;
       }
       
       // Check date match (within ±7 days)
       const dateDiff = Math.abs(fixkostenTx.date.getTime() - buchung.date.getTime());
       const maxDateDiff = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      const daysDiff = Math.round(dateDiff / (24 * 60 * 60 * 1000));
       
       if (dateDiff > maxDateDiff) {
+        console.log(`[MATCH DEBUG] Date mismatch: ${fixkostenTx.date.toISOString().split('T')[0]} vs ${buchung.date.toISOString().split('T')[0]} (diff: ${daysDiff} days)`);
         continue;
       }
       
@@ -368,16 +408,28 @@ export async function matchBuchungToFixkostenServer(
       // Require minimum similarity score
       // Lower threshold when amount and date match perfectly (high confidence)
       const amountMatchPerfect = amountDiff < 0.01; // Exact match (within 1 cent)
-      const dateMatchClose = dateDiff <= 3 * 24 * 60 * 60 * 1000; // Within 3 days
+      const dateMatchClose = dateDiff <= 5 * 24 * 60 * 60 * 1000; // Within 5 days (increased from 3)
       
-      // If amount matches perfectly and date is close, be more lenient with text
-      const minSimilarity = (amountMatchPerfect && dateMatchClose) ? 0.25 : 0.3;
+      // If amount matches perfectly and date is close, be very lenient with text
+      // This handles cases where bank adds lots of extra text
+      let minSimilarity = 0.3;
+      if (amountMatchPerfect && dateMatchClose) {
+        minSimilarity = 0.2; // Very lenient - only need 20% text match
+      } else if (amountMatchPerfect) {
+        minSimilarity = 0.25; // Lenient if amount matches
+      } else if (dateMatchClose) {
+        minSimilarity = 0.28; // Slightly lenient if date is close
+      }
+      
+      console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
+      console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
       
       if (textSimilarity < minSimilarity) {
+        console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
         continue;
       }
       
-      console.log(`Text match found: "${buchung.details}" vs "${fixkostenTx.details}" (similarity: ${(textSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${Math.round(dateDiff / (24 * 60 * 60 * 1000))} days)`);
+      console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
       
       // Found a match! Extract fixkosten ID from transaction ID
       // Transaction ID format: `fixkosten_${fixkosten.id}_${date}`
