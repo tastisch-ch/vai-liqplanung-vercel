@@ -7,6 +7,7 @@ import { parseCHF } from '@/lib/currency';
 import ExcelJS from 'exceljs';
 import { Buffer } from 'node:buffer';
 import { v4 as uuidv4 } from 'uuid';
+import { matchBuchungToFixkostenServer } from '@/lib/services/fixkosten-overrides-server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -173,6 +174,33 @@ export async function POST(request: NextRequest) {
           { error: 'Database error', details: error.message },
           { status: 500 }
         );
+      }
+      
+      // Try to match imported transactions to fixkosten and create skip overrides
+      let matchedCount = 0;
+      for (const item of processedData) {
+        try {
+          const override = await matchBuchungToFixkostenServer(
+            {
+              date: new Date(item.date),
+              amount: item.amount,
+              details: item.details,
+              direction: item.direction
+            },
+            userId,
+            supabase
+          );
+          if (override) {
+            matchedCount++;
+          }
+        } catch (matchError) {
+          // Non-critical error, just log it
+          console.warn('Error matching buchung to fixkosten:', matchError);
+        }
+      }
+      
+      if (matchedCount > 0) {
+        console.log(`Created ${matchedCount} skip overrides for matching fixkosten transactions`);
       }
       
       // Persist last import meta (best-effort, global shared key)
@@ -693,6 +721,33 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
   if (toInsert.length > 0) {
     const { error: insErr } = await supabase.from('buchungen').insert(toInsert);
     if (insErr) throw insErr;
+    
+    // Try to match inserted transactions to fixkosten and create skip overrides
+    let matchedCount = 0;
+    for (const item of toInsert) {
+      try {
+        const override = await matchBuchungToFixkostenServer(
+          {
+            date: new Date(item.date),
+            amount: item.amount,
+            details: item.details,
+            direction: item.direction
+          },
+          userId,
+          supabase
+        );
+        if (override) {
+          matchedCount++;
+        }
+      } catch (matchError) {
+        // Non-critical error, just log it
+        console.warn('Error matching buchung to fixkosten:', matchError);
+      }
+    }
+    
+    if (matchedCount > 0) {
+      console.log(`Created ${matchedCount} skip overrides for matching fixkosten transactions`);
+    }
   }
   if (toReopen.length > 0) {
     const { error: reopenErr } = await supabase

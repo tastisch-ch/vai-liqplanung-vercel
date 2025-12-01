@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase/client';
 import { FixkostenOverride } from '@/models/types';
 import { dateToIsoString } from '@/lib/date-utils/format';
+import { loadFixkosten, convertFixkostenToBuchungen } from './fixkosten';
 
 /**
  * Load all fixkosten overrides from the database
@@ -329,4 +330,134 @@ export function hasOverridesInDateRange(
   return overrides.some(override => 
     override.original_date >= startDate && override.original_date <= endDate
   );
+}
+
+/**
+ * Match a Buchung (transaction) to a Fixkosten transaction and create an override to skip it
+ * This is used when a transaction from E-Banking import matches a fixed cost transaction
+ * 
+ * @param buchung - The imported transaction to match
+ * @param userId - Current user ID
+ * @returns The created override, or null if no match was found
+ */
+export async function matchBuchungToFixkosten(
+  buchung: {
+    date: Date;
+    amount: number;
+    details: string;
+    direction: 'Incoming' | 'Outgoing';
+  },
+  userId: string
+): Promise<FixkostenOverride | null> {
+  try {
+    // Only match outgoing transactions (Fixkosten are always outgoing)
+    if (buchung.direction !== 'Outgoing') {
+      return null;
+    }
+
+    // Load all fixkosten
+    const fixkosten = await loadFixkosten(userId);
+    
+    // Load existing overrides to avoid duplicates
+    const existingOverrides = await loadFixkostenOverrides(userId);
+    
+    // Normalize buchung details for comparison
+    const normalizeText = (text: string) => 
+      text.toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/[^\w\s]/g, '');
+    
+    const buchungNormalized = normalizeText(buchung.details);
+    
+    // Check date range: look for fixkosten transactions within ±7 days
+    const dateRangeStart = new Date(buchung.date);
+    dateRangeStart.setDate(dateRangeStart.getDate() - 7);
+    const dateRangeEnd = new Date(buchung.date);
+    dateRangeEnd.setDate(dateRangeEnd.getDate() + 7);
+    
+    // Generate fixkosten transactions for the date range
+    const fixkostenTransactions = convertFixkostenToBuchungen(
+      dateRangeStart,
+      dateRangeEnd,
+      fixkosten,
+      existingOverrides
+    );
+    
+    // Find matching fixkosten transaction
+    for (const fixkostenTx of fixkostenTransactions) {
+      // Check amount match (within 1% tolerance)
+      const amountDiff = Math.abs(fixkostenTx.amount - buchung.amount);
+      const amountTolerance = buchung.amount * 0.01;
+      
+      if (amountDiff > amountTolerance) {
+        continue;
+      }
+      
+      // Check date match (within ±7 days)
+      const dateDiff = Math.abs(fixkostenTx.date.getTime() - buchung.date.getTime());
+      const maxDateDiff = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      
+      if (dateDiff > maxDateDiff) {
+        continue;
+      }
+      
+      // Check text similarity (fuzzy match)
+      const fixkostenNormalized = normalizeText(fixkostenTx.details);
+      
+      // Simple similarity check: check if significant words match
+      const buchungWords = buchungNormalized.split(/\s+/).filter(w => w.length > 3);
+      const fixkostenWords = fixkostenNormalized.split(/\s+/).filter(w => w.length > 3);
+      
+      // Count matching words
+      const matchingWords = buchungWords.filter(word => 
+        fixkostenWords.some(fw => fw.includes(word) || word.includes(fw))
+      );
+      
+      // Require at least 1 matching significant word OR exact normalized match
+      const hasTextMatch = matchingWords.length > 0 || buchungNormalized === fixkostenNormalized;
+      
+      if (!hasTextMatch) {
+        continue;
+      }
+      
+      // Found a match! Extract fixkosten ID from transaction ID
+      // Transaction ID format: `fixkosten_${fixkosten.id}_${date}`
+      const match = fixkostenTx.id.match(/^fixkosten_(.+?)_/);
+      if (!match) {
+        continue;
+      }
+      
+      const fixkostenId = match[1];
+      const originalDate = fixkostenTx.date;
+      
+      // Check if override already exists
+      const existingOverride = findOverrideForDate(existingOverrides, fixkostenId, originalDate);
+      if (existingOverride) {
+        // Override already exists, skip
+        return null;
+      }
+      
+      // Create override to skip this fixkosten occurrence
+      const override = await addFixkostenOverride(
+        fixkostenId,
+        originalDate,
+        null, // newDate
+        null, // newAmount
+        true, // isSkipped
+        `Automatisch übersprungen: Deckungsgleich mit importierter Buchung "${buchung.details}"`,
+        userId
+      );
+      
+      console.log(`Created skip override for fixkosten ${fixkostenId} on ${originalDate.toISOString()} matching buchung "${buchung.details}"`);
+      
+      return override;
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error('Error matching buchung to fixkosten:', error);
+    // Don't throw - this is a non-critical operation
+    return null;
+  }
 } 
