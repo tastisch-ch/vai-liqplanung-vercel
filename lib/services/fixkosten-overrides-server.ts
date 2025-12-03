@@ -77,21 +77,11 @@ async function addFixkostenOverrideServer(
     normalizedNewDate.setHours(0, 0, 0, 0);
   }
   
-  // Get the original amount from fixkosten
-  const { data: fixkostenData } = await supabase
-    .from('fixkosten')
-    .select('betrag')
-    .eq('id', fixkostenId)
-    .single();
-  
-  const originalAmount = fixkostenData?.betrag || 0;
-  
   const newOverride = {
     id: uuidv4(),
     fixkosten_id: fixkostenId,
     original_date: dateToIsoString(normalizedOriginalDate) as string,
     new_date: normalizedNewDate ? dateToIsoString(normalizedNewDate) : null,
-    original_amount: originalAmount,
     new_amount: newAmount,
     is_skipped: isSkipped,
     notes,
