@@ -484,6 +484,8 @@ export default function Planung() {
                 {filteredTransactions.map((transaction) => {
                   const isIncome = transaction.direction === 'Incoming';
                   const amountClass = isIncome ? 'text-emerald-600' : 'text-rose-600';
+                  const isSkipped = (transaction as any).isSkipped === true;
+                  const skipReason = (transaction as any).overrideNotes;
                   const categoryBadge = transaction.kategorie === 'Lohn' ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
                       <RiUser3Line className="h-3.5 w-3.5" /> Lohn
