@@ -212,6 +212,11 @@ export default function DatenImport() {
             console.log(`[CLIENT] ✓ Matched: "${detail.transaction}"`);
           } else {
             console.log(`[CLIENT] ✗ No match: "${detail.transaction}"${detail.error ? ` (Error: ${detail.error})` : ''}`);
+            // Log debug logs if available
+            if (detail.debugLogs && detail.debugLogs.length > 0) {
+              console.log(`[CLIENT] Debug logs for "${detail.transaction}":`);
+              detail.debugLogs.forEach((log: string) => console.log(`  ${log}`));
+            }
           }
         });
       }

@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       console.log(`[HTML IMPORT] Starting fixkosten matching for ${processedData.length} transactions`);
       let matchedCount = 0;
       let errorCount = 0;
-      const matchDetails: Array<{transaction: string; matched: boolean; error?: string}> = [];
+      const matchDetails: Array<{transaction: string; matched: boolean; error?: string; debugLogs?: string[]}> = [];
       
       for (const item of processedData) {
         try {
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
             continue;
           }
           
-          const override = await matchBuchungToFixkostenServer(
+          const result = await matchBuchungToFixkostenServer(
             {
               date: transactionDate,
               amount: item.amount,
@@ -203,16 +203,25 @@ export async function POST(request: NextRequest) {
               direction: item.direction
             },
             userId,
-            supabase
+            supabase,
+            true // Collect debug logs
           );
           
-          if (override) {
+          if (result.override) {
             matchedCount++;
             console.log(`[HTML IMPORT] ✓ Match found and override created for: "${item.details}"`);
-            matchDetails.push({transaction: item.details, matched: true});
+            matchDetails.push({
+              transaction: item.details, 
+              matched: true,
+              debugLogs: result.debugLogs
+            });
           } else {
             console.log(`[HTML IMPORT] ✗ No match found for: "${item.details}"`);
-            matchDetails.push({transaction: item.details, matched: false});
+            matchDetails.push({
+              transaction: item.details, 
+              matched: false,
+              debugLogs: result.debugLogs
+            });
           }
         } catch (matchError) {
           errorCount++;
@@ -757,7 +766,7 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
     let matchedCount = 0;
     for (const item of toInsert) {
       try {
-        const override = await matchBuchungToFixkostenServer(
+        const result = await matchBuchungToFixkostenServer(
           {
             date: new Date(item.date),
             amount: item.amount,
@@ -765,9 +774,10 @@ async function upsertExcelInvoices(file: File | undefined, userId: string, reque
             direction: item.direction
           },
           userId,
-          supabase
+          supabase,
+          false // Don't collect debug logs for Excel import
         );
-        if (override) {
+        if (result.override) {
           matchedCount++;
         }
       } catch (matchError) {

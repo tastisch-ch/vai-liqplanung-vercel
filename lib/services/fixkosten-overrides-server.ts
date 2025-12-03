@@ -152,6 +152,9 @@ async function addFixkostenOverrideServer(
  * @param supabase - Supabase server client
  * @returns The created override, or null if no match was found
  */
+// Global debug log collector for this request
+let debugLogs: string[] = [];
+
 export async function matchBuchungToFixkostenServer(
   buchung: {
     date: Date;
@@ -160,37 +163,47 @@ export async function matchBuchungToFixkostenServer(
     direction: 'Incoming' | 'Outgoing';
   },
   userId: string,
-  supabase: SupabaseClient
-): Promise<FixkostenOverride | null> {
+  supabase: SupabaseClient,
+  collectDebugLogs: boolean = false
+): Promise<{ override: FixkostenOverride | null; debugLogs?: string[] }> {
+  const logs: string[] = [];
+  const log = (msg: string) => {
+    console.log(msg);
+    if (collectDebugLogs) logs.push(msg);
+  };
+  
   try {
-    console.log(`[MATCH] Starting match for: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString()}, ${buchung.direction})`);
+    log(`[MATCH] Starting match for: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString()}, ${buchung.direction})`);
     
     // Only match outgoing transactions (Fixkosten are always outgoing)
     if (buchung.direction !== 'Outgoing') {
-      console.log(`[MATCH] Skipping incoming transaction`);
-      return null;
+      log(`[MATCH] Skipping incoming transaction`);
+      return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
     }
     
     // Validate date
     if (isNaN(buchung.date.getTime())) {
-      console.error(`[MATCH] Invalid date: ${buchung.date}`);
-      return null;
+      log(`[MATCH] Invalid date: ${buchung.date}`);
+      return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
     }
-
+    
     // Load all fixkosten
-    console.log(`[MATCH] Loading fixkosten...`);
+    log(`[MATCH] Loading fixkosten...`);
     const fixkosten = await loadFixkostenServer(supabase);
-    console.log(`[MATCH] Loaded ${fixkosten.length} fixkosten`);
+    log(`[MATCH] Loaded ${fixkosten.length} fixkosten`);
     
     if (fixkosten.length === 0) {
-      console.log(`[MATCH] No fixkosten found, skipping match`);
-      return null;
+      log(`[MATCH] No fixkosten found, skipping match`);
+      return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
     }
     
+    // Log fixkosten names for debugging
+    log(`[MATCH] Fixkosten names: ${fixkosten.map(f => f.name).join(', ')}`);
+    
     // Load existing overrides to avoid duplicates
-    console.log(`[MATCH] Loading existing overrides...`);
+    log(`[MATCH] Loading existing overrides...`);
     const existingOverrides = await loadFixkostenOverridesServer(supabase);
-    console.log(`[MATCH] Loaded ${existingOverrides.length} existing overrides`);
+    log(`[MATCH] Loaded ${existingOverrides.length} existing overrides`);
     
     // Enhanced text normalization and matching
     const normalizeText = (text: string) => {
@@ -413,7 +426,13 @@ export async function matchBuchungToFixkostenServer(
       existingOverrides
     );
     
-    console.log(`[MATCH DEBUG] Checking ${fixkostenTransactions.length} fixkosten transactions for buchung: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString().split('T')[0]})`);
+    log(`[MATCH DEBUG] Checking ${fixkostenTransactions.length} fixkosten transactions for buchung: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString().split('T')[0]})`);
+    
+    if (fixkostenTransactions.length === 0) {
+      log(`[MATCH DEBUG] No fixkosten transactions generated for date range ${dateRangeStart.toISOString().split('T')[0]} to ${dateRangeEnd.toISOString().split('T')[0]}`);
+    } else {
+      log(`[MATCH DEBUG] Generated fixkosten transactions: ${fixkostenTransactions.map(tx => `${tx.details} (${tx.amount}, ${tx.date.toISOString().split('T')[0]})`).join('; ')}`);
+    }
     
     // Find matching fixkosten transaction
     for (const fixkostenTx of fixkostenTransactions) {
@@ -421,8 +440,10 @@ export async function matchBuchungToFixkostenServer(
       const amountDiff = Math.abs(fixkostenTx.amount - buchung.amount);
       const amountTolerance = buchung.amount * 0.01;
       
+      log(`[MATCH DEBUG] Comparing with fixkosten: "${fixkostenTx.details}" (${fixkostenTx.amount}, ${fixkostenTx.date.toISOString().split('T')[0]})`);
+      
       if (amountDiff > amountTolerance) {
-        console.log(`[MATCH DEBUG] Amount mismatch: ${fixkostenTx.amount} vs ${buchung.amount} (diff: ${amountDiff.toFixed(2)}, tolerance: ${amountTolerance.toFixed(2)})`);
+        log(`[MATCH DEBUG] Amount mismatch: ${fixkostenTx.amount} vs ${buchung.amount} (diff: ${amountDiff.toFixed(2)}, tolerance: ${amountTolerance.toFixed(2)})`);
         continue;
       }
       
@@ -431,8 +452,10 @@ export async function matchBuchungToFixkostenServer(
       const maxDateDiff = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
       const daysDiff = Math.round(dateDiff / (24 * 60 * 60 * 1000));
       
+      log(`[MATCH DEBUG] Amount match ✓, Date diff: ${daysDiff} days`);
+      
       if (dateDiff > maxDateDiff) {
-        console.log(`[MATCH DEBUG] Date mismatch: ${fixkostenTx.date.toISOString().split('T')[0]} vs ${buchung.date.toISOString().split('T')[0]} (diff: ${daysDiff} days)`);
+        log(`[MATCH DEBUG] Date mismatch: ${fixkostenTx.date.toISOString().split('T')[0]} vs ${buchung.date.toISOString().split('T')[0]} (diff: ${daysDiff} days, max: 7)`);
         continue;
       }
       
@@ -479,21 +502,21 @@ export async function matchBuchungToFixkostenServer(
           });
           
           if (hasSignificantMatch) {
-            console.log(`[MATCH DEBUG] ✓ Match found via significant keyword match!`);
+            log(`[MATCH DEBUG] ✓ Match found via significant keyword match!`);
           } else {
             // Fall back to text similarity check
             const textSimilarity = calculateTextSimilarity(buchung.details, fixkostenTx.details);
             const minSimilarity = 0.15; // Very lenient when amount and date match
             
-            console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
-            console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
+            log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
+            log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
             
             if (textSimilarity < minSimilarity) {
-              console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
+              log(`[MATCH DEBUG] Text similarity too low, skipping`);
               continue;
             }
             
-            console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
+            log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
           }
         }
       } else {
@@ -507,15 +530,15 @@ export async function matchBuchungToFixkostenServer(
           minSimilarity = 0.28; // Slightly lenient if date is close
         }
         
-        console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
-        console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
+        log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
+        log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
         
         if (textSimilarity < minSimilarity) {
-          console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
+          log(`[MATCH DEBUG] Text similarity too low, skipping`);
           continue;
         }
         
-        console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
+        log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
       }
       
       // Found a match! Extract fixkosten ID from transaction ID
@@ -532,7 +555,8 @@ export async function matchBuchungToFixkostenServer(
       const existingOverride = findOverrideForDate(existingOverrides, fixkostenId, originalDate);
       if (existingOverride) {
         // Override already exists, skip
-        return null;
+        log(`[MATCH DEBUG] Override already exists for this fixkosten on this date`);
+        return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
       }
       
       // Create override to skip this fixkosten occurrence
@@ -547,16 +571,19 @@ export async function matchBuchungToFixkostenServer(
         supabase
       );
       
-      console.log(`Created skip override for fixkosten ${fixkostenId} on ${originalDate.toISOString()} matching buchung "${buchung.details}"`);
+      log(`[MATCH] ✓ Created skip override for fixkosten ${fixkostenId} on ${originalDate.toISOString()} matching buchung "${buchung.details}"`);
       
-      return override;
+      return { override, debugLogs: collectDebugLogs ? logs : undefined };
     }
     
-    return null;
+    log(`[MATCH] ✗ No match found after checking ${fixkostenTransactions.length} fixkosten transactions`);
+    return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
   } catch (error: any) {
-    console.error('Error matching buchung to fixkosten:', error);
+    const errorMsg = `Error matching buchung to fixkosten: ${error instanceof Error ? error.message : String(error)}`;
+    console.error(errorMsg, error);
+    if (collectDebugLogs) logs.push(`[MATCH ERROR] ${errorMsg}`);
     // Don't throw - this is a non-critical operation
-    return null;
+    return { override: null, debugLogs: collectDebugLogs ? logs : undefined };
   }
 }
 
