@@ -163,16 +163,34 @@ export async function matchBuchungToFixkostenServer(
   supabase: SupabaseClient
 ): Promise<FixkostenOverride | null> {
   try {
+    console.log(`[MATCH] Starting match for: "${buchung.details}" (${buchung.amount}, ${buchung.date.toISOString()}, ${buchung.direction})`);
+    
     // Only match outgoing transactions (Fixkosten are always outgoing)
     if (buchung.direction !== 'Outgoing') {
+      console.log(`[MATCH] Skipping incoming transaction`);
+      return null;
+    }
+    
+    // Validate date
+    if (isNaN(buchung.date.getTime())) {
+      console.error(`[MATCH] Invalid date: ${buchung.date}`);
       return null;
     }
 
     // Load all fixkosten
+    console.log(`[MATCH] Loading fixkosten...`);
     const fixkosten = await loadFixkostenServer(supabase);
+    console.log(`[MATCH] Loaded ${fixkosten.length} fixkosten`);
+    
+    if (fixkosten.length === 0) {
+      console.log(`[MATCH] No fixkosten found, skipping match`);
+      return null;
+    }
     
     // Load existing overrides to avoid duplicates
+    console.log(`[MATCH] Loading existing overrides...`);
     const existingOverrides = await loadFixkostenOverridesServer(supabase);
+    console.log(`[MATCH] Loaded ${existingOverrides.length} existing overrides`);
     
     // Enhanced text normalization and matching
     const normalizeText = (text: string) => {

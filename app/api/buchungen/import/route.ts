@@ -177,12 +177,25 @@ export async function POST(request: NextRequest) {
       }
       
       // Try to match imported transactions to fixkosten and create skip overrides
+      console.log(`[HTML IMPORT] Starting fixkosten matching for ${processedData.length} transactions`);
       let matchedCount = 0;
+      let errorCount = 0;
+      
       for (const item of processedData) {
         try {
+          console.log(`[HTML IMPORT] Attempting to match: "${item.details}" (${item.amount}, ${item.date}, ${item.direction})`);
+          
+          // Ensure date is a Date object
+          const transactionDate = typeof item.date === 'string' ? new Date(item.date) : item.date;
+          
+          if (isNaN(transactionDate.getTime())) {
+            console.warn(`[HTML IMPORT] Invalid date for transaction: ${item.date}`);
+            continue;
+          }
+          
           const override = await matchBuchungToFixkostenServer(
             {
-              date: new Date(item.date),
+              date: transactionDate,
               amount: item.amount,
               details: item.details,
               direction: item.direction
@@ -190,14 +203,24 @@ export async function POST(request: NextRequest) {
             userId,
             supabase
           );
+          
           if (override) {
             matchedCount++;
+            console.log(`[HTML IMPORT] ✓ Match found and override created for: "${item.details}"`);
+          } else {
+            console.log(`[HTML IMPORT] ✗ No match found for: "${item.details}"`);
           }
         } catch (matchError) {
-          // Non-critical error, just log it
-          console.warn('Error matching buchung to fixkosten:', matchError);
+          errorCount++;
+          // Non-critical error, but log it with more details
+          console.error(`[HTML IMPORT] Error matching buchung to fixkosten:`, matchError);
+          if (matchError instanceof Error) {
+            console.error(`[HTML IMPORT] Error stack:`, matchError.stack);
+          }
         }
       }
+      
+      console.log(`[HTML IMPORT] Matching completed: ${matchedCount} matches, ${errorCount} errors out of ${processedData.length} transactions`);
       
       if (matchedCount > 0) {
         console.log(`Created ${matchedCount} skip overrides for matching fixkosten transactions`);
