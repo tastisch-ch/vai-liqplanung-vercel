@@ -531,15 +531,25 @@ export async function matchBuchungToFixkostenServer(
         log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
       }
       
-      // Found a match! Extract fixkosten ID from transaction ID
-      // Transaction ID format: `fixkosten_${fixkosten.id}_${date}`
-      const match = fixkostenTx.id.match(/^fixkosten_(.+?)_/);
-      if (!match) {
+      // Found a match! Extract fixkosten ID and date from transaction ID
+      // Transaction ID format: `fixkosten_${fixkosten.id}_${currentDate.toISOString()}`
+      // Note: The ID contains currentDate (before weekend adjustment), not transactionDate
+      // We need to use currentDate because that's what convertFixkostenToBuchungen uses to search for overrides
+      const match = fixkostenTx.id.match(/^fixkosten_(.+?)_(.+)$/);
+      if (!match || !match[2]) {
+        log(`[MATCH DEBUG] Could not extract fixkosten ID and date from transaction ID: ${fixkostenTx.id}`);
         continue;
       }
       
       const fixkostenId = match[1];
-      const originalDate = fixkostenTx.date;
+      // Extract the currentDate from the transaction ID (this is the date before weekend adjustment)
+      // This is the date that convertFixkostenToBuchungen uses to search for overrides
+      const originalDate = new Date(match[2]);
+      
+      if (isNaN(originalDate.getTime())) {
+        log(`[MATCH DEBUG] Invalid date extracted from transaction ID: ${match[2]}`);
+        continue;
+      }
       
       // Check if override already exists
       const existingOverride = findOverrideForDate(existingOverrides, fixkostenId, originalDate);
