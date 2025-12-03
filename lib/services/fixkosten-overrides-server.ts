@@ -308,11 +308,27 @@ export async function matchBuchungToFixkostenServer(
         // This handles cases like "Zuerich Betriebshaftpflicht" where "Zuerich" matches
         if (shorterWords.length === 2 && foundInLonger >= 1) {
           // Check if the matching word is significant (not just a common word)
-          const significantWords = ['zuerich', 'zurich', 'basel', 'bern', 'genf', 'lausanne', 'versicherung', 'insurance'];
+          const significantWords = [
+            'zuerich', 'zurich', 'basel', 'bern', 'genf', 'lausanne', 'lugano', 'stans',
+            'versicherung', 'insurance', 'versicherungs', 'betriebshaftpflicht', 'sachversicherung',
+            'steuerverwaltung', 'finanzverwaltung', 'eidgenössische', 'eidgenoessische',
+            'metanet', 'kfn', 'kabelfernsehen', 'engelberger', 'druck', 'kiwanis'
+          ];
           const matchedWord = foundWords[0];
-          if (significantWords.some(sig => matchedWord.includes(sig) || sig.includes(matchedWord))) {
+          const isSignificant = significantWords.some(sig => 
+            matchedWord.includes(sig) || sig.includes(matchedWord) ||
+            matchedWord.toLowerCase().includes(sig.toLowerCase()) || sig.toLowerCase().includes(matchedWord.toLowerCase())
+          );
+          
+          if (isSignificant) {
             console.log(`[MATCH DEBUG] Accepting match based on significant word: "${matchedWord}"`);
             return 0.65; // Accept match with significant word
+          }
+          
+          // Also check: if the first word matches and it's a company name pattern (capitalized), accept it
+          if (foundWords.length > 0 && shorterWords[0] === foundWords[0] && shorterWords[0].length >= 4) {
+            console.log(`[MATCH DEBUG] Accepting match based on first word match: "${foundWords[0]}"`);
+            return 0.6; // Accept match with first word
           }
         }
         
@@ -420,34 +436,87 @@ export async function matchBuchungToFixkostenServer(
         continue;
       }
       
-      // Check text similarity (enhanced fuzzy match)
-      const textSimilarity = calculateTextSimilarity(buchung.details, fixkostenTx.details);
-      
       // Require minimum similarity score
       // Lower threshold when amount and date match perfectly (high confidence)
       const amountMatchPerfect = amountDiff < 0.01; // Exact match (within 1 cent)
       const dateMatchClose = dateDiff <= 7 * 24 * 60 * 60 * 1000; // Within 7 days
       
-      // If amount matches perfectly and date is close, be very lenient with text
-      // This handles cases where bank adds lots of extra text
-      let minSimilarity = 0.3;
+      // Special case: if amount matches exactly and date is within 7 days, check for keyword match first
+      // This handles cases where the fixkosten name is very short but appears in the bank transaction
       if (amountMatchPerfect && dateMatchClose) {
-        minSimilarity = 0.2; // Very lenient - only need 20% text match
-      } else if (amountMatchPerfect) {
-        minSimilarity = 0.25; // Lenient if amount matches
-      } else if (dateMatchClose) {
-        minSimilarity = 0.28; // Slightly lenient if date is close
+        // Extract key words from fixkosten name and bank transaction
+        const fixkostenKeyWords = extractKeyWords(fixkostenTx.details);
+        const buchungKeyWords = extractKeyWords(buchung.details);
+        const fixkostenNameLower = normalizeText(fixkostenTx.details);
+        const buchungDetailsLower = normalizeText(buchung.details);
+        
+        // Check if fixkosten name appears as substring in bank transaction
+        if (buchungDetailsLower.includes(fixkostenNameLower) || fixkostenNameLower.includes(buchungDetailsLower)) {
+          console.log(`[MATCH DEBUG] ✓ Match found via substring match!`);
+        } else {
+          // Check if any significant fixkosten keyword appears in buchung
+          const significantWords = [
+            'zuerich', 'zurich', 'basel', 'bern', 'genf', 'lausanne', 'lugano', 'stans',
+            'versicherung', 'insurance', 'versicherungs', 'betriebshaftpflicht', 'sachversicherung',
+            'steuerverwaltung', 'finanzverwaltung', 'eidgenössische', 'eidgenoessische',
+            'metanet', 'kfn', 'kabelfernsehen', 'engelberger', 'druck', 'kiwanis'
+          ];
+          
+          const hasSignificantMatch = fixkostenKeyWords.some(fkWord => {
+            // Check if it's a significant word
+            const isSignificant = significantWords.some(sig => 
+              fkWord.toLowerCase().includes(sig.toLowerCase()) || sig.toLowerCase().includes(fkWord.toLowerCase())
+            );
+            
+            if (!isSignificant) return false;
+            
+            // Check if it appears in buchung
+            return buchungKeyWords.some(bWord => 
+              bWord.toLowerCase().includes(fkWord.toLowerCase()) || 
+              fkWord.toLowerCase().includes(bWord.toLowerCase()) ||
+              buchungDetailsLower.includes(fkWord.toLowerCase())
+            );
+          });
+          
+          if (hasSignificantMatch) {
+            console.log(`[MATCH DEBUG] ✓ Match found via significant keyword match!`);
+          } else {
+            // Fall back to text similarity check
+            const textSimilarity = calculateTextSimilarity(buchung.details, fixkostenTx.details);
+            const minSimilarity = 0.15; // Very lenient when amount and date match
+            
+            console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
+            console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
+            
+            if (textSimilarity < minSimilarity) {
+              console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
+              continue;
+            }
+            
+            console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
+          }
+        }
+      } else {
+        // Normal text similarity check
+        const textSimilarity = calculateTextSimilarity(buchung.details, fixkostenTx.details);
+        
+        let minSimilarity = 0.3;
+        if (amountMatchPerfect) {
+          minSimilarity = 0.25; // Lenient if amount matches
+        } else if (dateMatchClose) {
+          minSimilarity = 0.28; // Slightly lenient if date is close
+        }
+        
+        console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
+        console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
+        
+        if (textSimilarity < minSimilarity) {
+          console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
+          continue;
+        }
+        
+        console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
       }
-      
-      console.log(`[MATCH DEBUG] Comparing "${buchung.details}" vs "${fixkostenTx.details}"`);
-      console.log(`[MATCH DEBUG] Similarity: ${(textSimilarity * 100).toFixed(1)}%, min required: ${(minSimilarity * 100).toFixed(1)}%, amount diff: ${amountDiff.toFixed(2)}, date diff: ${daysDiff} days`);
-      
-      if (textSimilarity < minSimilarity) {
-        console.log(`[MATCH DEBUG] Text similarity too low, skipping`);
-        continue;
-      }
-      
-      console.log(`[MATCH DEBUG] ✓ Match found! Similarity: ${(textSimilarity * 100).toFixed(1)}%`);
       
       // Found a match! Extract fixkosten ID from transaction ID
       // Transaction ID format: `fixkosten_${fixkosten.id}_${date}`
