@@ -13,6 +13,7 @@ export interface Buchung {
   updated_at?: string;
   isOverridden?: boolean;
   overrideNotes?: string;
+  isSkipped?: boolean; // True if this transaction is skipped via override
   is_simulation?: boolean;
   // Invoice lifecycle (optional; present for imported invoices)
   is_invoice?: boolean;

@@ -253,13 +253,19 @@ export default function Planung() {
     }
     
     // Recalculate running balance based only on visible transactions
+    // Skip transactions that are marked as skipped (they don't affect the balance)
     let runningBalance = balanceToUse;
     const recalculatedTransactions = filtered.map(tx => {
-      // Update running balance based on transaction direction
-      if (tx.direction === 'Incoming') {
-        runningBalance += tx.amount;
-      } else {
-        runningBalance -= tx.amount;
+      // Skip balance calculation for skipped transactions
+      const isSkipped = (tx as any).isSkipped === true;
+      
+      if (!isSkipped) {
+        // Update running balance based on transaction direction
+        if (tx.direction === 'Incoming') {
+          runningBalance += tx.amount;
+        } else {
+          runningBalance -= tx.amount;
+        }
       }
       
       // Return transaction with recalculated balance
@@ -500,11 +506,37 @@ export default function Planung() {
                           </span>
                   );
                   return (
-                    <TableRow key={transaction.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/40">
-                      <TableCell className="text-gray-500">{format(transaction.date, 'dd.MM.yyyy', { locale: de })}</TableCell>
-                      <TableCell className="text-gray-900 max-w-[60vw] truncate whitespace-nowrap overflow-hidden text-ellipsis" title={transaction.details}>{transaction.details}</TableCell>
-                      <TableCell className="text-gray-600">{categoryBadge}</TableCell>
-                      <TableCell className={cx("text-right tabular-nums font-medium", amountClass)}>
+                    <TableRow 
+                      key={transaction.id} 
+                      className={cx(
+                        "hover:bg-gray-50 dark:hover:bg-gray-900/40",
+                        isSkipped && "opacity-50 bg-gray-100 dark:bg-gray-800/30"
+                      )}
+                    >
+                      <TableCell className={cx("text-gray-500", isSkipped && "line-through")}>
+                        {format(transaction.date, 'dd.MM.yyyy', { locale: de })}
+                      </TableCell>
+                      <TableCell className={cx(
+                        "max-w-[60vw] truncate whitespace-nowrap overflow-hidden text-ellipsis",
+                        isSkipped ? "text-gray-500 line-through" : "text-gray-900"
+                      )} title={isSkipped && skipReason ? `${transaction.details} - ${skipReason}` : transaction.details}>
+                        {transaction.details}
+                        {isSkipped && skipReason && (
+                          <span className="ml-2 text-xs text-gray-400 italic">({skipReason})</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {categoryBadge}
+                        {isSkipped && (
+                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                            [Ignoriert]
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className={cx(
+                        "text-right tabular-nums font-medium",
+                        isSkipped ? "text-gray-400 line-through" : amountClass
+                      )}>
                         <span className="mr-1">{isIncome ? '+' : '-'}</span>
                         {formatCHF(Math.abs(transaction.amount))}
                       </TableCell>
@@ -532,17 +564,37 @@ export default function Planung() {
           <div className="md:hidden space-y-2 mt-4">
             {filteredTransactions.map((tx) => {
               const isIncome = tx.direction === 'Incoming';
-              const amountClass = isIncome ? 'text-emerald-700' : 'text-rose-700';
+              const isSkipped = (tx as any).isSkipped === true;
+              const skipReason = (tx as any).overrideNotes;
+              const amountClass = isSkipped 
+                ? 'text-gray-400' 
+                : (isIncome ? 'text-emerald-700' : 'text-rose-700');
               return (
-                <div key={tx.id} className="rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950">
+                <div 
+                  key={tx.id} 
+                  className={cx(
+                    "rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-white dark:bg-gray-950",
+                    isSkipped && "opacity-50 bg-gray-100 dark:bg-gray-800/30"
+                  )}
+                >
                   {/* Zeile 1: Details */}
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-50 line-clamp-2 break-anywhere" title={tx.details}>{tx.details}</div>
+                  <div className={cx(
+                    "text-sm font-medium line-clamp-2 break-anywhere",
+                    isSkipped ? "text-gray-500 line-through" : "text-gray-900 dark:text-gray-50"
+                  )} title={isSkipped && skipReason ? `${tx.details} - ${skipReason}` : tx.details}>
+                    {tx.details}
+                    {isSkipped && skipReason && (
+                      <span className="ml-2 text-xs text-gray-400 italic">({skipReason})</span>
+                    )}
+                  </div>
                   {/* Zeile 2: Betrag */}
-                  <div className={`mt-1 tabular-nums text-base font-semibold ${amountClass}`}>
+                  <div className={cx("mt-1 tabular-nums text-base font-semibold", amountClass, isSkipped && "line-through")}>
                     <span className="mr-1">{isIncome ? '+' : '-'}</span>{formatCHF(Math.abs(tx.amount))}
                   </div>
                   {/* Zeile 3: Datum */}
-                  <div className="mt-1 text-xs text-gray-500">{format(tx.date, 'dd.MM.yyyy', { locale: de })}</div>
+                  <div className={cx("mt-1 text-xs", isSkipped ? "text-gray-400 line-through" : "text-gray-500")}>
+                    {format(tx.date, 'dd.MM.yyyy', { locale: de })}
+                  </div>
                   {/* Zeile 4: Kategorie + Kontostand */}
                   <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
                     <div className="inline-flex items-center gap-2">
@@ -556,6 +608,11 @@ export default function Planung() {
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">Manuell</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">Standard</span>
+                      )}
+                      {isSkipped && (
+                        <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                          [Ignoriert]
+                        </span>
                       )}
                     </div>
                     <div className="text-gray-700">KS: {formatCHF(tx.kontostand || 0)}</div>

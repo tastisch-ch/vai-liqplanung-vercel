@@ -267,12 +267,8 @@ export function convertFixkostenToBuchungen(
       // Check for overrides for this specific fixkosten+date combination
       const override = findOverrideForDate(overrides, fixkosten.id, currentDate);
       
-      // If this occurrence is skipped by an override, skip to the next occurrence
-      if (override && override.is_skipped) {
-        // Get next occurrence based on rhythm and continue with the loop
-        currentDate = getNextOccurrence(currentDate, fixkosten.rhythmus);
-        continue;
-      }
+      // Check if this occurrence is skipped by an override
+      const isSkipped = override && override.is_skipped;
       
       // Check if the original date is at the end of the month (e.g., 30th, 31st)
       const originalDate = new Date(fixkosten.start);
@@ -291,6 +287,7 @@ export function convertFixkostenToBuchungen(
         : fixkosten.betrag;
         
       // Create transaction with potential override details
+      // Even if skipped, we still create the transaction but mark it as skipped
       result.push({
         id: `fixkosten_${fixkosten.id}_${currentDate.toISOString()}`,
         date: transactionDate,
@@ -304,7 +301,9 @@ export function convertFixkostenToBuchungen(
         shifted: transactionDate.getTime() !== currentDate.getTime(),
         // Add override information
         isOverridden: !!override,
-        overrideNotes: override?.notes || undefined
+        overrideNotes: override?.notes || undefined,
+        // Mark as skipped if override says so
+        isSkipped: isSkipped || false
       });
       
       // Get next occurrence based on rhythm
