@@ -312,11 +312,20 @@ export function findOverrideForDate(
   fixkostenId: string, 
   date: Date
 ): FixkostenOverride | null {
+  // Normalize both dates to start of day for comparison
+  const normalizedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  normalizedDate.setHours(0, 0, 0, 0);
+  
   // Find an override matching the fixkosten_id and original_date
-  return overrides.find(override => 
-    override.fixkosten_id === fixkostenId && 
-    override.original_date.getTime() === new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
-  ) || null;
+  const found = overrides.find(override => {
+    const normalizedOverrideDate = new Date(override.original_date);
+    normalizedOverrideDate.setHours(0, 0, 0, 0);
+    
+    return override.fixkosten_id === fixkostenId && 
+           normalizedOverrideDate.getTime() === normalizedDate.getTime();
+  });
+  
+  return found || null;
 }
 
 /**

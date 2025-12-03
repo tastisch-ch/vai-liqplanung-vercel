@@ -267,8 +267,17 @@ export function convertFixkostenToBuchungen(
       // Check for overrides for this specific fixkosten+date combination
       const override = findOverrideForDate(overrides, fixkosten.id, currentDate);
       
+      // Debug logging
+      if (override) {
+        console.log(`[FIXKOSTEN DEBUG] Found override for ${fixkosten.name} on ${currentDate.toISOString().split('T')[0]}:`, {
+          is_skipped: override.is_skipped,
+          notes: override.notes,
+          original_date: override.original_date.toISOString().split('T')[0]
+        });
+      }
+      
       // Check if this occurrence is skipped by an override
-      const isSkipped = override && override.is_skipped;
+      const isSkipped = override && override.is_skipped === true;
       
       // Check if the original date is at the end of the month (e.g., 30th, 31st)
       const originalDate = new Date(fixkosten.start);
