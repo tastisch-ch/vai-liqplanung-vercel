@@ -362,11 +362,16 @@ export async function enhanceTransactions(
     shifted: tx.shifted
   })));
   const enhancedFutureTransactions = futureTransactions.map(tx => {
-    // Update running balance based on transaction direction
-    if (tx.direction === 'Incoming') {
-      runningBalance += tx.amount;
-    } else {
-      runningBalance -= tx.amount;
+    // Skip balance calculation for skipped transactions
+    const isSkipped = (tx as any).isSkipped === true;
+    
+    if (!isSkipped) {
+      // Update running balance based on transaction direction
+      if (tx.direction === 'Incoming') {
+        runningBalance += tx.amount;
+      } else {
+        runningBalance -= tx.amount;
+      }
     }
     
     // Keep the original kategorie if it exists, ensuring it's a valid TransactionCategory
