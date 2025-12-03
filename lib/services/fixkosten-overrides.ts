@@ -29,6 +29,8 @@ export async function loadFixkostenOverrides(userId: string): Promise<FixkostenO
       ...item,
       original_date: new Date(item.original_date),
       new_date: item.new_date ? new Date(item.new_date) : null,
+      // Ensure is_skipped is a boolean (database might return 1/0 or true/false)
+      is_skipped: item.is_skipped === true || item.is_skipped === 1 || item.is_skipped === 'true',
     })) as FixkostenOverride[];
   } catch (error: any) {
     console.error('Unexpected error loading fixkosten overrides:', error);
@@ -57,6 +59,8 @@ export async function loadOverridesForFixkosten(fixkostenId: string): Promise<Fi
       ...item,
       original_date: new Date(item.original_date),
       new_date: item.new_date ? new Date(item.new_date) : null,
+      // Ensure is_skipped is a boolean (database might return 1/0 or true/false)
+      is_skipped: item.is_skipped === true || item.is_skipped === 1 || item.is_skipped === 'true',
     })) as FixkostenOverride[];
   } catch (error: any) {
     console.error('Unexpected error loading fixkosten overrides:', error);
