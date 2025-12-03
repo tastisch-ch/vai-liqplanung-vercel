@@ -180,6 +180,7 @@ export async function POST(request: NextRequest) {
       console.log(`[HTML IMPORT] Starting fixkosten matching for ${processedData.length} transactions`);
       let matchedCount = 0;
       let errorCount = 0;
+      const matchDetails: Array<{transaction: string; matched: boolean; error?: string}> = [];
       
       for (const item of processedData) {
         try {
@@ -190,6 +191,7 @@ export async function POST(request: NextRequest) {
           
           if (isNaN(transactionDate.getTime())) {
             console.warn(`[HTML IMPORT] Invalid date for transaction: ${item.date}`);
+            matchDetails.push({transaction: item.details, matched: false, error: `Invalid date: ${item.date}`});
             continue;
           }
           
@@ -207,16 +209,20 @@ export async function POST(request: NextRequest) {
           if (override) {
             matchedCount++;
             console.log(`[HTML IMPORT] ✓ Match found and override created for: "${item.details}"`);
+            matchDetails.push({transaction: item.details, matched: true});
           } else {
             console.log(`[HTML IMPORT] ✗ No match found for: "${item.details}"`);
+            matchDetails.push({transaction: item.details, matched: false});
           }
         } catch (matchError) {
           errorCount++;
+          const errorMsg = matchError instanceof Error ? matchError.message : String(matchError);
           // Non-critical error, but log it with more details
           console.error(`[HTML IMPORT] Error matching buchung to fixkosten:`, matchError);
           if (matchError instanceof Error) {
             console.error(`[HTML IMPORT] Error stack:`, matchError.stack);
           }
+          matchDetails.push({transaction: item.details, matched: false, error: errorMsg});
         }
       }
       
@@ -242,9 +248,11 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ 
         success: true, 
-        message: `Importiert: ${processedData.length} Einträge${duplicateCount > 0 ? `, ${duplicateCount} Duplikate übersprungen` : ''}`, 
+        message: `Importiert: ${processedData.length} Einträge${duplicateCount > 0 ? `, ${duplicateCount} Duplikate übersprungen` : ''}${matchedCount > 0 ? `, ${matchedCount} Fixkosten-Matches gefunden` : ''}`, 
         count: processedData.length,
-        duplicates: duplicateCount
+        duplicates: duplicateCount,
+        matchedCount: matchedCount,
+        matchDetails: matchDetails
       }, { status: 200 });
     }
     

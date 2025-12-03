@@ -203,6 +203,19 @@ export default function DatenImport() {
         throw new Error(result.error || 'Import fehlgeschlagen');
       }
       
+      // Log match details if available
+      if (result.matchDetails) {
+        console.log('[CLIENT] Match details:', result.matchDetails);
+        console.log(`[CLIENT] Matched: ${result.matchedCount || 0} out of ${result.count || 0} transactions`);
+        result.matchDetails.forEach((detail: any) => {
+          if (detail.matched) {
+            console.log(`[CLIENT] ✓ Matched: "${detail.transaction}"`);
+          } else {
+            console.log(`[CLIENT] ✗ No match: "${detail.transaction}"${detail.error ? ` (Error: ${detail.error})` : ''}`);
+          }
+        });
+      }
+      
       if (result.success) {
         setImportSuccess({
           message: result.message || 'Import erfolgreich',
